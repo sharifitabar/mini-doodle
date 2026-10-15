@@ -28,13 +28,13 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 **Purpose**: Project initialization and build tooling
 
-- [ ] T001 Create Gradle project files in `settings.gradle.kts` and `build.gradle.kts` (Java 21 toolchain, Spring Boot 3.5.x, Spring MVC + Validation, Actuator, Micrometer-Prometheus, jOOQ, Flyway, springdoc-openapi, Testcontainers; add the Gradle wrapper)
-- [ ] T002 [P] Configure jOOQ code generation in `build.gradle.kts` (jOOQ plugin reading `src/main/resources/db/migration`, generated sources under `build/generated-sources`)
-- [ ] T003 [P] Create `docker-compose.yml` with the app service and a PostgreSQL 16 service (healthcheck, env, ports)
-- [ ] T004 [P] Create the multi-stage `Dockerfile` (Gradle build stage → JRE 21 runtime stage)
-- [ ] T005 [P] Create `src/main/resources/application.yml` (datasource, Flyway, jOOQ, actuator exposure, springdoc, logging) and a `docker` profile
-- [ ] T006 Create the application entry point `src/main/java/com/minidoodle/MiniDoodleApplication.java` and the package skeleton (`shared/config`, `shared/web`, `calendar/domain`, `calendar/application`, `calendar/adapter`)
-- [ ] T007 [P] Add a `src/main/resources/application-test.yml` for test wiring (Testcontainers JDBC url placeholder)
+- [X] T001 Create Gradle project files in `settings.gradle.kts` and `build.gradle.kts` (Java 21 toolchain, Spring Boot 3.5.x, Spring MVC + Validation, Actuator, Micrometer-Prometheus, jOOQ, Flyway, springdoc-openapi, Testcontainers; add the Gradle wrapper)
+- [X] T002 [P] Configure jOOQ code generation in `build.gradle.kts` (jOOQ plugin reading `src/main/resources/db/migration`, generated sources under `build/generated-sources`)
+- [X] T003 [P] Create `docker-compose.yml` with the app service and a PostgreSQL 16 service (healthcheck, env, ports)
+- [X] T004 [P] Create the multi-stage `Dockerfile` (Gradle build stage → JRE 21 runtime stage)
+- [X] T005 [P] Create `src/main/resources/application.yml` (datasource, Flyway, jOOQ, actuator exposure, springdoc, logging) and a `docker` profile
+- [X] T006 Create the application entry point `src/main/java/com/minidoodle/MiniDoodleApplication.java` and the package skeleton (`shared/config`, `shared/web`, `calendar/domain`, `calendar/application`, `calendar/adapter`)
+- [X] T007 [P] Add a `src/main/resources/application-test.yml` for test wiring (Testcontainers JDBC url placeholder)
 
 ---
 

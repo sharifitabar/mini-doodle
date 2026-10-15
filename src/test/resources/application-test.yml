@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:16:///minidoodle
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jooq:
+    sql-dialect: POSTGRES
+
+app:
+  slot:
+    max-duration-minutes: 1440
+
+logging:
+  level:
+    org.testcontainers: INFO
