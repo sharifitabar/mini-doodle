@@ -2,6 +2,7 @@ package com.minidoodle.calendar.adapter.in.web;
 
 import com.minidoodle.calendar.application.port.in.ChangeSlotStatusUseCase;
 import com.minidoodle.calendar.application.port.in.CreateSlotUseCase;
+import com.minidoodle.calendar.application.port.in.DeleteSlotUseCase;
 import com.minidoodle.calendar.application.port.in.GetSlotUseCase;
 import com.minidoodle.calendar.application.port.in.ListSlotsUseCase;
 import com.minidoodle.calendar.application.port.in.ModifySlotCommand;
@@ -19,6 +20,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,18 +44,21 @@ class SlotController {
     private final ListSlotsUseCase listSlots;
     private final ChangeSlotStatusUseCase changeSlotStatus;
     private final ModifySlotUseCase modifySlot;
+    private final DeleteSlotUseCase deleteSlot;
 
     SlotController(
             CreateSlotUseCase createSlot,
             GetSlotUseCase getSlot,
             ListSlotsUseCase listSlots,
             ChangeSlotStatusUseCase changeSlotStatus,
-            ModifySlotUseCase modifySlot) {
+            ModifySlotUseCase modifySlot,
+            DeleteSlotUseCase deleteSlot) {
         this.createSlot = createSlot;
         this.getSlot = getSlot;
         this.listSlots = listSlots;
         this.changeSlotStatus = changeSlotStatus;
         this.modifySlot = modifySlot;
+        this.deleteSlot = deleteSlot;
     }
 
     @PostMapping
@@ -103,5 +108,11 @@ class SlotController {
                     caller, id, new ModifySlotCommand(request.startAt(), request.durationMinutes()));
         }
         return SlotWebMapper.toResponse(updated);
+    }
+
+    @DeleteMapping("/{slotId}")
+    ResponseEntity<Void> delete(@CurrentUser UserId caller, @PathVariable UUID slotId) {
+        deleteSlot.deleteSlot(caller, SlotId.of(slotId));
+        return ResponseEntity.noContent().build();
     }
 }

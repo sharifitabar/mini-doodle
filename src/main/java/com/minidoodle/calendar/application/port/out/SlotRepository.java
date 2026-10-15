@@ -13,7 +13,7 @@ public interface SlotRepository {
 
     void update(TimeSlot slot);
 
-    void deleteById(SlotId slotId);
+    void deleteByIdAndCalendarId(SlotId slotId, CalendarId calendarId);
 
     Optional<TimeSlot> findByIdAndCalendarId(SlotId slotId, CalendarId calendarId);
 

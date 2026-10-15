@@ -142,14 +142,14 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 ### Tests for User Story 4
 
-- [ ] T042 [P] [US4] Persistence integration test for delete scoped to calendar in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryDeleteIT.java`
-- [ ] T043 [P] [US4] MockMvc contract test for `DELETE /api/v1/slots/{slotId}` (204, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerDeleteIT.java`
+- [X] T042 [P] [US4] Persistence integration test for delete scoped to calendar in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryDeleteIT.java`
+- [X] T043 [P] [US4] MockMvc contract test for `DELETE /api/v1/slots/{slotId}` (204, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerDeleteIT.java`
 
 ### Implementation for User Story 4
 
-- [ ] T044 [P] [US4] Define inbound port `DeleteSlotUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [ ] T045 [US4] Implement `DeleteSlotService` (ownership check, delete) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T044)
-- [ ] T046 [US4] Add DELETE endpoint to `SlotController` in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T045)
+- [X] T044 [P] [US4] Define inbound port `DeleteSlotUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [X] T045 [US4] Implement `DeleteSlotService` (ownership check, delete) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T044)
+- [X] T046 [US4] Add DELETE endpoint to `SlotController` in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T045)
 
 **Checkpoint**: All four stories independently functional
 

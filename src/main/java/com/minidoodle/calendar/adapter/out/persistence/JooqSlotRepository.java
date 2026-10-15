@@ -72,9 +72,10 @@ class JooqSlotRepository implements SlotRepository {
     }
 
     @Override
-    public void deleteById(SlotId slotId) {
+    public void deleteByIdAndCalendarId(SlotId slotId, CalendarId calendarId) {
         dsl.deleteFrom(TimeSlots.TIME_SLOTS)
-                .where(TimeSlots.TIME_SLOTS.ID.eq(slotId.value()))
+                .where(TimeSlots.TIME_SLOTS.ID.eq(slotId.value())
+                        .and(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId.value())))
                 .execute();
     }
 
