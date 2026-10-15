@@ -120,15 +120,15 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 ### Tests for User Story 3
 
-- [ ] T036 [P] [US3] Domain unit test for modifying time/duration invariants and overlap re-check in `src/test/java/com/minidoodle/calendar/domain/TimeSlotModifyTest.java`
-- [ ] T037 [P] [US3] Persistence integration test: updating a slot into an overlapping range fails on the constraint in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryModifyIT.java`
-- [ ] T038 [P] [US3] MockMvc contract test for `PATCH /api/v1/slots/{slotId}` with `startAt`/`durationMinutes` (200, 400, 404, 409) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerModifyIT.java`
+- [X] T036 [P] [US3] Domain unit test for modifying time/duration invariants and overlap re-check in `src/test/java/com/minidoodle/calendar/domain/TimeSlotModifyTest.java`
+- [X] T037 [P] [US3] Persistence integration test: updating a slot into an overlapping range fails on the constraint in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryModifyIT.java`
+- [X] T038 [P] [US3] MockMvc contract test for `PATCH /api/v1/slots/{slotId}` with `startAt`/`durationMinutes` (200, 400, 404, 409) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerModifyIT.java`
 
 ### Implementation for User Story 3
 
-- [ ] T039 [P] [US3] Define inbound port `ModifySlotUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [ ] T040 [US3] Implement `ModifySlotService` (re-validate invariants, persist, translate overlap → 409) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T039)
-- [ ] T041 [US3] Add `UpdateSlotRequest` DTO and extend `SlotController` PATCH for `startAt`/`durationMinutes` in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T040, T035)
+- [X] T039 [P] [US3] Define inbound port `ModifySlotUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [X] T040 [US3] Implement `ModifySlotService` (re-validate invariants, persist, translate overlap → 409) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T039)
+- [X] T041 [US3] Add `UpdateSlotRequest` DTO and extend `SlotController` PATCH for `startAt`/`durationMinutes` in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T040, T035)
 
 **Checkpoint**: US1–US3 independently functional
 
