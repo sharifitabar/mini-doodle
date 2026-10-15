@@ -1,0 +1,206 @@
+openapi: 3.0.3
+info:
+  title: Mini Doodle - Meeting Scheduling API
+  version: 1.0.0
+  description: |
+    Convert available (free) time slots into meetings, view a slot's meeting, and cancel a
+    meeting to free its slot again. The caller is identified by the required `X-User-Id`
+    header (demo authentication). Meetings are addressed through their slot; a slot holds at
+    most one meeting. All date-times are ISO-8601 with an explicit offset and are normalized
+    to UTC for storage.
+servers:
+  - url: http://localhost:8080
+    description: Local (docker-compose)
+tags:
+  - name: Meetings
+    description: Meeting lifecycle on a time slot
+
+paths:
+  /api/v1/slots/{slotId}/meeting:
+    parameters:
+      - $ref: '#/components/parameters/SlotId'
+      - $ref: '#/components/parameters/XUserId'
+    post:
+      tags: [Meetings]
+      summary: Book a meeting from an available slot
+      description: |
+        Converts the caller's free slot into a meeting. The slot must belong to the caller's
+        calendar and be currently FREE. On success the slot becomes BUSY.
+      operationId: bookMeeting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookMeetingRequest'
+            example:
+              title: Sprint planning
+              description: Kick off the next sprint
+              participants:
+                - name: Ada Lovelace
+                  email: ada@example.com
+                - email: guest@example.com
+      responses:
+        '201':
+          description: Meeting booked; the slot is now BUSY
+          headers:
+            Location:
+              schema: { type: string }
+              description: URL of the meeting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meeting'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags: [Meetings]
+      summary: Retrieve the meeting for a slot
+      operationId: getMeeting
+      responses:
+        '200':
+          description: The meeting for this slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Meeting'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Meetings]
+      summary: Cancel the meeting for a slot
+      description: Removes the meeting and frees its slot (status returns to FREE).
+      operationId: cancelMeeting
+      responses:
+        '204':
+          description: Meeting cancelled; the slot is available again
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    XUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      description: Identifies the calling user (demo authentication).
+      schema: { type: string, format: uuid }
+    SlotId:
+      name: slotId
+      in: path
+      required: true
+      description: Identifier of the slot the meeting belongs to.
+      schema: { type: string, format: uuid }
+
+  schemas:
+    BookMeetingRequest:
+      type: object
+      required: [title, participants]
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Meeting title.
+        description:
+          type: string
+          maxLength: 2000
+          description: Optional meeting description.
+        participants:
+          type: array
+          minItems: 1
+          description: One or more participants; need not be existing users.
+          items:
+            $ref: '#/components/schemas/Participant'
+
+    Participant:
+      type: object
+      additionalProperties: false
+      description: |
+        A meeting participant. At least one of `name` or `email` must be present and
+        non-blank; participants are not required to be existing users.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          maxLength: 254
+
+    Meeting:
+      type: object
+      required: [slotId, title, participants, startAt, endAt, createdAt, updatedAt]
+      properties:
+        slotId: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        participants:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Participant'
+        startAt:
+          type: string
+          format: date-time
+          description: Start of the meeting's slot (inherited from the slot).
+        endAt:
+          type: string
+          format: date-time
+          description: End of the meeting's slot (inherited from the slot).
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Problem:
+      type: object
+      description: RFC 7807 problem details.
+      required: [type, title, status]
+      properties:
+        type: { type: string, example: 'https://minidoodle.example/problems/slot-not-free' }
+        title: { type: string, example: 'Slot is not available for booking' }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+
+  responses:
+    BadRequest:
+      description: |
+        Validation failure (blank/over-length title, missing or blank participant details).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: The caller identity is missing or does not resolve to a known user.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: |
+        The slot does not exist, does not belong to the caller (existence is not disclosed),
+        or holds no meeting.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: |
+        The slot is not free, already holds a meeting, or a slot operation conflicts with an
+        existing meeting.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
