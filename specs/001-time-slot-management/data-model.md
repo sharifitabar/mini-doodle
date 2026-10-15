@@ -61,7 +61,9 @@ CREATE TABLE time_slots (
     status           TEXT NOT NULL DEFAULT 'FREE',
     slot_range       TSTZRANGE GENERATED ALWAYS AS
                        (tstzrange(start_at,
-                                  start_at + make_interval(mins => duration_minutes),
+                                  ((start_at AT TIME ZONE 'UTC')
+                                     + make_interval(mins => duration_minutes))
+                                     AT TIME ZONE 'UTC',
                                   '[)')) STORED,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -86,6 +88,11 @@ CREATE INDEX ix_time_slots_range ON time_slots USING gist (slot_range);
   exception → HTTP 409.
 - The generated `slot_range` column is not written by the application; jOOQ is configured
   to exclude generated columns from insert/update.
+- The generated expression normalizes through `AT TIME ZONE 'UTC'` before adding the
+  interval because PostgreSQL requires generated columns (and exclusion constraints) to use
+  IMMUTABLE expressions. `timestamptz + interval` is STABLE (DST-dependent) and is rejected
+  with `ERROR: generation expression is not immutable`; converting to a UTC `timestamp`,
+  adding the interval, then converting back is IMMUTABLE and yields the same end instant.
 
 ## Validation Rules (from requirements)
 

@@ -44,18 +44,18 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T008 Create Flyway migration `src/main/resources/db/migration/V1__init.sql` (`btree_gist` extension, `users`, `calendars`, `time_slots` with generated `slot_range`, `ck_*` checks, `ex_slot_no_overlap` exclusion constraint, indexes) per data-model.md
-- [ ] T009 Run jOOQ code generation against `src/main/resources/db/migration` and verify generated classes build under `build/generated-sources/jooq`; configure the generated `slot_range` column to be excluded from generated insert/update statements (depends on T002, T008)
-- [ ] T010 [P] Implement value objects `UserId`, `CalendarId`, `SlotId`, `TimeRange`, `SlotStatus` in `src/main/java/com/minidoodle/calendar/domain/model/`
-- [ ] T011 Implement domain entities `Calendar` and `TimeSlot` (aggregate root with invariants) in `src/main/java/com/minidoodle/calendar/domain/model/` (depends on T010)
-- [ ] T012 [P] Define domain exceptions (`SlotOverlapException`, `InvalidSlotException`, `SlotNotFoundException`, `ForbiddenAccessException`) in `src/main/java/com/minidoodle/calendar/domain/exception/`
-- [ ] T013 [P] Define outbound ports `CalendarRepository` and `SlotRepository` in `src/main/java/com/minidoodle/calendar/application/port/out/`
-- [ ] T014 Implement persistence adapters `JooqCalendarRepository` and `JooqSlotRepository` (+ row mappers) in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/`; ensure the generated `slot_range` column is never written (let PostgreSQL maintain it) (depends on T009, T013)
-- [ ] T015 [P] Implement caller identity: `CurrentUserArgumentResolver` / filter resolving `X-User-Id` into a `UserId` and provisioning lookup, in `src/main/java/com/minidoodle/shared/web/`
-- [ ] T016 [P] Implement global error handling `ApiExceptionHandler` mapping domain exceptions to RFC 7807 `ProblemDetail` (400/403/404/409) in `src/main/java/com/minidoodle/shared/web/` (depends on T012)
-- [ ] T017 [P] Add `OpenApiConfig` and structured logging configuration in `src/main/java/com/minidoodle/shared/config/`
-- [ ] T018 Create Testcontainers base test `src/test/java/com/minidoodle/support/PostgresIntegrationTest.java` (spins up PostgreSQL 16, applies Flyway) 
-- [ ] T019 Add dev seed data for a demo user + calendar via `src/main/resources/db/migration/V2__seed_dev.sql` or a dev-profile `ApplicationRunner`
+- [X] T008 Create Flyway migration `src/main/resources/db/migration/V1__init.sql` (`btree_gist` extension, `users`, `calendars`, `time_slots` with generated `slot_range`, `ck_*` checks, `ex_slot_no_overlap` exclusion constraint, indexes) per data-model.md
+- [X] T009 Run jOOQ code generation against `src/main/resources/db/migration` and verify generated classes build under `build/generated-sources/jooq`; configure the generated `slot_range` column to be excluded from generated insert/update statements (depends on T002, T008)
+- [X] T010 [P] Implement value objects `UserId`, `CalendarId`, `SlotId`, `TimeRange`, `SlotStatus` in `src/main/java/com/minidoodle/calendar/domain/model/`
+- [X] T011 Implement domain entities `Calendar` and `TimeSlot` (aggregate root with invariants) in `src/main/java/com/minidoodle/calendar/domain/model/` (depends on T010)
+- [X] T012 [P] Define domain exceptions (`SlotOverlapException`, `InvalidSlotException`, `SlotNotFoundException`, `ForbiddenAccessException`) in `src/main/java/com/minidoodle/calendar/domain/exception/`
+- [X] T013 [P] Define outbound ports `CalendarRepository` and `SlotRepository` in `src/main/java/com/minidoodle/calendar/application/port/out/`
+- [X] T014 Implement persistence adapters `JooqCalendarRepository` and `JooqSlotRepository` (+ row mappers) in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/`; ensure the generated `slot_range` column is never written (let PostgreSQL maintain it) (depends on T009, T013)
+- [X] T015 [P] Implement caller identity: `CurrentUserArgumentResolver` / filter resolving `X-User-Id` into a `UserId` and provisioning lookup, in `src/main/java/com/minidoodle/shared/web/`
+- [X] T016 [P] Implement global error handling `ApiExceptionHandler` mapping domain exceptions to RFC 7807 `ProblemDetail` (400/403/404/409) in `src/main/java/com/minidoodle/shared/web/` (depends on T012)
+- [X] T017 [P] Add `OpenApiConfig` and structured logging configuration in `src/main/java/com/minidoodle/shared/config/`
+- [X] T018 Create Testcontainers base test `src/test/java/com/minidoodle/support/PostgresIntegrationTest.java` (spins up PostgreSQL 16, applies Flyway) 
+- [X] T019 Add dev seed data for a demo user + calendar via `src/main/resources/db/migration/V2__seed_dev.sql` or a dev-profile `ApplicationRunner`
 
 **Checkpoint**: Foundation ready — user stories can begin
 
