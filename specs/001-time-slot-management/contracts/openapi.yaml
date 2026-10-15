@@ -1,0 +1,251 @@
+openapi: 3.0.3
+info:
+  title: mini-doodle Time Slot API
+  version: 1.0.0
+  description: >
+    Manage time slots in a user's personal calendar. The caller is identified by the
+    required `X-User-Id` header (demo authentication). All date-times are ISO-8601 with an
+    explicit offset and are normalized to UTC for storage.
+servers:
+  - url: http://localhost:8080
+    description: Local (docker-compose)
+tags:
+  - name: Slots
+    description: Time slot lifecycle
+
+paths:
+  /api/v1/slots:
+    post:
+      tags: [Slots]
+      summary: Create a time slot
+      operationId: createSlot
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSlotRequest'
+            example:
+              startAt: '2026-11-02T09:00:00+01:00'
+              durationMinutes: 30
+      responses:
+        '201':
+          description: Slot created (status defaults to FREE)
+          headers:
+            Location:
+              schema: { type: string }
+              description: URL of the created slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Slot'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags: [Slots]
+      summary: List the caller's time slots
+      operationId: listSlots
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - name: from
+          in: query
+          description: Include slots overlapping this instant or later (inclusive start).
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          description: Include slots overlapping this instant or earlier (exclusive end).
+          schema: { type: string, format: date-time }
+        - name: status
+          in: query
+          description: Filter by availability status.
+          schema:
+            $ref: '#/components/schemas/SlotStatus'
+        - name: limit
+          in: query
+          description: Maximum number of slots to return (server max 100).
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: offset
+          in: query
+          description: Number of slots to skip.
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: A page of the caller's slots, ordered by start time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlotPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/slots/{slotId}:
+    parameters:
+      - $ref: '#/components/parameters/SlotId'
+      - $ref: '#/components/parameters/XUserId'
+    get:
+      tags: [Slots]
+      summary: Retrieve a time slot
+      operationId: getSlot
+      responses:
+        '200':
+          description: The slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Slot'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Slots]
+      summary: Modify a slot's time, duration, and/or status
+      operationId: updateSlot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSlotRequest'
+            example:
+              durationMinutes: 45
+              status: BUSY
+      responses:
+        '200':
+          description: The updated slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Slot'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Slots]
+      summary: Delete a slot
+      operationId: deleteSlot
+      responses:
+        '204':
+          description: Slot deleted
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    XUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      description: Identifies the calling user (demo authentication).
+      schema: { type: string, format: uuid }
+    SlotId:
+      name: slotId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+    SlotStatus:
+      type: string
+      enum: [FREE, BUSY]
+
+    CreateSlotRequest:
+      type: object
+      required: [startAt, durationMinutes]
+      additionalProperties: false
+      properties:
+        startAt:
+          type: string
+          format: date-time
+          description: Start instant with offset; normalized to UTC.
+        durationMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+
+    UpdateSlotRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      description: Any subset of editable fields; omitted fields are unchanged.
+      properties:
+        startAt:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+        status:
+          $ref: '#/components/schemas/SlotStatus'
+
+    Slot:
+      type: object
+      required: [id, startAt, endAt, durationMinutes, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        startAt: { type: string, format: date-time }
+        endAt: { type: string, format: date-time }
+        durationMinutes: { type: integer }
+        status: { $ref: '#/components/schemas/SlotStatus' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    SlotPage:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Slot' }
+        limit: { type: integer }
+        offset: { type: integer }
+        total: { type: integer, description: Total slots matching the filter }
+
+    Problem:
+      type: object
+      description: RFC 7807 problem details.
+      required: [type, title, status]
+      properties:
+        type: { type: string, example: 'https://minidoodle.example/problems/slot-overlap' }
+        title: { type: string, example: 'Slot overlaps an existing slot' }
+        status: { type: integer, example: 409 }
+        detail: { type: string }
+        instance: { type: string }
+
+  responses:
+    BadRequest:
+      description: Validation failure
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: Caller may not act on this resource
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Slot or caller not found
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: The slot overlaps another slot in the same calendar
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
