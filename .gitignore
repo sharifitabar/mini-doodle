@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+
+# Java / Maven
+target/
+
+# Java / Gradle
+.gradle/
+build/
+
+# Spec Kit machine-local state
+.specify/feature.json
+.specify/extensions/*/local-config.yml
