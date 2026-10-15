@@ -18,11 +18,12 @@ The platform is designed to be used by hundreds of users with thousands of slots
 
 ## Tech stack
 
-- **Java** / **Spring Boot**
-- **PostgreSQL** for persistence
+- **Java 21** (LTS) with **Spring Boot 3.5.x**
+- **Gradle** (Kotlin DSL) with wrapper — `./gradlew`
+- **Hexagonal architecture** (ports & adapters) with DDD tactical patterns
+- **jOOQ** over **PostgreSQL** for persistence, **Flyway** for versioned migrations
+- Slot overlap prevented by a PostgreSQL `tstzrange` + GIST exclusion constraint
 - **Docker** & **docker-compose** for local, one-command startup
-
-_TBD: exact Java and Spring Boot versions, build tool (Maven/Gradle)._
 
 ## Domain concepts
 
@@ -74,10 +75,10 @@ _TBD: environment variables (database URL, credentials, pool sizing, pagination 
 
 ## Testing
 
-_TBD: how to run the test suite._
+The suite uses JUnit 5, AssertJ, MockMvc, and Testcontainers (real PostgreSQL).
 
 ```bash
-./mvnw test
+./gradlew test
 ```
 
 ## Project structure
