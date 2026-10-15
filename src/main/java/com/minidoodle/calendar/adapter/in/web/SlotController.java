@@ -1,9 +1,11 @@
 package com.minidoodle.calendar.adapter.in.web;
 
+import com.minidoodle.calendar.application.port.in.ChangeSlotStatusUseCase;
 import com.minidoodle.calendar.application.port.in.CreateSlotUseCase;
 import com.minidoodle.calendar.application.port.in.GetSlotUseCase;
 import com.minidoodle.calendar.application.port.in.ListSlotsUseCase;
 import com.minidoodle.calendar.application.port.in.SlotQuery;
+import com.minidoodle.calendar.domain.exception.InvalidSlotException;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.calendar.domain.model.TimeSlot;
@@ -16,6 +18,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,11 +38,17 @@ class SlotController {
     private final CreateSlotUseCase createSlot;
     private final GetSlotUseCase getSlot;
     private final ListSlotsUseCase listSlots;
+    private final ChangeSlotStatusUseCase changeSlotStatus;
 
-    SlotController(CreateSlotUseCase createSlot, GetSlotUseCase getSlot, ListSlotsUseCase listSlots) {
+    SlotController(
+            CreateSlotUseCase createSlot,
+            GetSlotUseCase getSlot,
+            ListSlotsUseCase listSlots,
+            ChangeSlotStatusUseCase changeSlotStatus) {
         this.createSlot = createSlot;
         this.getSlot = getSlot;
         this.listSlots = listSlots;
+        this.changeSlotStatus = changeSlotStatus;
     }
 
     @PostMapping
@@ -69,5 +78,17 @@ class SlotController {
     @GetMapping("/{slotId}")
     SlotResponse get(@CurrentUser UserId caller, @PathVariable UUID slotId) {
         return SlotWebMapper.toResponse(getSlot.getSlot(caller, SlotId.of(slotId)));
+    }
+
+    @PatchMapping("/{slotId}")
+    SlotResponse update(
+            @CurrentUser UserId caller,
+            @PathVariable UUID slotId,
+            @Valid @RequestBody UpdateSlotRequest request) {
+        if (request.status() == null) {
+            throw new InvalidSlotException("Only status updates are supported");
+        }
+        return SlotWebMapper.toResponse(
+                changeSlotStatus.changeStatus(caller, SlotId.of(slotId), request.status()));
     }
 }

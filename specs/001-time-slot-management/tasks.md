@@ -99,14 +99,14 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 ### Tests for User Story 2
 
-- [ ] T031 [P] [US2] Domain unit test for idempotent status transitions in `src/test/java/com/minidoodle/calendar/domain/TimeSlotStatusTest.java`
-- [ ] T032 [P] [US2] MockMvc contract test for `PATCH /api/v1/slots/{slotId}` with `status` (200, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerStatusIT.java`
+- [X] T031 [P] [US2] Domain unit test for idempotent status transitions in `src/test/java/com/minidoodle/calendar/domain/TimeSlotStatusTest.java`
+- [X] T032 [P] [US2] MockMvc contract test for `PATCH /api/v1/slots/{slotId}` with `status` (200, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerStatusIT.java`
 
 ### Implementation for User Story 2
 
-- [ ] T033 [P] [US2] Define inbound port `ChangeSlotStatusUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [ ] T034 [US2] Implement `ChangeSlotStatusService` (ownership check, idempotent set) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T033)
-- [ ] T035 [US2] Extend `SlotController` PATCH to handle `status` field in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T034, T028)
+- [X] T033 [P] [US2] Define inbound port `ChangeSlotStatusUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [X] T034 [US2] Implement `ChangeSlotStatusService` (ownership check, idempotent set) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T033)
+- [X] T035 [US2] Extend `SlotController` PATCH to handle `status` field in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T034, T028)
 
 **Checkpoint**: US1 and US2 both work independently
 
