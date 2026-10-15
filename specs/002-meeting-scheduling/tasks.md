@@ -28,7 +28,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Purpose**: Confirm the existing project already provides everything this feature needs
 
-- [ ] T001 Verify no new third-party dependencies are required (Spring MVC, Bean Validation, jOOQ, Flyway, springdoc, Micrometer are already present), record the decision in `build.gradle.kts` if needed, and run `./gradlew build` to confirm a green baseline
+- [x] T001 Verify no new third-party dependencies are required (Spring MVC, Bean Validation, jOOQ, Flyway, springdoc, Micrometer are already present), record the decision in `build.gradle.kts` if needed, and run `./gradlew build` to confirm a green baseline
 
 ---
 
@@ -38,16 +38,16 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T002 Create Flyway migration `src/main/resources/db/migration/V2__meetings.sql` (`meetings` table with `uq_meetings_slot`, `ON DELETE RESTRICT` FK to `time_slots`, title `ck_*` checks; `meeting_participants` table with `(meeting_id, position)` PK, participant `ck_*` checks, `ON DELETE CASCADE`) per data-model.md
-- [ ] T003 Run jOOQ code generation and verify the `Meetings`/`MeetingParticipants` generated classes build under `build/generated-sources/jooq`; confirm no generated column is written by the app (depends on T002)
-- [ ] T004 [P] Implement value objects `MeetingId` and `Participant` (name and/or email, at least one present) in `src/main/java/com/minidoodle/calendar/domain/model/`
-- [ ] T005 Implement the `Meeting` aggregate root (framework-free; title and participant invariants) in `src/main/java/com/minidoodle/calendar/domain/model/` (depends on T004)
-- [ ] T006 [P] Define domain exceptions `MeetingNotFoundException` and `MeetingConflictException`, extending the existing `DomainException`, in `src/main/java/com/minidoodle/calendar/domain/exception/`
-- [ ] T007 [P] Define outbound port `MeetingRepository` (`save`, `findBySlotId`, `existsBySlotId`, `deleteBySlotId`) in `src/main/java/com/minidoodle/calendar/application/port/out/`
-- [ ] T008 Implement `JooqMeetingRepository` and `MeetingPersistenceMapper` in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/`; translate SQLSTATE `23505` (unique slot) and `23503` (restricted delete) into `MeetingConflictException` (depends on T003, T007)
-- [ ] T009 [P] Expose/confirm a status-update operation on the existing `SlotRepository` (`src/main/java/com/minidoodle/calendar/application/port/out/SlotRepository.java` + `JooqSlotRepository`) used by booking (→ BUSY) and cancellation (→ FREE)
-- [ ] T010 [P] Extend `src/main/java/com/minidoodle/shared/web/GlobalExceptionHandler.java` to map `MeetingNotFoundException` → 404 and `MeetingConflictException` → 409 (RFC 7807) (depends on T006)
-- [ ] T011 Extend the Testcontainers base so `V2__meetings.sql` is applied in tests and add meeting tables/constraints to `src/test/java/com/minidoodle/SchemaSmokeTest.java`
+- [x] T002 Create Flyway migration `src/main/resources/db/migration/V2__meetings.sql` (`meetings` table with `uq_meetings_slot`, `ON DELETE RESTRICT` FK to `time_slots`, title `ck_*` checks; `meeting_participants` table with `(meeting_id, position)` PK, participant `ck_*` checks, `ON DELETE CASCADE`) per data-model.md
+- [x] T003 Run jOOQ code generation and verify the `Meetings`/`MeetingParticipants` generated classes build under `build/generated-sources/jooq`; confirm no generated column is written by the app (depends on T002)
+- [x] T004 [P] Implement value objects `MeetingId` and `Participant` (name and/or email, at least one present) in `src/main/java/com/minidoodle/calendar/domain/model/`
+- [x] T005 Implement the `Meeting` aggregate root (framework-free; title and participant invariants) in `src/main/java/com/minidoodle/calendar/domain/model/` (depends on T004)
+- [x] T006 [P] Define domain exceptions `MeetingNotFoundException` and `MeetingConflictException`, extending the existing `DomainException`, in `src/main/java/com/minidoodle/calendar/domain/exception/`
+- [x] T007 [P] Define outbound port `MeetingRepository` (`save`, `findBySlotId`, `existsBySlotId`, `deleteBySlotId`) in `src/main/java/com/minidoodle/calendar/application/port/out/`
+- [x] T008 Implement `JooqMeetingRepository` and `MeetingPersistenceMapper` in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/`; translate SQLSTATE `23505` (unique slot) and `23503` (restricted delete) into `MeetingConflictException` (depends on T003, T007)
+- [x] T009 [P] Expose/confirm a status-update operation on the existing `SlotRepository` (`src/main/java/com/minidoodle/calendar/application/port/out/SlotRepository.java` + `JooqSlotRepository`) used by booking (→ BUSY) and cancellation (→ FREE)
+- [x] T010 [P] Extend `src/main/java/com/minidoodle/shared/web/GlobalExceptionHandler.java` to map `MeetingNotFoundException` → 404 and `MeetingConflictException` → 409 (RFC 7807) (depends on T006)
+- [x] T011 Extend the Testcontainers base so `V2__meetings.sql` is applied in tests and add meeting tables/constraints to `src/test/java/com/minidoodle/SchemaSmokeTest.java`
 
 **Checkpoint**: Foundation ready — user stories can begin
 

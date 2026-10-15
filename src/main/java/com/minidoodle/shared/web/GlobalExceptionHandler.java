@@ -2,7 +2,10 @@ package com.minidoodle.shared.web;
 
 import com.minidoodle.calendar.domain.exception.ForbiddenAccessException;
 import com.minidoodle.calendar.domain.exception.InvalidCallerIdException;
+import com.minidoodle.calendar.domain.exception.InvalidMeetingException;
 import com.minidoodle.calendar.domain.exception.InvalidSlotException;
+import com.minidoodle.calendar.domain.exception.MeetingConflictException;
+import com.minidoodle.calendar.domain.exception.MeetingNotFoundException;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
 import com.minidoodle.calendar.domain.exception.SlotOverlapException;
 import jakarta.validation.ConstraintViolationException;
@@ -33,6 +36,11 @@ class GlobalExceptionHandler {
         return problem(HttpStatus.BAD_REQUEST, "invalid-slot", "Invalid slot", ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidMeetingException.class)
+    ProblemDetail handleInvalidMeeting(InvalidMeetingException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "invalid-meeting", "Invalid meeting", ex.getMessage());
+    }
+
     @ExceptionHandler(ForbiddenAccessException.class)
     ProblemDetail handleForbidden(ForbiddenAccessException ex) {
         return problem(HttpStatus.FORBIDDEN, "forbidden", "Forbidden", ex.getMessage());
@@ -43,9 +51,19 @@ class GlobalExceptionHandler {
         return problem(HttpStatus.NOT_FOUND, "slot-not-found", "Slot not found", ex.getMessage());
     }
 
+    @ExceptionHandler(MeetingNotFoundException.class)
+    ProblemDetail handleMeetingNotFound(MeetingNotFoundException ex) {
+        return problem(HttpStatus.NOT_FOUND, "meeting-not-found", "Meeting not found", ex.getMessage());
+    }
+
     @ExceptionHandler(SlotOverlapException.class)
     ProblemDetail handleOverlap(SlotOverlapException ex) {
         return problem(HttpStatus.CONFLICT, "slot-overlap", "Slot overlaps an existing slot", ex.getMessage());
+    }
+
+    @ExceptionHandler(MeetingConflictException.class)
+    ProblemDetail handleMeetingConflict(MeetingConflictException ex) {
+        return problem(HttpStatus.CONFLICT, "meeting-conflict", "Meeting conflict", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

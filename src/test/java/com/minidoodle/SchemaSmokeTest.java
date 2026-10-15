@@ -20,7 +20,7 @@ class SchemaSmokeTest extends PostgresIntegrationTest {
                         + "where table_schema = 'public' and table_type = 'BASE TABLE'")
                 .getValues(0, String.class);
 
-        assertThat(tables).contains("users", "calendars", "time_slots");
+        assertThat(tables).contains("users", "calendars", "time_slots", "meetings", "meeting_participants");
     }
 
     @Test
@@ -30,5 +30,24 @@ class SchemaSmokeTest extends PostgresIntegrationTest {
                 .get("count", Integer.class);
 
         assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    void meetingUniqueSlotConstraintExists() {
+        Integer count = dsl.fetchOne(
+                "select count(*)::int as count from pg_constraint where conname = 'uq_meetings_slot'")
+                .get("count", Integer.class);
+
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    void meetingToSlotForeignKeyRestrictsDeletes() {
+        String deleteAction = dsl.fetchOne(
+                "select confdeltype::text as action from pg_constraint "
+                        + "where conrelid = 'meetings'::regclass and contype = 'f'")
+                .get("action", String.class);
+
+        assertThat(deleteAction).isEqualTo("r");
     }
 }

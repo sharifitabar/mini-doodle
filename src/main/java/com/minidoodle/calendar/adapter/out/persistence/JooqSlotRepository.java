@@ -4,6 +4,7 @@ import com.minidoodle.calendar.application.port.out.SlotFilter;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
 import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.SlotId;
+import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.exception.SlotOverlapException;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.jooq.tables.TimeSlots;
@@ -22,6 +23,7 @@ import java.util.Optional;
 class JooqSlotRepository implements SlotRepository {
 
     private static final String EXCLUSION_VIOLATION = "23P01";
+    private static final String FOREIGN_KEY_VIOLATION = "23503";
     private static final String DEADLOCK_DETECTED = "40P01";
     private static final String SERIALIZATION_FAILURE = "40001";
     private static final int MAX_ATTEMPTS = 6;
@@ -73,10 +75,17 @@ class JooqSlotRepository implements SlotRepository {
 
     @Override
     public void deleteByIdAndCalendarId(SlotId slotId, CalendarId calendarId) {
-        dsl.deleteFrom(TimeSlots.TIME_SLOTS)
-                .where(TimeSlots.TIME_SLOTS.ID.eq(slotId.value())
-                        .and(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId.value())))
-                .execute();
+        try {
+            dsl.deleteFrom(TimeSlots.TIME_SLOTS)
+                    .where(TimeSlots.TIME_SLOTS.ID.eq(slotId.value())
+                            .and(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId.value())))
+                    .execute();
+        } catch (RuntimeException ex) {
+            if (FOREIGN_KEY_VIOLATION.equals(sqlState(ex))) {
+                throw new MeetingConflictException("Slot cannot be deleted while it holds a meeting");
+            }
+            throw ex;
+        }
     }
 
     @Override
