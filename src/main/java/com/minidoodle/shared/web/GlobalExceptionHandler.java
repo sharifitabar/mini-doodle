@@ -5,6 +5,7 @@ import com.minidoodle.calendar.domain.exception.InvalidCallerIdException;
 import com.minidoodle.calendar.domain.exception.InvalidSlotException;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
 import com.minidoodle.calendar.domain.exception.SlotOverlapException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -72,6 +73,15 @@ class GlobalExceptionHandler {
     ProblemDetail handleUnreadable(HttpMessageNotReadableException ex) {
         return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed",
                 "Malformed or unreadable request body");
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
+        String detail = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + " " + violation.getMessage())
+                .findFirst()
+                .orElse("Request validation failed");
+        return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed", detail);
     }
 
     private ProblemDetail problem(HttpStatus status, String type, String title, String detail) {

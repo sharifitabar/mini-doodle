@@ -69,23 +69,23 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 ### Tests for User Story 1 (write first, must fail before implementation) ⚠️
 
-- [ ] T020 [P] [US1] Domain unit tests for slot creation invariants (positive duration, ≤24h, future start, default FREE) in `src/test/java/com/minidoodle/calendar/domain/TimeSlotTest.java`
-- [ ] T021 [P] [US1] Persistence integration test: insert succeeds and a second overlapping insert fails on `ex_slot_no_overlap` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryOverlapIT.java`
-- [ ] T022 [P] [US1] MockMvc contract test for `POST /api/v1/slots` (201, 400, 403, 404, 409, including missing/unknown caller identity) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerCreateIT.java` (covers FR-016)
-- [ ] T023 [P] [US1] MockMvc contract test for `GET /api/v1/slots` and `GET /api/v1/slots/{slotId}` (200, filters, pagination, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerReadIT.java`
-- [ ] T054 [P] [US1] Persistence integration test proving slots survive a restart (fresh application context / reconnected DataSource against the same database) in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryPersistenceIT.java` (covers FR-013)
-- [ ] T055 [P] [US1] Domain test for timezone/offset normalization across a DST boundary (e.g., a slot crossing a spring-forward/fall-back transition) in `src/test/java/com/minidoodle/calendar/domain/TimeRangeTimezoneTest.java` (covers FR-014 edge case)
-- [ ] T056 [P] [US1] Concurrency integration test: N parallel inserts of mutually overlapping slots yield exactly one success and N-1 overlap rejections via `ex_slot_no_overlap` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryConcurrencyIT.java` (covers FR-010, SC-002)
+- [X] T020 [P] [US1] Domain unit tests for slot creation invariants (positive duration, ≤24h, future start, default FREE) in `src/test/java/com/minidoodle/calendar/domain/TimeSlotTest.java`
+- [X] T021 [P] [US1] Persistence integration test: insert succeeds and a second overlapping insert fails on `ex_slot_no_overlap` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryOverlapIT.java`
+- [X] T022 [P] [US1] MockMvc contract test for `POST /api/v1/slots` (201, 400, 403, 404, 409, including missing/unknown caller identity) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerCreateIT.java` (covers FR-016)
+- [X] T023 [P] [US1] MockMvc contract test for `GET /api/v1/slots` and `GET /api/v1/slots/{slotId}` (200, filters, pagination, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerReadIT.java`
+- [X] T054 [P] [US1] Persistence integration test proving slots survive a restart (fresh application context / reconnected DataSource against the same database) in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryPersistenceIT.java` (covers FR-013)
+- [X] T055 [P] [US1] Domain test for timezone/offset normalization across a DST boundary (e.g., a slot crossing a spring-forward/fall-back transition) in `src/test/java/com/minidoodle/calendar/domain/TimeRangeTimezoneTest.java` (covers FR-014 edge case)
+- [X] T056 [P] [US1] Concurrency integration test: N parallel inserts of mutually overlapping slots yield exactly one success and N-1 overlap rejections via `ex_slot_no_overlap` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryConcurrencyIT.java` (covers FR-010, SC-002)
 
 ### Implementation for User Story 1
 
-- [ ] T024 [P] [US1] Define inbound ports `CreateSlotUseCase`, `ListSlotsUseCase`, `GetSlotUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [ ] T025 [P] [US1] Add web DTOs `CreateSlotRequest`, `SlotResponse`, `SlotPageResponse` and mapper in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
-- [ ] T026 [US1] Implement `CreateSlotService` (resolve calendar, build aggregate, persist, translate exclusion violation → `SlotOverlapException`) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T024)
-- [ ] T027 [US1] Implement `ListSlotsService` and `GetSlotService` (range/status filters, limit/offset, ownership scoping) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T024, T014)
-- [ ] T028 [US1] Implement `SlotController` POST and GET/GET-one endpoints wiring the use cases in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T025, T026, T027)
-- [ ] T029 [US1] Map PostgreSQL `exclusion_violation` (23P01) to `SlotOverlapException` in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/` (depends on T014)
-- [ ] T030 [US1] Enforce bean validation on `CreateSlotRequest` in `src/main/java/com/minidoodle/calendar/adapter/in/web/CreateSlotRequest.java` (duration bounds, future start, offset date-time) and confirm 400 surface (depends on T016)
+- [X] T024 [P] [US1] Define inbound ports `CreateSlotUseCase`, `ListSlotsUseCase`, `GetSlotUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [X] T025 [P] [US1] Add web DTOs `CreateSlotRequest`, `SlotResponse`, `SlotPageResponse` and mapper in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
+- [X] T026 [US1] Implement `CreateSlotService` (resolve calendar, build aggregate, persist, translate exclusion violation → `SlotOverlapException`) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T024)
+- [X] T027 [US1] Implement `ListSlotsService` and `GetSlotService` (range/status filters, limit/offset, ownership scoping) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T024, T014)
+- [X] T028 [US1] Implement `SlotController` POST and GET/GET-one endpoints wiring the use cases in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T025, T026, T027)
+- [X] T029 [US1] Map PostgreSQL `exclusion_violation` (23P01) to `SlotOverlapException` in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/` (depends on T014)
+- [X] T030 [US1] Enforce bean validation on `CreateSlotRequest` in `src/main/java/com/minidoodle/calendar/adapter/in/web/CreateSlotRequest.java` (duration bounds, future start, offset date-time) and confirm 400 surface (depends on T016)
 
 **Checkpoint**: US1 fully functional and independently testable (MVP)
 

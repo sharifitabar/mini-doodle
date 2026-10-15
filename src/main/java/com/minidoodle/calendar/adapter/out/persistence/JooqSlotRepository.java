@@ -4,6 +4,7 @@ import com.minidoodle.calendar.application.port.out.SlotFilter;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
 import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.SlotId;
+import com.minidoodle.calendar.domain.exception.SlotOverlapException;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.jooq.tables.TimeSlots;
 import org.jooq.Condition;
@@ -11,6 +12,7 @@ import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,12 @@ import java.util.Optional;
 
 @Repository
 class JooqSlotRepository implements SlotRepository {
+
+    private static final String EXCLUSION_VIOLATION = "23P01";
+    private static final String DEADLOCK_DETECTED = "40P01";
+    private static final String SERIALIZATION_FAILURE = "40001";
+    private static final int MAX_ATTEMPTS = 6;
+    private static final long RETRY_BACKOFF_MILLIS = 10L;
 
     private final DSLContext dsl;
 
@@ -27,6 +35,10 @@ class JooqSlotRepository implements SlotRepository {
 
     @Override
     public void insert(TimeSlot slot) {
+        execute(() -> insertInternal(slot));
+    }
+
+    private void insertInternal(TimeSlot slot) {
         dsl.insertInto(TimeSlots.TIME_SLOTS)
                 .columns(
                         TimeSlots.TIME_SLOTS.ID,
@@ -49,14 +61,14 @@ class JooqSlotRepository implements SlotRepository {
 
     @Override
     public void update(TimeSlot slot) {
-        dsl.update(TimeSlots.TIME_SLOTS)
+        execute(() -> dsl.update(TimeSlots.TIME_SLOTS)
                 .set(TimeSlots.TIME_SLOTS.START_AT, slot.timeRange().start())
                 .set(TimeSlots.TIME_SLOTS.DURATION_MINUTES, slot.timeRange().durationMinutes())
                 .set(TimeSlots.TIME_SLOTS.STATUS, slot.status().name())
                 .set(TimeSlots.TIME_SLOTS.UPDATED_AT, slot.updatedAt())
                 .where(TimeSlots.TIME_SLOTS.ID.eq(slot.id().value())
                         .and(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(slot.calendarId().value())))
-                .execute();
+                .execute());
     }
 
     @Override
@@ -124,5 +136,54 @@ class JooqSlotRepository implements SlotRepository {
         }
         sql.append(", '[)')");
         return DSL.condition(sql.toString(), bindings.toArray());
+    }
+
+    /**
+     * The database exclusion constraint ({@code ex_slot_no_overlap}) is the authoritative
+     * guard against overlapping slots. When it fires, a domain-level overlap error (409) is
+     * surfaced instead of a raw persistence exception. Concurrent inserts into a GiST
+     * exclusion constraint can also fail with a deadlock or serialization failure; such
+     * transient conflicts are retried a bounded number of times so the write converges on the
+     * definitive exclusion violation once the winning transaction commits. The SQL error may
+     * be surfaced as a jOOQ exception or wrapped as a Spring {@code DataAccessException}, so
+     * the whole cause chain is inspected.
+     */
+    private void execute(Runnable action) {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                action.run();
+                return;
+            } catch (RuntimeException ex) {
+                String sqlState = sqlState(ex);
+                if (EXCLUSION_VIOLATION.equals(sqlState)) {
+                    throw new SlotOverlapException("Slot overlaps an existing slot in the calendar");
+                }
+                boolean transientConflict = DEADLOCK_DETECTED.equals(sqlState)
+                        || SERIALIZATION_FAILURE.equals(sqlState);
+                if (transientConflict && attempt < MAX_ATTEMPTS) {
+                    backoff(attempt);
+                    continue;
+                }
+                throw ex;
+            }
+        }
+    }
+
+    private String sqlState(Throwable ex) {
+        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sqlException) {
+                return sqlException.getSQLState();
+            }
+        }
+        return null;
+    }
+
+    private void backoff(int attempt) {
+        try {
+            Thread.sleep(RETRY_BACKOFF_MILLIS * attempt);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while retrying slot write", interrupted);
+        }
     }
 }
