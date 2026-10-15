@@ -18,11 +18,17 @@ class ChangeSlotStatusService implements ChangeSlotStatusUseCase {
 
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
+    private final SlotMetrics metrics;
     private final Clock clock;
 
-    ChangeSlotStatusService(CallerCalendarResolver calendarResolver, SlotRepository slots, Clock clock) {
+    ChangeSlotStatusService(
+            CallerCalendarResolver calendarResolver,
+            SlotRepository slots,
+            SlotMetrics metrics,
+            Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
@@ -33,6 +39,7 @@ class ChangeSlotStatusService implements ChangeSlotStatusUseCase {
                 .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
         slot.changeStatus(newStatus, OffsetDateTime.now(clock));
         slots.update(slot);
+        metrics.slotUpdated(slot);
         return slot;
     }
 }

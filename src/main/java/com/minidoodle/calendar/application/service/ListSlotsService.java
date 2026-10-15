@@ -17,19 +17,23 @@ class ListSlotsService implements ListSlotsUseCase {
 
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
+    private final SlotMetrics metrics;
 
-    ListSlotsService(CallerCalendarResolver calendarResolver, SlotRepository slots) {
+    ListSlotsService(CallerCalendarResolver calendarResolver, SlotRepository slots, SlotMetrics metrics) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
+        this.metrics = metrics;
     }
 
     @Override
     public SlotPage listSlots(UserId caller, SlotQuery query) {
-        Calendar calendar = calendarResolver.resolve(caller);
-        SlotFilter filter = new SlotFilter(
-                calendar.id(), query.from(), query.to(), query.status(), query.limit(), query.offset());
-        List<TimeSlot> items = slots.find(filter);
-        long total = slots.count(filter);
-        return new SlotPage(items, query.limit(), query.offset(), total);
+        return metrics.timeList(() -> {
+            Calendar calendar = calendarResolver.resolve(caller);
+            SlotFilter filter = new SlotFilter(
+                    calendar.id(), query.from(), query.to(), query.status(), query.limit(), query.offset());
+            List<TimeSlot> items = slots.find(filter);
+            long total = slots.count(filter);
+            return new SlotPage(items, query.limit(), query.offset(), total);
+        });
     }
 }

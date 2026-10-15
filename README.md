@@ -1,39 +1,7 @@
 # mini-doodle
 
-A high-performance backend simulation of a meeting scheduling platform (a "mini Doodle"). Users manage personal calendars of time slots, mark them busy/free, and convert free slots into meetings with a title, description, and participants.
-
-> **Status:** First draft. Sections marked _TBD_ are still being finalized.
-
----
-
-## Overview
-
-The service exposes an HTTP API that lets users:
-
-- **Manage time slots** — create available time slots with a configurable duration inside a personal calendar, modify or delete existing slots, and toggle them between `FREE` and `BUSY`.
-- **Schedule meetings** — convert available (free) slots into meetings, attaching details such as title, description, and participants.
-- **Query availability** — ask for free or busy slots and get an aggregated view for a selected time frame.
-
-The platform is designed to be used by hundreds of users with thousands of slots, so the design favours efficient storage, indexed range queries, and bounded result sets.
-
-## Tech stack
-
-- **Java 21** (LTS) with **Spring Boot 3.5.x**
-- **Gradle** (Kotlin DSL) with wrapper — `./gradlew`
-- **Hexagonal architecture** (ports & adapters) with DDD tactical patterns
-- **jOOQ** over **PostgreSQL** for persistence, **Flyway** for versioned migrations
-- Slot overlap prevented by a PostgreSQL `tstzrange` + GIST exclusion constraint
-- **Docker** & **docker-compose** for local, one-command startup
-
-## Domain concepts
-
-| Concept | Description |
-| --- | --- |
-| **Calendar** | A user's personal container for their time. Internal domain concept; not exposed as a first-class API resource. |
-| **Time slot** | A time interval with a configurable duration inside a calendar. Has a status of `FREE` or `BUSY`. |
-| **Meeting** | A booked slot with a title, description, and one or more participants. |
-
-A slot can be booked as a meeting. Each user has a personal calendar that manages their time.
+A high-performance Spring Boot backend for meeting scheduling: users own a personal calendar of
+time slots, mark those slots free or busy, and (on the roadmap) book them as meetings.
 
 ## Getting started
 
@@ -43,73 +11,111 @@ A slot can be booked as a meeting. Each user has a personal calendar that manage
 
 ### Run locally
 
-_TBD: docker-compose service definitions are not committed yet._
-
 ```bash
 docker-compose up --build
 ```
 
-The API will be available at `http://localhost:8080`.
+This starts PostgreSQL and the service, applying Flyway migrations and seeding a demo user on
+startup. Once healthy:
 
-_TBD: add health check endpoint and default seeded data details._
+- API base URL: `http://localhost:8080`
+- OpenAPI UI: <http://localhost:8080/swagger-ui.html>
+- Health: <http://localhost:8080/actuator/health>
+- Metrics (Prometheus): <http://localhost:8080/actuator/prometheus>
+
+Requests are authenticated by a demo `X-User-Id` header. Use the seeded demo user:
+
+```
+X-User-Id: 11111111-1111-1111-1111-111111111111
+```
+
+See [`specs/001-time-slot-management/quickstart.md`](specs/001-time-slot-management/quickstart.md)
+for a full end-to-end walkthrough.
 
 ## API
 
-_TBD: endpoints, request/response examples, and error model._
+All endpoints are under `/api/v1` and require the `X-User-Id` header.
 
-Planned resource groups:
+| Method   | Path                  | Description                                       |
+|----------|-----------------------|---------------------------------------------------|
+| `POST`   | `/slots`              | Create a time slot (starts `FREE`)                |
+| `GET`    | `/slots`              | List the caller's slots (filter + paginate)       |
+| `GET`    | `/slots/{slotId}`     | Fetch one slot                                    |
+| `PATCH`  | `/slots/{slotId}`     | Update `status`, `startAt`, and/or `durationMinutes` |
+| `DELETE` | `/slots/{slotId}`     | Delete a slot                                     |
 
-- `POST /calendars/{calendarId}/slots` — create a time slot
-- `PATCH /slots/{slotId}` — modify a slot (time, duration, status)
-- `DELETE /slots/{slotId}` — delete a slot
-- `POST /slots/{slotId}/meeting` — convert a free slot into a meeting
-- `GET /availability?from=...&to=...&status=free|busy` — aggregated availability for a time frame
+Example:
+
+```bash
+export USER_ID=11111111-1111-1111-1111-111111111111
+
+curl -sS -X POST http://localhost:8080/api/v1/slots \
+  -H "X-User-Id: $USER_ID" -H "Content-Type: application/json" \
+  -d '{"startAt":"2026-11-02T09:00:00Z","durationMinutes":30}'
+```
+
+Error responses use the RFC 9457 problem-details shape. A slot that overlaps an existing slot in
+the same calendar is rejected with `409 Conflict`.
 
 ## Data model
 
-_TBD: entity fields, indexes, and constraints (particularly range/index strategy for slot queries)._
+- **User** — owns a calendar; identified in the API by `X-User-Id`.
+- **Calendar** — a user's personal time container (one per user; internal concept).
+- **Time slot** — a `[start, end)` interval with a configurable duration and a `FREE`/`BUSY`
+  status. Stored with a `tstzrange` column and a GiST exclusion constraint that makes overlapping
+  slots in the same calendar impossible at the database level.
 
 ## Configuration
 
-_TBD: environment variables (database URL, credentials, pool sizing, pagination limits)._
+| Variable                    | Default                                          | Purpose                          |
+|-----------------------------|--------------------------------------------------|----------------------------------|
+| `DB_URL`                    | `jdbc:postgresql://localhost:5432/minidoodle`    | JDBC URL                         |
+| `DB_USER` / `DB_PASSWORD`   | `minidoodle` / `minidoodle`                      | Database credentials             |
+| `SERVER_PORT`               | `8080`                                           | HTTP port                        |
+| `SEED_DEMO_DATA`            | `true`                                           | Seed the demo user on startup    |
+| `SLOT_MAX_DURATION_MINUTES` | `1440`                                           | Maximum slot duration            |
+
+The `docker` Spring profile (used by Compose) points the datasource at the `db` service.
+
+## Observability
+
+Actuator exposes health, info, and Prometheus metrics. Slot operations emit counters and timers
+(`minidoodle.slots.created`, `minidoodle.slots.updated`, `minidoodle.slots.deleted`,
+`minidoodle.slots.create`, `minidoodle.slots.list`) and structured `event=... key=value` logs.
 
 ## Testing
 
-The suite uses JUnit 5, AssertJ, MockMvc, and Testcontainers (real PostgreSQL).
+The suite uses JUnit 5, AssertJ, MockMvc, and Testcontainers (real PostgreSQL); Docker must be
+running.
 
 ```bash
-./gradlew test
+./gradlew test      # run the test suite
+./gradlew build     # full build (codegen + tests + boot jar)
 ```
-
-## Project structure
-
-```
-src/
-  main/java/...   # application code
-  main/resources/ # configuration
-  test/java/...   # tests
-docs/             # challenge brief and project docs
-docker-compose.yml
-```
-
-_TBD: confirm layout once the build tool is chosen._
 
 ## Design decisions
 
-_TBD: document the key trade-offs — storage of intervals, overlapping-slot rules, concurrency when booking a slot, query pagination, and indexing for large-scale availability lookups._
+- **Intervals as `tstzrange`**: overlap is a first-class DB concern enforced by a GIST exclusion
+  constraint (`btree_gist`), so correctness does not rely on application-level checks alone.
+- **Hexagonal architecture**: domain and application layers are framework-free; jOOQ, Spring MVC,
+  and Micrometer live in adapters.
+- **Concurrency**: overlapping concurrent inserts are retried on deadlock/serialization errors and
+  eventually surface as a `409`.
+- **Bounded queries**: listing is paginated and capped, and range filters use the slot-range index
+  for predictable latency as data grows.
 
 ## Notes
 
-- The challenge brief references a "composer file"; this is interpreted as the `docker-compose.yml` that defines all service dependencies, and it will contain all required dependencies for the service.
-- Data is persisted so it can be properly managed and queried.
+- The challenge brief references a "composer file"; this is interpreted as the `docker-compose.yml`
+  that defines all service dependencies for the service.
 
 ## Roadmap
 
-- [ ] Project skeleton (Spring Boot + build tool)
-- [ ] Docker Compose environment (app + PostgreSQL)
-- [ ] Time slot CRUD and status management
+- [x] Project skeleton (Spring Boot + build tool)
+- [x] Docker Compose environment (app + PostgreSQL)
+- [x] Time slot CRUD and status management
+- [x] Tests
+- [x] Metrics and observability
+- [x] API documentation (OpenAPI)
 - [ ] Meeting scheduling from slots
 - [ ] Availability query with aggregated view
-- [ ] Tests
-- [ ] Metrics and observability
-- [ ] API documentation (OpenAPI)

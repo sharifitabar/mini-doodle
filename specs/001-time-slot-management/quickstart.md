@@ -60,12 +60,14 @@ curl -sS -o /dev/null -w '%{http_code}\n' -X DELETE \
 
 ## 4. Verify the key rule: no overlaps
 
-Creating a slot that overlaps an existing one must fail with `409 Conflict`:
+Creating a slot that overlaps an existing one must fail with `409 Conflict`.
+Note that step 3 moved the slot to 10:00 for 45 minutes, so the overlapping
+request must target that window (a 09:15 start would no longer overlap):
 
 ```bash
 curl -sS -X POST http://localhost:8080/api/v1/slots \
   -H "X-User-Id: $USER_ID" -H "Content-Type: application/json" \
-  -d '{"startAt":"2026-11-02T09:15:00+01:00","durationMinutes":30}'
+  -d '{"startAt":"2026-11-02T10:15:00+01:00","durationMinutes":30}'
 # -> 409, problem+json explaining the overlap
 ```
 

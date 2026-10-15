@@ -17,20 +17,29 @@ class CreateSlotService implements CreateSlotUseCase {
 
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
+    private final SlotMetrics metrics;
     private final Clock clock;
 
-    CreateSlotService(CallerCalendarResolver calendarResolver, SlotRepository slots, Clock clock) {
+    CreateSlotService(
+            CallerCalendarResolver calendarResolver,
+            SlotRepository slots,
+            SlotMetrics metrics,
+            Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
     @Override
     public TimeSlot createSlot(UserId caller, CreateSlotCommand command) {
-        Calendar calendar = calendarResolver.resolve(caller);
-        TimeRange timeRange = new TimeRange(command.startAt(), command.durationMinutes());
-        TimeSlot slot = TimeSlot.create(calendar.id(), timeRange, OffsetDateTime.now(clock));
-        slots.insert(slot);
-        return slot;
+        return metrics.timeCreate(() -> {
+            Calendar calendar = calendarResolver.resolve(caller);
+            TimeRange timeRange = new TimeRange(command.startAt(), command.durationMinutes());
+            TimeSlot slot = TimeSlot.create(calendar.id(), timeRange, OffsetDateTime.now(clock));
+            slots.insert(slot);
+            metrics.slotCreated(slot);
+            return slot;
+        });
     }
 }

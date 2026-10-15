@@ -58,10 +58,15 @@ tasks.withType<Test> {
 
 val jooqGeneratedDir = layout.buildDirectory.dir("generated-sources/jooq")
 
-// jOOQ code generation runs against a real PostgreSQL 16 container migrated by Flyway.
+// jOOQ code generation runs against a real PostgreSQL 16 database migrated by Flyway.
 // The OSS jOOQ parser cannot parse the PostgreSQL-specific DDL (tstzrange generated
 // column, exclusion constraint), and generating from a live database keeps the generated
 // code faithful to the schema that is actually the source of truth.
+//
+// By default a throwaway Testcontainers PostgreSQL is used (requires a Docker daemon on
+// the build machine). When JOOQ_CODEGEN_URL is set, that database is used instead, which
+// lets container image builds run the generator against a PostgreSQL started inside the
+// build container (no Docker-in-Docker).
 val jooqCodegen by tasks.registering {
     group = "build"
     description = "Generates jOOQ sources from the Flyway-managed schema (postgres:16 container)"
@@ -69,11 +74,22 @@ val jooqCodegen by tasks.registering {
     outputs.dir(jooqGeneratedDir)
 
     doLast {
-        val container = org.testcontainers.containers.PostgreSQLContainer<Nothing>("postgres:16")
-        container.start()
+        val externalUrl = System.getenv("JOOQ_CODEGEN_URL")?.takeIf { it.isNotBlank() }
+        val container = if (externalUrl == null) {
+            org.testcontainers.containers.PostgreSQLContainer<Nothing>("postgres:16").also { it.start() }
+        } else {
+            null
+        }
+
+        val jdbcUrl = externalUrl ?: container!!.jdbcUrl
+        val jdbcUser = System.getenv("JOOQ_CODEGEN_USER")?.takeIf { it.isNotBlank() }
+            ?: container?.username ?: "postgres"
+        val jdbcPassword = System.getenv("JOOQ_CODEGEN_PASSWORD")?.takeIf { it.isNotBlank() }
+            ?: container?.password ?: "postgres"
+
         try {
             org.flywaydb.core.Flyway.configure()
-                .dataSource(container.jdbcUrl, container.username, container.password)
+                .dataSource(jdbcUrl, jdbcUser, jdbcPassword)
                 .locations("filesystem:src/main/resources/db/migration")
                 .load()
                 .migrate()
@@ -96,15 +112,15 @@ val jooqCodegen by tasks.registering {
             val configuration = org.jooq.meta.jaxb.Configuration()
                 .withJdbc(
                     org.jooq.meta.jaxb.Jdbc()
-                        .withUrl(container.jdbcUrl)
-                        .withUser(container.username)
-                        .withPassword(container.password)
+                        .withUrl(jdbcUrl)
+                        .withUser(jdbcUser)
+                        .withPassword(jdbcPassword)
                 )
                 .withGenerator(generator)
 
             org.jooq.codegen.GenerationTool.generate(configuration)
         } finally {
-            container.stop()
+            container?.stop()
         }
     }
 }

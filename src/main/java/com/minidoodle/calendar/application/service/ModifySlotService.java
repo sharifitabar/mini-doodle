@@ -19,11 +19,17 @@ class ModifySlotService implements ModifySlotUseCase {
 
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
+    private final SlotMetrics metrics;
     private final Clock clock;
 
-    ModifySlotService(CallerCalendarResolver calendarResolver, SlotRepository slots, Clock clock) {
+    ModifySlotService(
+            CallerCalendarResolver calendarResolver,
+            SlotRepository slots,
+            SlotMetrics metrics,
+            Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
@@ -41,6 +47,7 @@ class ModifySlotService implements ModifySlotUseCase {
 
         slot.changeTime(new TimeRange(start, durationMinutes), OffsetDateTime.now(clock));
         slots.update(slot);
+        metrics.slotUpdated(slot);
         return slot;
     }
 }

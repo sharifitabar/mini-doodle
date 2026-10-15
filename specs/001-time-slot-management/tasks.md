@@ -159,13 +159,13 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 **Purpose**: Documentation, observability, CI, and performance verification
 
-- [ ] T047 [P] Annotate endpoints with springdoc `@Operation`/`@ApiResponse` and verify Swagger UI matches `contracts/openapi.yaml` in `src/main/java/com/minidoodle/calendar/adapter/in/web/SlotController.java`
-- [ ] T048 [P] Add Micrometer counters/timers for slot operations and a structured-log convention in `src/main/java/com/minidoodle/calendar/application/service/`
-- [ ] T049 [P] Add GitHub Actions workflow `.github/workflows/ci.yml` running `./gradlew build` (with Testcontainers) on pull requests
-- [ ] T050 Update `README.md` with concrete run steps, endpoint overview, and link to the OpenAPI UI
-- [ ] T051 Run `quickstart.md` end-to-end against `docker-compose up` and fix discrepancies
-- [ ] T052 Performance check for `specs/001-time-slot-management/quickstart.md`: verify slot create p99 ≤ 200 ms and bounded list latency under a seeded dataset (thousands of slots)
-- [ ] T053 Code cleanup and confirm no framework types leaked into `src/main/java/com/minidoodle/calendar/domain/`
+- [X] T047 [P] Annotate endpoints with springdoc `@Operation`/`@ApiResponse` and verify Swagger UI matches `contracts/openapi.yaml` in `src/main/java/com/minidoodle/calendar/adapter/in/web/SlotController.java`
+- [X] T048 [P] Add Micrometer counters/timers for slot operations and a structured-log convention in `src/main/java/com/minidoodle/calendar/application/service/`
+- [X] T049 [P] Add GitHub Actions workflow `.github/workflows/ci.yml` running `./gradlew build` (with Testcontainers) on pull requests
+- [X] T050 Update `README.md` with concrete run steps, endpoint overview, and link to the OpenAPI UI
+- [X] T051 Run `quickstart.md` end-to-end against `docker-compose up` and fix discrepancies
+- [X] T052 Performance check for `specs/001-time-slot-management/quickstart.md`: verify slot create p99 ≤ 200 ms and bounded list latency under a seeded dataset (thousands of slots)
+- [X] T053 Code cleanup and confirm no framework types leaked into `src/main/java/com/minidoodle/calendar/domain/`
 
 ---
 
