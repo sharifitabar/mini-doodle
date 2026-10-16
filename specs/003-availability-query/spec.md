@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-16
 
-**Status**: Draft
+**Status**: Complete
 
 **Input**: User description: "Availability query: return a user's free/busy availability aggregated over a requested time frame."
 

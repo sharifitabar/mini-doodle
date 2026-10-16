@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-15
 
-**Status**: Draft
+**Status**: Complete
 
 **Input**: User description: "Time slot management: users create available time slots with a configurable duration in their personal calendar, modify and delete existing slots, and mark them busy or free."
 
