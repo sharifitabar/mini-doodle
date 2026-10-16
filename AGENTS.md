@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## Approval before committing or pushing
+
+- NEVER run `git commit` or `git push` unless the user has explicitly approved it for the current work.
+- Implement and verify first, then STOP and ask for approval (e.g. "shall I commit?"). Wait for an explicit yes.
+- Approval is per-change; a previous approval does not carry over to later changes. Do not push without approval even if a commit was approved.
+- When approval is given, commit and push exactly the approved changes — do not bundle unrelated work.
+- Before pushing, run the full CI build locally (`./gradlew build --no-daemon --console=plain`) and confirm it passes. Never push with a red build.
+- A versioned `.githooks/pre-push` hook runs that build and blocks a failing push. Enable it once per clone with `git config core.hooksPath .githooks`.
+
 ## Commit Conventions
 
 All commits MUST follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
