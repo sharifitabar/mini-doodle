@@ -126,12 +126,12 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Purpose**: Documentation, observability, and performance verification
 
-- [ ] T033 [P] Annotate `MeetingController` endpoints with springdoc `@Operation`/`@ApiResponse` and the required `X-User-Id` header, and verify Swagger UI matches `specs/002-meeting-scheduling/contracts/openapi.yaml` in `src/main/java/com/minidoodle/calendar/adapter/in/web/MeetingController.java`
-- [ ] T034 [P] Add `MeetingMetrics` (booked/viewed/cancelled counters and timers) and structured logging, wired into the meeting services, in `src/main/java/com/minidoodle/calendar/application/service/`
-- [ ] T035 [P] Update `README.md` with the meeting endpoints, examples, and the "one meeting per slot" rule
-- [ ] T036 Run `specs/002-meeting-scheduling/quickstart.md` end-to-end against `docker-compose up` and fix discrepancies
-- [ ] T037 Performance check for `specs/002-meeting-scheduling/quickstart.md`: verify booking p99 ≤ 200 ms (SC-001) and meeting retrieval p99 ≤ 300 ms (SC-004) under a seeded dataset
-- [ ] T038 Code cleanup and confirm no framework types leaked into `src/main/java/com/minidoodle/calendar/domain/`
+- [x] T033 [P] Annotate `MeetingController` endpoints with springdoc `@Operation`/`@ApiResponse` and the required `X-User-Id` header, and verify Swagger UI matches `specs/002-meeting-scheduling/contracts/openapi.yaml` in `src/main/java/com/minidoodle/calendar/adapter/in/web/MeetingController.java`
+- [x] T034 [P] Add `MeetingMetrics` (booked/viewed/cancelled counters and timers) and structured logging, wired into the meeting services, in `src/main/java/com/minidoodle/calendar/application/service/`
+- [x] T035 [P] Update `README.md` with the meeting endpoints, examples, and the "one meeting per slot" rule
+- [x] T036 Run `specs/002-meeting-scheduling/quickstart.md` end-to-end against `docker-compose up` and fix discrepancies
+- [x] T037 Performance check for `specs/002-meeting-scheduling/quickstart.md`: verify booking p99 ≤ 200 ms (SC-001) and meeting retrieval p99 ≤ 300 ms (SC-004) under a seeded dataset
+- [x] T038 Code cleanup and confirm no framework types leaked into `src/main/java/com/minidoodle/calendar/domain/`
 
 ---
 

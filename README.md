@@ -1,7 +1,7 @@
 # mini-doodle
 
 A high-performance Spring Boot backend for meeting scheduling: users own a personal calendar of
-time slots, mark those slots free or busy, and (on the roadmap) book them as meetings.
+time slots, mark those slots free or busy, and book a free slot as a meeting.
 
 ## Getting started
 
@@ -30,32 +30,47 @@ X-User-Id: 11111111-1111-1111-1111-111111111111
 ```
 
 See [`specs/001-time-slot-management/quickstart.md`](specs/001-time-slot-management/quickstart.md)
-for a full end-to-end walkthrough.
+and [`specs/002-meeting-scheduling/quickstart.md`](specs/002-meeting-scheduling/quickstart.md)
+for full end-to-end walkthroughs.
 
 ## API
 
 All endpoints are under `/api/v1` and require the `X-User-Id` header.
 
-| Method   | Path                  | Description                                       |
-|----------|-----------------------|---------------------------------------------------|
-| `POST`   | `/slots`              | Create a time slot (starts `FREE`)                |
-| `GET`    | `/slots`              | List the caller's slots (filter + paginate)       |
-| `GET`    | `/slots/{slotId}`     | Fetch one slot                                    |
-| `PATCH`  | `/slots/{slotId}`     | Update `status`, `startAt`, and/or `durationMinutes` |
-| `DELETE` | `/slots/{slotId}`     | Delete a slot                                     |
+| Method   | Path                        | Description                                       |
+|----------|-----------------------------|---------------------------------------------------|
+| `POST`   | `/slots`                    | Create a time slot (starts `FREE`)                |
+| `GET`    | `/slots`                    | List the caller's slots (filter + paginate)       |
+| `GET`    | `/slots/{slotId}`           | Fetch one slot                                    |
+| `PATCH`  | `/slots/{slotId}`           | Update `status`, `startAt`, and/or `durationMinutes` |
+| `DELETE` | `/slots/{slotId}`           | Delete a slot                                     |
+| `POST`   | `/slots/{slotId}/meeting`   | Book a meeting on a `FREE` slot (slot becomes `BUSY`) |
+| `GET`    | `/slots/{slotId}/meeting`   | Fetch the meeting on a slot                       |
+| `DELETE` | `/slots/{slotId}/meeting`   | Cancel a meeting (slot returns to `FREE`)         |
 
-Example:
+A slot holds **at most one meeting** (enforced by a unique constraint). While a slot holds a
+meeting, `PATCH`/`DELETE` on that slot are rejected with `409 Conflict` until the meeting is
+cancelled.
+
+Example — create a slot and book a meeting on it:
 
 ```bash
 export USER_ID=11111111-1111-1111-1111-111111111111
 
-curl -sS -X POST http://localhost:8080/api/v1/slots \
+SLOT_ID=$(curl -sS -X POST http://localhost:8080/api/v1/slots \
   -H "X-User-Id: $USER_ID" -H "Content-Type: application/json" \
-  -d '{"startAt":"2026-11-02T09:00:00Z","durationMinutes":30}'
+  -d '{"startAt":"2026-11-02T09:00:00Z","durationMinutes":30}' | jq -r .id)
+
+curl -sS -X POST "http://localhost:8080/api/v1/slots/$SLOT_ID/meeting" \
+  -H "X-User-Id: $USER_ID" -H "Content-Type: application/json" \
+  -d '{"title":"Sprint planning","participants":[{"name":"Ada Lovelace","email":"ada@example.com"}]}'
 ```
 
+Participants are free-form (a name and/or email); they need not be existing users.
+
 Error responses use the RFC 9457 problem-details shape. A slot that overlaps an existing slot in
-the same calendar is rejected with `409 Conflict`.
+the same calendar, booking a slot that is not free, or modifying/deleting a slot that holds a
+meeting are all rejected with `409 Conflict`.
 
 ## Data model
 
@@ -64,6 +79,10 @@ the same calendar is rejected with `409 Conflict`.
 - **Time slot** — a `[start, end)` interval with a configurable duration and a `FREE`/`BUSY`
   status. Stored with a `tstzrange` column and a GiST exclusion constraint that makes overlapping
   slots in the same calendar impossible at the database level.
+- **Meeting** — a booking on a `FREE` slot: a title, optional description, and one or more
+  free-form participants. A slot has at most one meeting (`UNIQUE (slot_id)`); deleting a slot
+  that holds a meeting is blocked by a foreign key (`ON DELETE RESTRICT`), so a meeting must be
+  cancelled first.
 
 ## Configuration
 
@@ -81,7 +100,9 @@ The `docker` Spring profile (used by Compose) points the datasource at the `db` 
 
 Actuator exposes health, info, and Prometheus metrics. Slot operations emit counters and timers
 (`minidoodle.slots.created`, `minidoodle.slots.updated`, `minidoodle.slots.deleted`,
-`minidoodle.slots.create`, `minidoodle.slots.list`) and structured `event=... key=value` logs.
+`minidoodle.slots.create`, `minidoodle.slots.list`); meeting operations emit
+`minidoodle.meetings.booked`, `minidoodle.meetings.viewed`, `minidoodle.meetings.cancelled` and the
+`minidoodle.meetings.book`/`get`/`cancel` timers. Both use structured `event=... key=value` logs.
 
 ## Testing
 
@@ -101,6 +122,9 @@ running.
   and Micrometer live in adapters.
 - **Concurrency**: overlapping concurrent inserts are retried on deadlock/serialization errors and
   eventually surface as a `409`.
+- **One meeting per slot**: the `uq_meetings_slot` unique constraint is the authoritative guard
+  against double-booking, and cancellation frees the slot in the same transaction that deletes the
+  meeting.
 - **Bounded queries**: listing is paginated and capped, and range filters use the slot-range index
   for predictable latency as data grows.
 
@@ -117,5 +141,5 @@ running.
 - [x] Tests
 - [x] Metrics and observability
 - [x] API documentation (OpenAPI)
-- [ ] Meeting scheduling from slots
+- [x] Meeting scheduling (book/view/cancel on a slot)
 - [ ] Availability query with aggregated view
