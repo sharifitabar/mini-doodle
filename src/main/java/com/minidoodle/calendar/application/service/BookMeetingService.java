@@ -24,16 +24,19 @@ class BookMeetingService implements BookMeetingUseCase {
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
     private final MeetingRepository meetings;
+    private final MeetingMetrics metrics;
     private final Clock clock;
 
     BookMeetingService(
             CallerCalendarResolver calendarResolver,
             SlotRepository slots,
             MeetingRepository meetings,
+            MeetingMetrics metrics,
             Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
         this.meetings = meetings;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
@@ -45,21 +48,24 @@ class BookMeetingService implements BookMeetingUseCase {
     @Override
     @Transactional
     public MeetingView bookMeeting(UserId caller, BookMeetingCommand command) {
-        Calendar calendar = calendarResolver.resolve(caller);
-        TimeSlot slot = slots.findByIdAndCalendarId(command.slotId(), calendar.id())
-                .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + command.slotId().value()));
-        if (slot.status() != SlotStatus.FREE) {
-            throw new MeetingConflictException("Slot is not available for booking");
-        }
+        return metrics.timeBook(() -> {
+            Calendar calendar = calendarResolver.resolve(caller);
+            TimeSlot slot = slots.findByIdAndCalendarId(command.slotId(), calendar.id())
+                    .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + command.slotId().value()));
+            if (slot.status() != SlotStatus.FREE) {
+                throw new MeetingConflictException("Slot is not available for booking");
+            }
 
-        OffsetDateTime now = OffsetDateTime.now(clock);
-        Meeting meeting = Meeting.create(
-                slot.id(), command.title(), command.description(), command.participants(), now);
-        meetings.save(meeting);
+            OffsetDateTime now = OffsetDateTime.now(clock);
+            Meeting meeting = Meeting.create(
+                    slot.id(), command.title(), command.description(), command.participants(), now);
+            meetings.save(meeting);
 
-        slot.changeStatus(SlotStatus.BUSY, now);
-        slots.update(slot);
+            slot.changeStatus(SlotStatus.BUSY, now);
+            slots.update(slot);
 
-        return new MeetingView(meeting, slot.timeRange());
+            metrics.meetingBooked(meeting, slot);
+            return new MeetingView(meeting, slot.timeRange());
+        });
     }
 }

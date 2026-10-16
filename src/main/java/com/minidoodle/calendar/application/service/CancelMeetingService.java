@@ -22,16 +22,19 @@ class CancelMeetingService implements CancelMeetingUseCase {
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
     private final MeetingRepository meetings;
+    private final MeetingMetrics metrics;
     private final Clock clock;
 
     CancelMeetingService(
             CallerCalendarResolver calendarResolver,
             SlotRepository slots,
             MeetingRepository meetings,
+            MeetingMetrics metrics,
             Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
         this.meetings = meetings;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
@@ -42,15 +45,19 @@ class CancelMeetingService implements CancelMeetingUseCase {
     @Override
     @Transactional
     public void cancelMeeting(UserId caller, SlotId slotId) {
-        Calendar calendar = calendarResolver.resolve(caller);
-        TimeSlot slot = slots.findByIdAndCalendarId(slotId, calendar.id())
-                .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
-        if (!meetings.existsBySlotId(slotId)) {
-            throw new MeetingNotFoundException("No meeting on slot " + slotId.value());
-        }
+        metrics.timeCancel(() -> {
+            Calendar calendar = calendarResolver.resolve(caller);
+            TimeSlot slot = slots.findByIdAndCalendarId(slotId, calendar.id())
+                    .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
+            if (!meetings.existsBySlotId(slotId)) {
+                throw new MeetingNotFoundException("No meeting on slot " + slotId.value());
+            }
 
-        meetings.deleteBySlotId(slotId);
-        slot.changeStatus(SlotStatus.FREE, OffsetDateTime.now(clock));
-        slots.update(slot);
+            meetings.deleteBySlotId(slotId);
+            slot.changeStatus(SlotStatus.FREE, OffsetDateTime.now(clock));
+            slots.update(slot);
+
+            metrics.meetingCancelled(slotId);
+        });
     }
 }
