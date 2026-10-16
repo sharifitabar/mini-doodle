@@ -4,11 +4,14 @@ import com.minidoodle.calendar.domain.exception.InvalidSlotException;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 /**
  * Immutable half-open time range {@code [start, end)} with a fixed duration in minutes.
- * The start is normalized to UTC so that equality and persistence are offset-independent.
+ * The start is normalized to UTC and truncated to microsecond precision so that equality
+ * and persistence are offset-independent and round-trip exactly (PostgreSQL timestamptz
+ * stores microseconds).
  */
 public record TimeRange(OffsetDateTime start, int durationMinutes) {
 
@@ -16,7 +19,7 @@ public record TimeRange(OffsetDateTime start, int durationMinutes) {
 
     public TimeRange {
         Objects.requireNonNull(start, "start must not be null");
-        start = start.withOffsetSameInstant(ZoneOffset.UTC);
+        start = start.withOffsetSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS);
         if (durationMinutes <= 0) {
             throw new InvalidSlotException("durationMinutes must be positive");
         }

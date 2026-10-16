@@ -61,4 +61,16 @@ class TimeRangeTimezoneTest {
         assertThat(range.start().getOffset()).isEqualTo(ZoneOffset.UTC);
         assertThat(range.end()).isEqualTo(range.start().plusMinutes(90));
     }
+
+    @Test
+    void startIsTruncatedToMicrosecondPrecision() {
+        // PostgreSQL timestamptz stores microseconds; the domain must match so that a
+        // range created in memory equals the one reloaded from the database.
+        OffsetDateTime withNanos = OffsetDateTime.of(2026, 6, 1, 10, 0, 0, 123_456_789, ZoneOffset.UTC);
+
+        TimeRange range = new TimeRange(withNanos, 30);
+
+        assertThat(range.start()).isEqualTo(withNanos.truncatedTo(ChronoUnit.MICROS));
+        assertThat(range.start().getNano()).isEqualTo(123_456_000);
+    }
 }
