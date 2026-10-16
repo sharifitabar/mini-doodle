@@ -29,8 +29,9 @@ Requests are authenticated by a demo `X-User-Id` header. Use the seeded demo use
 X-User-Id: 11111111-1111-1111-1111-111111111111
 ```
 
-See [`specs/001-time-slot-management/quickstart.md`](specs/001-time-slot-management/quickstart.md)
-and [`specs/002-meeting-scheduling/quickstart.md`](specs/002-meeting-scheduling/quickstart.md)
+See [`specs/001-time-slot-management/quickstart.md`](specs/001-time-slot-management/quickstart.md),
+[`specs/002-meeting-scheduling/quickstart.md`](specs/002-meeting-scheduling/quickstart.md), and
+[`specs/003-availability-query/quickstart.md`](specs/003-availability-query/quickstart.md)
 for full end-to-end walkthroughs.
 
 ## API
@@ -47,6 +48,7 @@ All endpoints are under `/api/v1` and require the `X-User-Id` header.
 | `POST`   | `/slots/{slotId}/meeting`   | Book a meeting on a `FREE` slot (slot becomes `BUSY`) |
 | `GET`    | `/slots/{slotId}/meeting`   | Fetch the meeting on a slot                       |
 | `DELETE` | `/slots/{slotId}/meeting`   | Cancel a meeting (slot returns to `FREE`)         |
+| `GET`    | `/availability`             | Aggregated free/busy/unallocated view over a frame |
 
 A slot holds **at most one meeting** (enforced by a unique constraint). While a slot holds a
 meeting, `PATCH`/`DELETE` on that slot are rejected with `409 Conflict` until the meeting is
@@ -67,6 +69,36 @@ curl -sS -X POST "http://localhost:8080/api/v1/slots/$SLOT_ID/meeting" \
 ```
 
 Participants are free-form (a name and/or email); they need not be existing users.
+
+### Availability
+
+`GET /api/v1/availability?from=&to=` returns the caller's availability over the half-open frame
+`[from, to)` as one chronologically ordered list of disjoint intervals that cover the frame exactly.
+Each interval is classified as:
+
+- **`FREE`** — a slot that is not busy (`status = FREE` and no meeting),
+- **`BUSY`** — a slot marked `BUSY` or holding a meeting,
+- **`UNALLOCATED`** — time inside the frame covered by no slot.
+
+Contiguous intervals of the same kind are merged. `from` and `to` are required ISO-8601 timestamps
+with `from < to` and a span of at most 31 days.
+
+```bash
+curl -sS "http://localhost:8080/api/v1/availability?from=2026-11-02T09:00:00Z&to=2026-11-02T17:00:00Z" \
+  -H "X-User-Id: $USER_ID"
+```
+
+```json
+{
+  "from": "2026-11-02T09:00:00Z",
+  "to": "2026-11-02T17:00:00Z",
+  "intervals": [
+    { "startAt": "2026-11-02T09:00:00Z", "endAt": "2026-11-02T10:00:00Z", "kind": "FREE" },
+    { "startAt": "2026-11-02T10:00:00Z", "endAt": "2026-11-02T11:00:00Z", "kind": "BUSY" },
+    { "startAt": "2026-11-02T11:00:00Z", "endAt": "2026-11-02T17:00:00Z", "kind": "UNALLOCATED" }
+  ]
+}
+```
 
 Error responses use the RFC 9457 problem-details shape. A slot that overlaps an existing slot in
 the same calendar, booking a slot that is not free, or modifying/deleting a slot that holds a
@@ -102,7 +134,9 @@ Actuator exposes health, info, and Prometheus metrics. Slot operations emit coun
 (`minidoodle.slots.created`, `minidoodle.slots.updated`, `minidoodle.slots.deleted`,
 `minidoodle.slots.create`, `minidoodle.slots.list`); meeting operations emit
 `minidoodle.meetings.booked`, `minidoodle.meetings.viewed`, `minidoodle.meetings.cancelled` and the
-`minidoodle.meetings.book`/`get`/`cancel` timers. Both use structured `event=... key=value` logs.
+`minidoodle.meetings.book`/`get`/`cancel` timers. Availability queries emit the
+`minidoodle.availability.queries` counter and the `minidoodle.availability.query` timer. All use
+structured `event=... key=value` logs.
 
 ## Testing
 
@@ -142,4 +176,4 @@ running.
 - [x] Metrics and observability
 - [x] API documentation (OpenAPI)
 - [x] Meeting scheduling (book/view/cancel on a slot)
-- [ ] Availability query with aggregated view
+- [x] Availability query with aggregated view

@@ -30,7 +30,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Purpose**: Confirm the existing project already provides everything this feature needs
 
-- [ ] T001 Verify no new third-party dependencies are required (Spring MVC, Bean Validation, jOOQ, Flyway, springdoc, Micrometer already present) and no new Flyway migration is needed; run `./gradlew build --no-daemon --console=plain` to confirm a green baseline
+- [x] T001 Verify no new third-party dependencies are required (Spring MVC, Bean Validation, jOOQ, Flyway, springdoc, Micrometer already present) and no new Flyway migration is needed; run `./gradlew build --no-daemon --console=plain` to confirm a green baseline
 
 ---
 
@@ -40,16 +40,16 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T002 [P] Implement `AvailabilityKind` enum (`FREE`, `BUSY`, `UNALLOCATED`) in `src/main/java/com/minidoodle/calendar/domain/model/`
-- [ ] T003 [P] Implement `TimeFrame` value object (both bounds required, `end` strictly after `start`, span ≤ 31 days, normalized to UTC and truncated to microseconds) in `src/main/java/com/minidoodle/calendar/domain/model/`
-- [ ] T004 [P] Implement `AvailabilityInterval` value object (half-open `[start, end)`, kind, `end` strictly after `start`) in `src/main/java/com/minidoodle/calendar/domain/model/`
-- [ ] T005 Implement `Availability` result record (frame + ordered intervals) in `src/main/java/com/minidoodle/calendar/domain/model/` (depends on T003, T004)
-- [ ] T006 [P] Implement `SlotOccupancy` domain type (`TimeRange range`, `SlotStatus status`, `boolean holdsMeeting`, with derived `isBusy()`) in `src/main/java/com/minidoodle/calendar/domain/model/`
-- [ ] T007 [P] Define domain exception `InvalidTimeFrameException` extending `DomainException` in `src/main/java/com/minidoodle/calendar/domain/exception/`
-- [ ] T008 [P] Define outbound port `AvailabilityRepository` (`List<SlotOccupancy> findOccupancies(CalendarId calendarId, TimeFrame frame)`) in `src/main/java/com/minidoodle/calendar/application/port/out/`
-- [ ] T009 Implement `JooqAvailabilityRepository` reading `time_slots` scoped to the calendar and overlapping the frame (`slot_range && tstzrange(from, to, '[)')`, ordered by `start_at`), mapping rows to `SlotOccupancy`, in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/` (depends on T006, T008)
-- [ ] T010 [P] Extend `src/main/java/com/minidoodle/shared/web/GlobalExceptionHandler.java` to map `InvalidTimeFrameException` → 400 (`invalid-time-frame`) and `MissingServletRequestParameterException` → 400 (`validation`) (depends on T007)
-- [ ] T011 Extend the Testcontainers base to help this feature's tests: add a slot-creation helper (and a meeting-booking helper) to `src/test/java/com/minidoodle/support/PostgresIntegrationTest.java` (depends on T008)
+- [x] T002 [P] Implement `AvailabilityKind` enum (`FREE`, `BUSY`, `UNALLOCATED`) in `src/main/java/com/minidoodle/calendar/domain/model/`
+- [x] T003 [P] Implement `TimeFrame` value object (both bounds required, `end` strictly after `start`, span ≤ 31 days, normalized to UTC and truncated to microseconds) in `src/main/java/com/minidoodle/calendar/domain/model/`
+- [x] T004 [P] Implement `AvailabilityInterval` value object (half-open `[start, end)`, kind, `end` strictly after `start`) in `src/main/java/com/minidoodle/calendar/domain/model/`
+- [x] T005 Implement `Availability` result record (frame + ordered intervals) in `src/main/java/com/minidoodle/calendar/domain/model/` (depends on T003, T004)
+- [x] T006 [P] Implement `SlotOccupancy` domain type (`TimeRange range`, `SlotStatus status`, `boolean holdsMeeting`, with derived `isBusy()`) in `src/main/java/com/minidoodle/calendar/domain/model/`
+- [x] T007 [P] Define domain exception `InvalidTimeFrameException` extending `DomainException` in `src/main/java/com/minidoodle/calendar/domain/exception/`
+- [x] T008 [P] Define outbound port `AvailabilityRepository` (`List<SlotOccupancy> findOccupancies(CalendarId calendarId, TimeFrame frame)`) in `src/main/java/com/minidoodle/calendar/application/port/out/`
+- [x] T009 Implement `JooqAvailabilityRepository` reading `time_slots` scoped to the calendar and overlapping the frame (`slot_range && tstzrange(from, to, '[)')`, ordered by `start_at`), mapping rows to `SlotOccupancy`, in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/` (depends on T006, T008)
+- [x] T010 [P] Extend `src/main/java/com/minidoodle/shared/web/GlobalExceptionHandler.java` to map `InvalidTimeFrameException` → 400 (`invalid-time-frame`) and `MissingServletRequestParameterException` → 400 (`validation`) (depends on T007)
+- [x] T011 Extend the Testcontainers base to help this feature's tests: add a slot-creation helper (and a meeting-booking helper) to `src/test/java/com/minidoodle/support/PostgresIntegrationTest.java` (depends on T008)
 
 **Checkpoint**: Foundation ready — user stories can begin
 
@@ -63,19 +63,19 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ### Tests for User Story 1 (write first, must fail before implementation) ⚠️
 
-- [ ] T012 [P] [US1] Domain unit tests for `TimeFrame` (missing/inverted/oversized bounds rejected; bounds normalized to UTC and truncated) and `AvailabilityInterval` invariants in `src/test/java/com/minidoodle/calendar/domain/TimeFrameTest.java` and `src/test/java/com/minidoodle/calendar/domain/AvailabilityIntervalTest.java`
-- [ ] T013 [P] [US1] Domain unit tests for the FREE path of `AvailabilityCalculator` (contiguous free slots merge; non-adjacent free slots stay separate; a slot extending past a frame bound is clipped; a slot entirely outside the frame is dropped) in `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
-- [ ] T014 [P] [US1] Persistence integration test for `JooqAvailabilityRepository`: only slots overlapping the frame for the caller's calendar are returned, ordered by `start_at`; another calendar's slots are excluded in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/AvailabilityRepositoryIT.java`
-- [ ] T015 [P] [US1] MockMvc contract test for `GET /api/v1/availability` (200 with merged free windows for the frame; 400 missing/invalid/malformed `from`/`to`; 403 unknown caller; frame echoed) in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
+- [x] T012 [P] [US1] Domain unit tests for `TimeFrame` (missing/inverted/oversized bounds rejected; bounds normalized to UTC and truncated) and `AvailabilityInterval` invariants in `src/test/java/com/minidoodle/calendar/domain/TimeFrameTest.java` and `src/test/java/com/minidoodle/calendar/domain/AvailabilityIntervalTest.java`
+- [x] T013 [P] [US1] Domain unit tests for the FREE path of `AvailabilityCalculator` (contiguous free slots merge; non-adjacent free slots stay separate; a slot extending past a frame bound is clipped; a slot entirely outside the frame is dropped) in `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
+- [x] T014 [P] [US1] Persistence integration test for `JooqAvailabilityRepository`: only slots overlapping the frame for the caller's calendar are returned, ordered by `start_at`; another calendar's slots are excluded in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/AvailabilityRepositoryIT.java`
+- [x] T015 [P] [US1] MockMvc contract test for `GET /api/v1/availability` (200 with merged free windows for the frame; 400 missing/invalid/malformed `from`/`to`; 403 unknown caller; frame echoed) in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
 
 ### Implementation for User Story 1
 
-- [ ] T016 [P] [US1] Define inbound port `GetAvailabilityUseCase` and query `AvailabilityQuery` (`from`, `to`) in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [ ] T017 [US1] Implement `AvailabilityCalculator` FREE path (map free occupancies, clip to the frame, coalesce contiguous free blocks, keep chronological order) in `src/main/java/com/minidoodle/calendar/domain/service/` (depends on T003, T004, T006)
-- [ ] T018 [US1] Implement `GetAvailabilityService` (resolve caller calendar, build `TimeFrame`, load occupancies, invoke the calculator) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T008, T009, T016, T017)
-- [ ] T019 [P] [US1] Add web DTOs `AvailabilityResponse` and `AvailabilityIntervalResponse` with `AvailabilityWebMapper` in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
-- [ ] T020 [US1] Implement `AvailabilityController` `GET /api/v1/availability` wiring the use case, with the required `X-User-Id` header, in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T018, T019)
-- [ ] T021 [US1] Enforce the required `from`/`to` query parameters and ISO-8601-with-offset binding, and confirm the 400/403 surface, in `src/main/java/com/minidoodle/calendar/adapter/in/web/AvailabilityController.java` (depends on T010, T020)
+- [x] T016 [P] [US1] Define inbound port `GetAvailabilityUseCase` and query `AvailabilityQuery` (`from`, `to`) in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [x] T017 [US1] Implement `AvailabilityCalculator` FREE path (map free occupancies, clip to the frame, coalesce contiguous free blocks, keep chronological order) in `src/main/java/com/minidoodle/calendar/domain/service/` (depends on T003, T004, T006)
+- [x] T018 [US1] Implement `GetAvailabilityService` (resolve caller calendar, build `TimeFrame`, load occupancies, invoke the calculator) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T008, T009, T016, T017)
+- [x] T019 [P] [US1] Add web DTOs `AvailabilityResponse` and `AvailabilityIntervalResponse` with `AvailabilityWebMapper` in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
+- [x] T020 [US1] Implement `AvailabilityController` `GET /api/v1/availability` wiring the use case, with the required `X-User-Id` header, in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T018, T019)
+- [x] T021 [US1] Enforce the required `from`/`to` query parameters and ISO-8601-with-offset binding, and confirm the 400/403 surface, in `src/main/java/com/minidoodle/calendar/adapter/in/web/AvailabilityController.java` (depends on T010, T020)
 
 **Checkpoint**: US1 fully functional and independently testable (MVP) — returns merged free windows
 
@@ -89,14 +89,14 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ### Tests for User Story 2
 
-- [ ] T022 [P] [US2] Domain tests for busy classification (`SlotOccupancy.isBusy()`; `SlotStatus.BUSY` → BUSY; `holdsMeeting` → BUSY; a free block touching a busy block is not merged) in `src/test/java/com/minidoodle/calendar/domain/SlotOccupancyTest.java` and `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
-- [ ] T023 [P] [US2] Persistence integration test: a slot that holds a meeting is returned with `holdsMeeting = true` via the `LEFT JOIN meetings` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/AvailabilityRepositoryIT.java`
-- [ ] T024 [P] [US2] MockMvc contract test: after booking a meeting on a free slot, availability reports that period as `BUSY`, not `FREE`, in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
+- [x] T022 [P] [US2] Domain tests for busy classification (`SlotOccupancy.isBusy()`; `SlotStatus.BUSY` → BUSY; `holdsMeeting` → BUSY; a free block touching a busy block is not merged) in `src/test/java/com/minidoodle/calendar/domain/SlotOccupancyTest.java` and `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
+- [x] T023 [P] [US2] Persistence integration test: a slot that holds a meeting is returned with `holdsMeeting = true` via the `LEFT JOIN meetings` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/AvailabilityRepositoryIT.java`
+- [x] T024 [P] [US2] MockMvc contract test: after booking a meeting on a free slot, availability reports that period as `BUSY`, not `FREE`, in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
 
 ### Implementation for User Story 2
 
-- [ ] T025 [US2] Extend `JooqAvailabilityRepository` with a `LEFT JOIN` to `meetings` (`m.slot_id = ts.id`) so each `SlotOccupancy` carries `holdsMeeting`, in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/JooqAvailabilityRepository.java` (depends on T009)
-- [ ] T026 [US2] Extend `AvailabilityCalculator` to emit `BUSY` intervals using `SlotOccupancy.isBusy()` (status `BUSY` or holds a meeting), keeping same-kind coalescing and never merging across kinds, in `src/main/java/com/minidoodle/calendar/domain/service/AvailabilityCalculator.java` (depends on T017, T025)
+- [x] T025 [US2] Extend `JooqAvailabilityRepository` with a `LEFT JOIN` to `meetings` (`m.slot_id = ts.id`) so each `SlotOccupancy` carries `holdsMeeting`, in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/JooqAvailabilityRepository.java` (depends on T009)
+- [x] T026 [US2] Extend `AvailabilityCalculator` to emit `BUSY` intervals using `SlotOccupancy.isBusy()` (status `BUSY` or holds a meeting), keeping same-kind coalescing and never merging across kinds, in `src/main/java/com/minidoodle/calendar/domain/service/AvailabilityCalculator.java` (depends on T017, T025)
 
 **Checkpoint**: US1 and US2 both work independently — free and busy intervals are distinguished
 
@@ -110,12 +110,12 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ### Tests for User Story 3
 
-- [ ] T027 [P] [US3] Domain tests for gap filling and exact coverage: empty frame → single `UNALLOCATED` interval spanning the frame; holes between intervals → `UNALLOCATED`; a frame fully covered by free+busy slots → no gaps; boundaries align at microseconds, in `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
-- [ ] T028 [P] [US3] MockMvc contract test: response intervals are ordered, disjoint, and cover `[from, to)` exactly (first `startAt` == `from`, last `endAt` == `to`, adjacent boundaries equal), in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
+- [x] T027 [P] [US3] Domain tests for gap filling and exact coverage: empty frame → single `UNALLOCATED` interval spanning the frame; holes between intervals → `UNALLOCATED`; a frame fully covered by free+busy slots → no gaps; boundaries align at microseconds, in `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
+- [x] T028 [P] [US3] MockMvc contract test: response intervals are ordered, disjoint, and cover `[from, to)` exactly (first `startAt` == `from`, last `endAt` == `to`, adjacent boundaries equal), in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Extend `AvailabilityCalculator` to fill the gaps before the first, between, and after the last emitted interval with `UNALLOCATED` intervals so the union equals the frame exactly, in `src/main/java/com/minidoodle/calendar/domain/service/AvailabilityCalculator.java` (depends on T026)
+- [x] T029 [US3] Extend `AvailabilityCalculator` to fill the gaps before the first, between, and after the last emitted interval with `UNALLOCATED` intervals so the union equals the frame exactly, in `src/main/java/com/minidoodle/calendar/domain/service/AvailabilityCalculator.java` (depends on T026)
 
 **Checkpoint**: All three stories work — the response is a complete free/busy/unallocated cover of the frame
 
@@ -125,12 +125,12 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Purpose**: Documentation, observability, and end-to-end verification
 
-- [ ] T030 [P] Add springdoc `@Operation`/`@ApiResponses` annotations and the required `X-User-Id` header parameter to `AvailabilityController`, and verify Swagger UI matches `specs/003-availability-query/contracts/openapi.yaml`, in `src/main/java/com/minidoodle/calendar/adapter/in/web/AvailabilityController.java`
-- [ ] T031 [P] Add `AvailabilityMetrics` (`minidoodle.availability.queries` counter, `minidoodle.availability.query` timer, structured log) wired into `GetAvailabilityService`, in `src/main/java/com/minidoodle/calendar/application/service/`
-- [ ] T032 [P] Update `README.md` with the availability endpoint, an example, the free/busy/unallocated semantics, and the metric names
-- [ ] T033 Run `specs/003-availability-query/quickstart.md` end-to-end against `docker-compose up` and fix any discrepancies
-- [ ] T034 Performance check for `specs/003-availability-query/quickstart.md`: verify availability p99 ≤ 300 ms (SC-001, SC-005) against a seeded dataset of thousands of slots
-- [ ] T035 Code cleanup: confirm no framework types leaked into `src/main/java/com/minidoodle/calendar/domain/` and re-run `./gradlew build --no-daemon --console=plain`
+- [x] T030 [P] Add springdoc `@Operation`/`@ApiResponses` annotations and the required `X-User-Id` header parameter to `AvailabilityController`, and verify Swagger UI matches `specs/003-availability-query/contracts/openapi.yaml`, in `src/main/java/com/minidoodle/calendar/adapter/in/web/AvailabilityController.java`
+- [x] T031 [P] Add `AvailabilityMetrics` (`minidoodle.availability.queries` counter, `minidoodle.availability.query` timer, structured log) wired into `GetAvailabilityService`, in `src/main/java/com/minidoodle/calendar/application/service/`
+- [x] T032 [P] Update `README.md` with the availability endpoint, an example, the free/busy/unallocated semantics, and the metric names
+- [x] T033 Run `specs/003-availability-query/quickstart.md` end-to-end against `docker-compose up` and fix any discrepancies
+- [x] T034 Performance check for `specs/003-availability-query/quickstart.md`: verify availability p99 ≤ 300 ms (SC-001, SC-005) against a seeded dataset of thousands of slots
+- [x] T035 Code cleanup: confirm no framework types leaked into `src/main/java/com/minidoodle/calendar/domain/` and re-run `./gradlew build --no-daemon --console=plain`
 
 ---
 

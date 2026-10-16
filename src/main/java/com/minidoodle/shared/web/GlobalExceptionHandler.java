@@ -4,6 +4,7 @@ import com.minidoodle.calendar.domain.exception.ForbiddenAccessException;
 import com.minidoodle.calendar.domain.exception.InvalidCallerIdException;
 import com.minidoodle.calendar.domain.exception.InvalidMeetingException;
 import com.minidoodle.calendar.domain.exception.InvalidSlotException;
+import com.minidoodle.calendar.domain.exception.InvalidTimeFrameException;
 import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.exception.MeetingNotFoundException;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
@@ -14,6 +15,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -39,6 +41,11 @@ class GlobalExceptionHandler {
     @ExceptionHandler(InvalidMeetingException.class)
     ProblemDetail handleInvalidMeeting(InvalidMeetingException ex) {
         return problem(HttpStatus.BAD_REQUEST, "invalid-meeting", "Invalid meeting", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidTimeFrameException.class)
+    ProblemDetail handleInvalidTimeFrame(InvalidTimeFrameException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "invalid-time-frame", "Invalid time frame", ex.getMessage());
     }
 
     @ExceptionHandler(ForbiddenAccessException.class)
@@ -79,6 +86,12 @@ class GlobalExceptionHandler {
     ProblemDetail handleMissingHeader(MissingRequestHeaderException ex) {
         return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed",
                 "Missing required header: " + ex.getHeaderName());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    ProblemDetail handleMissingParameter(MissingServletRequestParameterException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed",
+                "Missing required parameter: " + ex.getParameterName());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
