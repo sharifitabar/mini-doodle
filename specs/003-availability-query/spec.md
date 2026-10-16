@@ -85,7 +85,7 @@ confirm the uncovered portions are returned as unallocated gaps.
 
 - A frame whose end is not later than its start (invalid).
 - A frame missing a start or an end (invalid).
-- A frame larger than the allowed maximum span (rejected).
+- A frame larger than 31 days (rejected).
 - A frame entirely before any of the user's slots, or entirely inside a single slot.
 - Slots overlapping the frame's start and/or end (clip to the frame).
 - Slots that touch exactly at their boundaries — merged when the same kind, kept separate when free
@@ -102,7 +102,7 @@ confirm the uncovered portions are returned as unallocated gaps.
 - **FR-001**: Users MUST be able to request their aggregated availability for a time frame defined
   by a start and an end.
 - **FR-002**: The system MUST require both a start and an end, MUST reject a frame whose end is not
-  later than its start, and MUST reject a frame whose span exceeds the allowed maximum.
+  later than its start, and MUST reject a frame whose span exceeds 31 days.
 - **FR-003**: The system MUST compute FREE intervals as the union of the caller's free slots within
   the frame, excluding any slot that holds a meeting, clipped to the frame, with contiguous or
   overlapping free intervals coalesced into single windows.
@@ -126,7 +126,7 @@ confirm the uncovered portions are returned as unallocated gaps.
 - **FR-013**: The system MUST handle times in UTC, consistently with existing slot and meeting data,
   and MUST interpret the requested frame boundaries inclusively at the start and exclusively at the
   end.
-- **FR-014**: The system MUST return availability promptly for frames up to the allowed maximum span,
+- **FR-014**: The system MUST return availability promptly for frames up to 31 days,
   independent of how many slots or meetings the user has.
 
 ### Key Entities *(include if feature involves data)*
@@ -136,7 +136,7 @@ confirm the uncovered portions are returned as unallocated gaps.
 - **Interval**: A labeled, half-open `[start, end)` period within the frame, classified as free,
   busy, or unallocated.
 - **Time Frame**: The caller-provided `[start, end)` window the availability is computed over; it
-  must be bounded and within the allowed maximum span.
+  must be bounded and within 31 days.
 - **Time Slot** (from time slot management): A user's declared block of time, either free or busy,
   which may hold a meeting.
 - **Meeting** (from meeting scheduling): Occupies a slot and causes that slot to count as busy.
@@ -170,7 +170,7 @@ confirm the uncovered portions are returned as unallocated gaps.
 - Time not covered by any slot is neither free nor busy and is reported as unallocated.
 - Only the caller's own availability is queryable; availability across users (per-user comparison,
   team availability, or "find a time we are all free") is out of scope.
-- The requested frame must be bounded and within a maximum span, chosen to keep responses
+- The requested frame must be bounded and within a maximum span of 31 days, to keep responses
   predictable.
 - Users, calendars, slots, meetings, ownership isolation, UTC storage, and free/busy slot semantics
   are defined by the time slot management and meeting scheduling features and are reused unchanged.

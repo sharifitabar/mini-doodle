@@ -1,7 +1,10 @@
 package com.minidoodle.calendar.adapter.in.web;
 
 import com.jayway.jsonpath.JsonPath;
+import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.SlotStatus;
+import com.minidoodle.jooq.tables.Meetings;
+import com.minidoodle.jooq.tables.TimeSlots;
 import com.minidoodle.support.PostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +16,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -104,6 +108,22 @@ class AvailabilityControllerIT extends PostgresIntegrationTest {
     }
 
     @Test
+    void doesNotMutateSlotsOrMeetings() throws Exception {
+        Caller caller = createCaller();
+        insertSlot(caller.calendarId(), BASE, 30, SlotStatus.FREE);
+        UUID busySlot = insertSlot(caller.calendarId(), BASE.plusHours(1), 30, SlotStatus.BUSY);
+        insertMeeting(busySlot);
+
+        List<String> before = snapshot(caller.calendarId());
+
+        mockMvc.perform(availability(caller).param("from", BASE.toString())
+                        .param("to", BASE.plusHours(2).toString()))
+                .andExpect(status().isOk());
+
+        assertThat(snapshot(caller.calendarId())).isEqualTo(before);
+    }
+
+    @Test
     void rejectsUnknownCaller() throws Exception {
         mockMvc.perform(get("/api/v1/availability")
                         .header(HEADER, UUID.randomUUID())
@@ -144,6 +164,24 @@ class AvailabilityControllerIT extends PostgresIntegrationTest {
 
     private MockHttpServletRequestBuilder availability(Caller caller) {
         return get("/api/v1/availability").header(HEADER, caller.userId().value());
+    }
+
+    private List<String> snapshot(CalendarId calendarId) {
+        List<String> slots = dsl.select(
+                        TimeSlots.TIME_SLOTS.ID,
+                        TimeSlots.TIME_SLOTS.START_AT,
+                        TimeSlots.TIME_SLOTS.DURATION_MINUTES,
+                        TimeSlots.TIME_SLOTS.STATUS,
+                        TimeSlots.TIME_SLOTS.UPDATED_AT)
+                .from(TimeSlots.TIME_SLOTS)
+                .where(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId.value()))
+                .orderBy(TimeSlots.TIME_SLOTS.ID)
+                .fetch(r -> r.value1() + "|" + r.value2() + "|" + r.value3() + "|" + r.value4() + "|" + r.value5());
+        List<String> meetings = dsl.select(Meetings.MEETINGS.ID, Meetings.MEETINGS.SLOT_ID)
+                .from(Meetings.MEETINGS)
+                .orderBy(Meetings.MEETINGS.ID)
+                .fetch(r -> r.value1() + "|" + r.value2());
+        return Stream.concat(slots.stream(), meetings.stream()).toList();
     }
 
     private static void assertContiguousCoverage(String json, OffsetDateTime from, OffsetDateTime to) {

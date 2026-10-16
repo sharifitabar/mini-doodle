@@ -131,6 +131,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 - [x] T033 Run `specs/003-availability-query/quickstart.md` end-to-end against `docker-compose up` and fix any discrepancies
 - [x] T034 Performance check for `specs/003-availability-query/quickstart.md`: verify availability p99 ≤ 300 ms (SC-001, SC-005) against a seeded dataset of thousands of slots
 - [x] T035 Code cleanup: confirm no framework types leaked into `src/main/java/com/minidoodle/calendar/domain/` and re-run `./gradlew build --no-daemon --console=plain`
+- [x] T036 [FR-010] Add a read-only assertion to `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java` verifying no `time_slots` or `meetings` rows change after an availability query
 
 ---
 

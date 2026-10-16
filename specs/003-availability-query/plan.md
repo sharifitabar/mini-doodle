@@ -111,7 +111,7 @@ src/main/java/com/minidoodle/shared/web/
 └── GlobalExceptionHandler.java        (~) InvalidTimeFrameException → 400; missing query param → 400
 
 src/test/java/com/minidoodle/calendar/
-├── domain/                            (+) AvailabilityCalculatorTest, TimeFrameTest, AvailabilityIntervalTest
+├── domain/                            (+) AvailabilityCalculatorTest, TimeFrameTest, AvailabilityIntervalTest, SlotOccupancyTest
 ├── adapter/out/persistence/           (+) AvailabilityRepositoryIT (range + meeting join + isolation)
 └── adapter/in/web/                    (+) AvailabilityControllerIT (contract, validation, auth)
 ```
