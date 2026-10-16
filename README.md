@@ -203,3 +203,7 @@ Services:
 - Stop: `docker compose down`
 - Data persists in named volumes: `prometheus-data` and `grafana-data`.
 
+
+### Dashboards
+
+- `Mini Doodle - Golden Signals & SLI/SLO`: traffic, latency (p95), error rate, and business metrics with SLI/SLO-oriented panels (error budget proxy).

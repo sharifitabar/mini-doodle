@@ -1,4 +1,4 @@
-# Feature Specification: Metrics Dashboards
+# Feature Specification: Metrics Dashboards (Prometheus + Grafana)
 
 **Feature Branch**: `004-metrics-dashboards`
 
@@ -79,6 +79,8 @@ An operator wants data and dashboards to survive container restarts so they are 
 - **FR-008**: The provisioned baseline dashboard MUST surface the core metrics already emitted by the application: slot operations, meeting operations, availability queries, HTTP server request metrics, and JVM/process metrics.
 - **FR-009**: `README.md` MUST document how to run the stack, the service URLs, Grafana credentials (demo), and how to add/modify provisioned dashboards.
 - **FR-010**: Provisioning files MUST live under the repository and be mounted into the containers (version-controlled and reproducible).
+- **FR-011**: Baseline dashboards MUST cover Golden Signals (Traffic, Latency, Errors, Saturation) using existing Actuator/Micrometer metrics.
+- **FR-012**: Baseline dashboards MUST include basic SLI/SLO indicators (request rate, p95 latency, 5xx error rate).
 
 ### Key Entities *(include if feature involves data)*
 
