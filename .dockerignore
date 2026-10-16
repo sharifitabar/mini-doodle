@@ -8,6 +8,7 @@ out
 .opencode
 .specify
 .githooks
+.cursor
 *.iml
 .DS_Store
 specs
