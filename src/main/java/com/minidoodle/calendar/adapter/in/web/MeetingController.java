@@ -1,6 +1,7 @@
 package com.minidoodle.calendar.adapter.in.web;
 
 import com.minidoodle.calendar.application.port.in.BookMeetingUseCase;
+import com.minidoodle.calendar.application.port.in.CancelMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.GetMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.MeetingView;
 import com.minidoodle.calendar.domain.model.SlotId;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,10 +39,15 @@ class MeetingController {
 
     private final BookMeetingUseCase bookMeeting;
     private final GetMeetingUseCase getMeeting;
+    private final CancelMeetingUseCase cancelMeeting;
 
-    MeetingController(BookMeetingUseCase bookMeeting, GetMeetingUseCase getMeeting) {
+    MeetingController(
+            BookMeetingUseCase bookMeeting,
+            GetMeetingUseCase getMeeting,
+            CancelMeetingUseCase cancelMeeting) {
         this.bookMeeting = bookMeeting;
         this.getMeeting = getMeeting;
+        this.cancelMeeting = cancelMeeting;
     }
 
     @PostMapping
@@ -82,5 +89,22 @@ class MeetingController {
                     description = CALLER_DESCRIPTION) @CurrentUser UserId caller,
             @PathVariable UUID slotId) {
         return MeetingWebMapper.toResponse(getMeeting.getMeeting(caller, SlotId.of(slotId)));
+    }
+
+    @DeleteMapping
+    @Operation(summary = "Cancel the meeting on a slot",
+            description = "Deletes the meeting booked on a slot owned by the caller and returns the slot to FREE.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Meeting cancelled"),
+            @ApiResponse(responseCode = "400", description = "Malformed X-User-Id or slot id"),
+            @ApiResponse(responseCode = "403", description = "Caller is not a known user"),
+            @ApiResponse(responseCode = "404", description = "Slot not found in the caller's calendar or has no meeting")
+    })
+    ResponseEntity<Void> cancel(
+            @Parameter(name = CALLER_HEADER, in = ParameterIn.HEADER, required = true,
+                    description = CALLER_DESCRIPTION) @CurrentUser UserId caller,
+            @PathVariable UUID slotId) {
+        cancelMeeting.cancelMeeting(caller, SlotId.of(slotId));
+        return ResponseEntity.noContent().build();
     }
 }

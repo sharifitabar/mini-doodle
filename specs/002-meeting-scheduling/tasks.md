@@ -107,16 +107,16 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ### Tests for User Story 3
 
-- [ ] T026 [P] [US3] MockMvc contract test for `DELETE /api/v1/slots/{slotId}/meeting` (204, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/MeetingControllerCancelIT.java`
-- [ ] T027 [P] [US3] MockMvc contract test for the FR-010 guards: `PATCH` status, `PATCH` time/duration, and `DELETE` on a booked slot each return `409` in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotMeetingGuardIT.java`
-- [ ] T028 [P] [US3] Persistence integration test: cancelling deletes the meeting, cascades participants, and frees the slot in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingRepositoryCancelIT.java`
+- [x] T026 [P] [US3] MockMvc contract test for `DELETE /api/v1/slots/{slotId}/meeting` (204, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/MeetingControllerCancelIT.java`
+- [x] T027 [P] [US3] MockMvc contract test for the FR-010 guards: `PATCH` status, `PATCH` time/duration, and `DELETE` on a booked slot each return `409` in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotMeetingGuardIT.java`
+- [x] T028 [P] [US3] Persistence integration test: cancelling deletes the meeting, cascades participants, and frees the slot in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingRepositoryCancelIT.java`
 
 ### Implementation for User Story 3
 
-- [ ] T029 [P] [US3] Define inbound port `CancelMeetingUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [ ] T030 [US3] Implement `CancelMeetingService` (ownership, delete meeting, set slot FREE in one transaction) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007, T009)
-- [ ] T031 [US3] Add the `DELETE` endpoint to `MeetingController` in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T019, T030)
-- [ ] T032 [US3] Add the meeting-exists guard (reject with `409`) to `ModifySlotService`, `ChangeSlotStatusService`, and `DeleteSlotService` in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007, T008, T010)
+- [x] T029 [P] [US3] Define inbound port `CancelMeetingUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [x] T030 [US3] Implement `CancelMeetingService` (ownership, delete meeting, set slot FREE in one transaction) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007, T009)
+- [x] T031 [US3] Add the `DELETE` endpoint to `MeetingController` in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T019, T030)
+- [x] T032 [US3] Add the meeting-exists guard (reject with `409`) to `ModifySlotService`, `ChangeSlotStatusService`, and `DeleteSlotService` in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007, T008, T010)
 
 **Checkpoint**: All three stories independently functional
 
