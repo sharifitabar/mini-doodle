@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,6 +67,17 @@ class MeetingTest {
         assertThatThrownBy(() -> Meeting.create(SLOT, "Title", null, List.of(), NOW))
                 .isInstanceOf(InvalidMeetingException.class)
                 .hasMessageContaining("participant");
+    }
+
+    @Test
+    void truncatesTimestampsToMicrosecondPrecision() {
+        OffsetDateTime withNanos = OffsetDateTime.of(2026, 11, 1, 8, 0, 0, 123_456_789, ZoneOffset.UTC);
+
+        Meeting meeting = Meeting.create(SLOT, "Title", null, List.of(ADA), withNanos);
+
+        assertThat(meeting.createdAt()).isEqualTo(withNanos.truncatedTo(ChronoUnit.MICROS));
+        assertThat(meeting.createdAt().getNano()).isEqualTo(123_456_000);
+        assertThat(meeting.updatedAt()).isEqualTo(meeting.createdAt());
     }
 
     @Test

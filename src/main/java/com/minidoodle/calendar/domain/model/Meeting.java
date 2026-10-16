@@ -4,6 +4,7 @@ import com.minidoodle.calendar.domain.exception.InvalidMeetingException;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 
@@ -49,7 +50,9 @@ public final class Meeting {
             List<Participant> participants,
             OffsetDateTime now) {
         Objects.requireNonNull(now, "now must not be null");
-        OffsetDateTime utcNow = now.withOffsetSameInstant(ZoneOffset.UTC);
+        // PostgreSQL stores timestamptz at microsecond resolution; truncate so the in-memory
+        // aggregate equals what is read back (nanosecond clocks, e.g. on Linux, otherwise differ).
+        OffsetDateTime utcNow = now.withOffsetSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS);
         return new Meeting(MeetingId.random(), slotId, title, description, participants, utcNow, utcNow);
     }
 
