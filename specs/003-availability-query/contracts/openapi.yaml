@@ -1,0 +1,139 @@
+openapi: 3.0.3
+info:
+  title: Mini Doodle - Availability Query API
+  version: 1.0.0
+  description: |
+    Returns the caller's free/busy availability, aggregated over a requested time frame as a
+    single, chronologically ordered list of disjoint intervals labelled FREE, BUSY, or
+    UNALLOCATED that together cover the frame exactly. The caller is identified by the required
+    `X-User-Id` header (demo authentication) and only ever sees their own calendar. All
+    date-times are ISO-8601 with an explicit offset and are normalized to UTC.
+servers:
+  - url: http://localhost:8080
+    description: Local (docker-compose)
+tags:
+  - name: Availability
+    description: Aggregated free/busy availability over a time frame
+
+paths:
+  /api/v1/availability:
+    get:
+      tags: [Availability]
+      summary: Get the caller's aggregated availability over a time frame
+      description: |
+        Computes the caller's availability for the half-open frame `[from, to)` (end exclusive).
+        Free slots are coalesced into contiguous free windows; a slot is BUSY when it is marked
+        busy or holds a meeting; time inside the frame covered by no slot is UNALLOCATED. The
+        frame is required and bounded (`from < to`, span at most 31 days).
+      operationId: getAvailability
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - name: from
+          in: query
+          required: true
+          description: Inclusive start of the frame (ISO-8601 date-time with offset).
+          schema: { type: string, format: date-time }
+          example: '2026-11-02T00:00:00Z'
+        - name: to
+          in: query
+          required: true
+          description: Exclusive end of the frame (ISO-8601 date-time with offset).
+          schema: { type: string, format: date-time }
+          example: '2026-11-09T00:00:00Z'
+      responses:
+        '200':
+          description: The aggregated availability for the frame
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Availability'
+              example:
+                from: '2026-11-02T00:00:00Z'
+                to: '2026-11-09T00:00:00Z'
+                intervals:
+                  - { startAt: '2026-11-02T00:00:00Z', endAt: '2026-11-02T09:00:00Z', kind: UNALLOCATED }
+                  - { startAt: '2026-11-02T09:00:00Z', endAt: '2026-11-02T10:00:00Z', kind: FREE }
+                  - { startAt: '2026-11-02T10:00:00Z', endAt: '2026-11-02T10:30:00Z', kind: BUSY }
+                  - { startAt: '2026-11-02T10:30:00Z', endAt: '2026-11-09T00:00:00Z', kind: UNALLOCATED }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  parameters:
+    XUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      description: Identifies the calling user (demo authentication).
+      schema: { type: string, format: uuid }
+
+  schemas:
+    Availability:
+      type: object
+      required: [from, to, intervals]
+      additionalProperties: false
+      properties:
+        from:
+          type: string
+          format: date-time
+          description: Inclusive start of the requested frame, normalized to UTC.
+        to:
+          type: string
+          format: date-time
+          description: Exclusive end of the requested frame, normalized to UTC.
+        intervals:
+          type: array
+          description: |
+            Ordered, disjoint intervals covering `[from, to)` exactly. Adjacent intervals always
+            differ in `kind` (contiguous same-kind time is merged).
+          items:
+            $ref: '#/components/schemas/AvailabilityInterval'
+
+    AvailabilityInterval:
+      type: object
+      required: [startAt, endAt, kind]
+      additionalProperties: false
+      properties:
+        startAt:
+          type: string
+          format: date-time
+          description: Inclusive start of the interval.
+        endAt:
+          type: string
+          format: date-time
+          description: Exclusive end of the interval (strictly after startAt).
+        kind:
+          type: string
+          enum: [FREE, BUSY, UNALLOCATED]
+          description: |
+            FREE — the caller declared availability; BUSY — the slot is marked busy or holds a
+            meeting; UNALLOCATED — no slot covers this time.
+
+    Problem:
+      type: object
+      description: RFC 9457 problem detail.
+      required: [type, title, status]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string, format: uri }
+
+  responses:
+    BadRequest:
+      description: |
+        Missing/unparseable `from` or `to`, missing/malformed `X-User-Id`, an inverted frame
+        (`to <= from`), or a frame longer than 31 days.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: The caller is not a known user.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
