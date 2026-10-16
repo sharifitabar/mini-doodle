@@ -177,3 +177,29 @@ running.
 - [x] API documentation (OpenAPI)
 - [x] Meeting scheduling (book/view/cancel on a slot)
 - [x] Availability query with aggregated view
+
+## Metrics Stack (Prometheus + Grafana)
+
+This project includes a local observability stack. The Spring Boot app exposes Prometheus metrics at `/actuator/prometheus` (Micrometer). Prometheus scrapes the app, and Grafana is pre-provisioned with Prometheus as the datasource and a baseline dashboard.
+
+### Starting the stack
+
+```bash
+docker compose up -d
+```
+
+Services:
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000 (admin/admin)
+- App: http://localhost:8080
+
+### Verifying
+
+1. Prometheus targets: http://localhost:9090/targets — `minidoodle` job should be UP (scraping `app:8080/actuator/prometheus`).
+2. Grafana: log in with `admin/admin`, open "Mini Doodle Baseline" dashboard.
+
+### Stopping and persistence
+
+- Stop: `docker compose down`
+- Data persists in named volumes: `prometheus-data` and `grafana-data`.
+
