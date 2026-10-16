@@ -61,18 +61,18 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ### Tests for User Story 1 (write first, must fail before implementation) ⚠️
 
-- [ ] T012 [P] [US1] Domain unit tests for `Meeting`/`Participant` invariants (blank/over-length title, no participants, participant with neither name nor email) in `src/test/java/com/minidoodle/calendar/domain/MeetingTest.java` and `src/test/java/com/minidoodle/calendar/domain/ParticipantTest.java`
-- [ ] T013 [P] [US1] MockMvc contract test for `POST /api/v1/slots/{slotId}/meeting` (201, 400, 403, 404 foreign/missing slot, 409 on busy/already-booked slot) in `src/test/java/com/minidoodle/calendar/adapter/in/web/MeetingControllerBookIT.java`
-- [ ] T014 [P] [US1] Persistence integration test: a second `save` for the same slot fails on `uq_meetings_slot`, and two parallel bookings yield exactly one success and one conflict in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingBookingConcurrencyIT.java` (covers FR-002, SC-002)
-- [ ] T015 [P] [US1] Persistence integration test: booking marks the slot `BUSY`, participants persist in order, and deleting a booked slot is blocked by the `RESTRICT` FK in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingRepositoryIT.java` (covers FR-006, FR-010)
+- [x] T012 [P] [US1] Domain unit tests for `Meeting`/`Participant` invariants (blank/over-length title, no participants, participant with neither name nor email) in `src/test/java/com/minidoodle/calendar/domain/MeetingTest.java` and `src/test/java/com/minidoodle/calendar/domain/ParticipantTest.java`
+- [x] T013 [P] [US1] MockMvc contract test for `POST /api/v1/slots/{slotId}/meeting` (201, 400, 403, 404 foreign/missing slot, 409 on busy/already-booked slot) in `src/test/java/com/minidoodle/calendar/adapter/in/web/MeetingControllerBookIT.java`
+- [x] T014 [P] [US1] Persistence integration test: a second `save` for the same slot fails on `uq_meetings_slot`, and two parallel bookings yield exactly one success and one conflict in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingBookingConcurrencyIT.java` (covers FR-002, SC-002)
+- [x] T015 [P] [US1] Persistence integration test: booking marks the slot `BUSY`, participants persist in order, and deleting a booked slot is blocked by the `RESTRICT` FK in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingRepositoryIT.java` (covers FR-006, FR-010)
 
 ### Implementation for User Story 1
 
-- [ ] T016 [P] [US1] Define inbound port `BookMeetingUseCase` and `BookMeetingCommand` (slotId, title, description, participants) in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [ ] T017 [US1] Implement `BookMeetingService` (resolve caller calendar, load slot, require FREE and no existing meeting, build aggregate, persist meeting, set slot BUSY in one transaction, translate constraint violations) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T007, T008, T009, T016)
-- [ ] T018 [P] [US1] Add web DTOs `BookMeetingRequest`, `ParticipantRequest`, `MeetingResponse`, and `MeetingWebMapper` in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
-- [ ] T019 [US1] Implement `MeetingController` `POST /api/v1/slots/{slotId}/meeting` wiring the use case in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T017, T018)
-- [ ] T020 [US1] Enforce bean validation on `BookMeetingRequest`/`ParticipantRequest` (title bounds, `@NotEmpty` participants, at least one of name/email) and confirm the 400 surface in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
+- [x] T016 [P] [US1] Define inbound port `BookMeetingUseCase` and `BookMeetingCommand` (slotId, title, description, participants) in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [x] T017 [US1] Implement `BookMeetingService` (resolve caller calendar, load slot, require FREE and no existing meeting, build aggregate, persist meeting, set slot BUSY in one transaction, translate constraint violations) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T007, T008, T009, T016)
+- [x] T018 [P] [US1] Add web DTOs `BookMeetingRequest`, `ParticipantRequest`, `MeetingResponse`, and `MeetingWebMapper` in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
+- [x] T019 [US1] Implement `MeetingController` `POST /api/v1/slots/{slotId}/meeting` wiring the use case in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T017, T018)
+- [x] T020 [US1] Enforce bean validation on `BookMeetingRequest`/`ParticipantRequest` (title bounds, `@NotEmpty` participants, at least one of name/email) and confirm the 400 surface in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
 
 **Checkpoint**: US1 fully functional and independently testable (MVP)
 
