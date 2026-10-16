@@ -86,14 +86,14 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ### Tests for User Story 2
 
-- [ ] T021 [P] [US2] MockMvc contract test for `GET /api/v1/slots/{slotId}/meeting` (200 body fields, 403 unknown caller, 404 for missing/foreign slot and for a slot with no meeting) in `src/test/java/com/minidoodle/calendar/adapter/in/web/MeetingControllerReadIT.java`
-- [ ] T022 [P] [US2] Persistence integration test: `findBySlotId` returns the meeting with its participants and returns empty for a slot without one in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingRepositoryReadIT.java`
+- [x] T021 [P] [US2] MockMvc contract test for `GET /api/v1/slots/{slotId}/meeting` (200 body fields, 403 unknown caller, 404 for missing/foreign slot and for a slot with no meeting) in `src/test/java/com/minidoodle/calendar/adapter/in/web/MeetingControllerReadIT.java`
+- [x] T022 [P] [US2] Persistence integration test: `findBySlotId` returns the meeting with its participants and returns empty for a slot without one in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingRepositoryReadIT.java`
 
 ### Implementation for User Story 2
 
-- [ ] T023 [P] [US2] Define inbound port `GetMeetingUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [ ] T024 [US2] Implement `GetMeetingService` (ownership via caller calendar, map to response, throw `MeetingNotFoundException` when absent) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007)
-- [ ] T025 [US2] Add the `GET` endpoint to `MeetingController` and a response mapper for the slot time window in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T019, T024)
+- [x] T023 [P] [US2] Define inbound port `GetMeetingUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [x] T024 [US2] Implement `GetMeetingService` (ownership via caller calendar, map to response, throw `MeetingNotFoundException` when absent) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007)
+- [x] T025 [US2] Add the `GET` endpoint to `MeetingController` and a response mapper for the slot time window in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T019, T024)
 
 **Checkpoint**: US1 and US2 both work independently
 

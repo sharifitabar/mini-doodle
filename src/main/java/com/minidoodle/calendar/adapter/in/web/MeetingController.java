@@ -1,6 +1,7 @@
 package com.minidoodle.calendar.adapter.in.web;
 
 import com.minidoodle.calendar.application.port.in.BookMeetingUseCase;
+import com.minidoodle.calendar.application.port.in.GetMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.MeetingView;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.UserId;
@@ -14,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,9 +36,11 @@ class MeetingController {
     private static final String CALLER_DESCRIPTION = "Caller user id (demo authentication)";
 
     private final BookMeetingUseCase bookMeeting;
+    private final GetMeetingUseCase getMeeting;
 
-    MeetingController(BookMeetingUseCase bookMeeting) {
+    MeetingController(BookMeetingUseCase bookMeeting, GetMeetingUseCase getMeeting) {
         this.bookMeeting = bookMeeting;
+        this.getMeeting = getMeeting;
     }
 
     @PostMapping
@@ -61,5 +65,22 @@ class MeetingController {
                 .buildAndExpand(slotId)
                 .toUri();
         return ResponseEntity.created(location).body(MeetingWebMapper.toResponse(view));
+    }
+
+    @GetMapping
+    @Operation(summary = "Get the meeting on a slot",
+            description = "Returns the meeting booked on a slot owned by the caller, including its participants and "
+                    + "the slot's time window. Returns 404 when the slot has no meeting.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "The meeting"),
+            @ApiResponse(responseCode = "400", description = "Malformed X-User-Id or slot id"),
+            @ApiResponse(responseCode = "403", description = "Caller is not a known user"),
+            @ApiResponse(responseCode = "404", description = "Slot not found in the caller's calendar or has no meeting")
+    })
+    MeetingResponse get(
+            @Parameter(name = CALLER_HEADER, in = ParameterIn.HEADER, required = true,
+                    description = CALLER_DESCRIPTION) @CurrentUser UserId caller,
+            @PathVariable UUID slotId) {
+        return MeetingWebMapper.toResponse(getMeeting.getMeeting(caller, SlotId.of(slotId)));
     }
 }
