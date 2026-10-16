@@ -4,6 +4,10 @@
 build
 out
 .idea
+.vscode
+.opencode
+.specify
+.githooks
 *.iml
 .DS_Store
 specs
