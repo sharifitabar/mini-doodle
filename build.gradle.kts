@@ -17,6 +17,7 @@ plugins {
     jacoco
     checkstyle
     id("com.diffplug.spotless") version "8.10.4"
+    id("info.solidsoft.pitest") version "1.19.0"
     id("org.springframework.boot") version "3.5.16"
     id("io.spring.dependency-management") version "1.1.7"
 }
@@ -105,37 +106,142 @@ spotless {
     }
 }
 
-// --- Coverage (report-only) ---------------------------------------------------
-// JaCoCo is intentionally NOT wired into `check`: it produces reports but never fails
-// the `./gradlew build` that .githooks/pre-push and CI run. It measures instruction,
-// branch, line, cyclomatic-complexity, method, and class coverage.
+// --- Coverage (feature 006-quality-gates) -------------------------------------
+// JaCoCo measures instruction, branch, line, cyclomatic-complexity, method, and class coverage.
+// Since feature 006 the measurement is *enforced*: `jacocoTestCoverageVerification` carries floors
+// and is wired into `check`, so a coverage regression fails the `./gradlew build` that
+// .githooks/pre-push and CI already run. Mutation analysis (test *strength*) is deliberately
+// separate and on demand — see the `pitest` block at the end of this file.
 //
-//   ./gradlew jacocoTestReport          # tests + report (report also runs after `test`)
+//   ./gradlew jacocoTestReport                 # tests + report (report also runs after `test`)
 //   open build/reports/jacoco/test/html/index.html
-//   XML (machine-readable): build/reports/jacoco/test/jacocoTestReport.xml
+//   ./gradlew jacocoTestCoverageVerification   # enforce the floors (also runs via `check`)
 jacoco {
     toolVersion = "0.8.15"
 }
+
+// The jOOQ output is machine-generated; it is not ours to cover and would otherwise dominate the
+// denominator and drag every percentage down. JacocoReport/JacocoCoverageVerification have no
+// `excludes` property, so filtering is done by rebuilding the class-dir collection — and because
+// each task owns a *separate* classDirectories collection, this one shared value is used by both.
+// Excluding it from the report but not the verification would let generated code satisfy a floor.
+val coverageClassDirectories =
+    files(
+        sourceSets.main.get().output.classesDirs.files.map { dir ->
+            fileTree(dir) { exclude("com/minidoodle/jooq/**") }
+        },
+    )
 
 tasks.named<Test>("test") {
     finalizedBy(tasks.named("jacocoTestReport"))
 }
 
 tasks.named<JacocoReport>("jacocoTestReport") {
-    // The jOOQ output is machine-generated; it is not ours to cover and would otherwise
-    // dominate the denominator and drag every percentage down. JacocoReport has no
-    // `excludes` property, so filtering is done by rebuilding the class-dir collection.
-    classDirectories.setFrom(
-        files(classDirectories.files.map { dir ->
-            fileTree(dir) { exclude("com/minidoodle/jooq/**") }
-        })
-    )
+    classDirectories.setFrom(coverageClassDirectories)
     reports {
         xml.required.set(true)
         csv.required.set(false)
         html.required.set(true)
     }
 }
+
+// Floors are not guesses. Each one is the ratio the suite actually achieves, rounded *down* to the
+// nearest 0.05, so a floor is always satisfied on a green `test` run and a regression has to be
+// real (at least one newly uncovered line/branch pair) before it trips. The full measurement, the
+// rounding rule and the residue that the rounding deliberately tolerates are recorded in
+// specs/006-quality-gates/research.md; re-measure before changing anything here:
+//
+//   jacocoTestReport -> build/reports/jacoco/test/jacocoTestReport.xml
+//
+//   BUNDLE      LINE 99.07% -> 0.95   BRANCH 95.73% -> 0.95
+//               METHOD 99.12% -> 0.95 COMPLEXITY 97.10% -> 0.95
+//
+// Instruction and class coverage stay measured-and-reported only: instruction is near-perfectly
+// correlated with line coverage, and class coverage is near-binary here.
+//
+// The class-scoped rules are the "error and recovery paths are their own dimension" requirement.
+// A bundle average hides them: the error-handling and write-recovery types were the worst-covered
+// classes in the baseline audit while the bundle looked healthy, and only a class-scoped floor can
+// see that. Where a class is fully covered the rounded-down floor lands on 1.00, which pins it.
+//
+// Deliberate residue, so that nobody has to wonder: JooqSlotRepository sits at LINE 98.67% and
+// BRANCH 91.67%. The uncovered line is the `throw ex;` that rethrows a delete failure which is
+// *not* a foreign-key violation - reachable only on an infrastructure fault, and exercised nowhere
+// because this project has no mocking framework and fabricating one for a defensive rethrow would
+// buy less than the floors already do.
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    classDirectories.setFrom(coverageClassDirectories)
+    violationRules {
+        rule {
+            element = "BUNDLE"
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.95".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "0.95".toBigDecimal()
+            }
+            limit {
+                counter = "METHOD"
+                value = "COVEREDRATIO"
+                minimum = "0.95".toBigDecimal()
+            }
+            limit {
+                counter = "COMPLEXITY"
+                value = "COVEREDRATIO"
+                minimum = "0.95".toBigDecimal()
+            }
+        }
+        rule {
+            element = "CLASS"
+            includes = listOf("com.minidoodle.shared.web.GlobalExceptionHandler")
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "1.00".toBigDecimal()
+            }
+            limit {
+                counter = "METHOD"
+                value = "COVEREDRATIO"
+                minimum = "1.00".toBigDecimal()
+            }
+        }
+        rule {
+            element = "CLASS"
+            includes = listOf("com.minidoodle.calendar.adapter.out.persistence.JooqSlotRepository")
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.95".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "0.90".toBigDecimal()
+            }
+        }
+        rule {
+            element = "CLASS"
+            includes = listOf("com.minidoodle.shared.web.CurrentUserArgumentResolver")
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "1.00".toBigDecimal()
+            }
+        }
+    }
+}
+
+// The JaCoCo plugin creates `jacocoTestCoverageVerification` but does *not* attach it to `check`
+// (verified with `./gradlew check --dry-run`), so the gate is wired explicitly here. This keeps
+// enforcement on the existing standard build — no new hook or CI step.
+tasks.named("check") {
+    dependsOn(tasks.named("jacocoTestCoverageVerification"))
+}
+
 
 val jooqGeneratedDir = layout.buildDirectory.dir("generated-sources/jooq")
 
@@ -216,4 +322,29 @@ sourceSets {
 
 tasks.named("compileJava") {
     dependsOn(jooqCodegen)
+}
+
+// --- Mutation analysis (feature 006-quality-gates, on demand) ------------------
+// Answers a different question from coverage: not "was this line executed?" but "would a test
+// fail if this line were wrong?". It re-runs the suite once per mutant, so it is deliberately
+// NOT reachable from `check`/`build` (the plugin adds its own task and attaches it to nothing).
+//
+//   ./gradlew pitest
+//   open build/reports/pitest/index.html
+//
+// Scope is the domain package only: it is the only layer covered by fast unit tests. Mutating the
+// application/adapter layers would run a container-backed integration test per mutant.
+//
+// No `mutationThreshold`: equivalent mutants (inherent in logging and `toString`) can never be
+// killed, so the score is a triage signal, not a gate.
+pitest {
+    pitestVersion = "1.22.1"
+    junit5PluginVersion = "1.2.3"
+    targetClasses = listOf("com.minidoodle.calendar.domain.*")
+    targetTests = listOf("com.minidoodle.calendar.domain.*")
+    outputFormats = listOf("HTML", "XML", "CSV")
+    // Stable report paths so the output location can be documented and linked.
+    timestampedReports = false
+    threads = 4
+    verbose = false
 }
