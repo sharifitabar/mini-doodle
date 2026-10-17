@@ -96,7 +96,7 @@ src/main/java/com/minidoodle/calendar/
 │   ├── port/out/
 │   │   └── AvailabilityRepository.java (+) findOccupancies(calendarId, frame) → List<SlotOccupancy>
 │   └── service/
-│       ├── GetAvailabilityService.java (+) resolve caller → load → calculate, timed
+│       ├── AvailabilityApplicationService.java (+) resolve caller → load → calculate, timed
 │       └── AvailabilityMetrics.java   (+) queries counter + query timer + structured log
 ├── adapter/
     ├── in/web/

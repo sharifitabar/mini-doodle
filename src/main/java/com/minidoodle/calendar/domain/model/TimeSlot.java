@@ -43,7 +43,7 @@ public final class TimeSlot {
         return new TimeSlot(SlotId.random(), calendarId, timeRange, SlotStatus.FREE, utcNow, utcNow);
     }
 
-    public static TimeSlot rehydrate(
+    public static TimeSlot of(
             SlotId id,
             CalendarId calendarId,
             TimeRange timeRange,

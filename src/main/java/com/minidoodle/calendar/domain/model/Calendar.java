@@ -23,7 +23,7 @@ public record Calendar(
         Objects.requireNonNull(updatedAt, "updatedAt must not be null");
     }
 
-    public static Calendar rehydrate(
+    public static Calendar of(
             CalendarId id, UserId ownerId, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         return new Calendar(id, ownerId, createdAt, updatedAt);
     }

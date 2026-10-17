@@ -16,7 +16,7 @@ final class PersistenceMapper {
     }
 
     static TimeSlot toTimeSlot(TimeSlotsRecord record) {
-        return TimeSlot.rehydrate(
+        return TimeSlot.of(
                 SlotId.of(record.getId()),
                 CalendarId.of(record.getCalendarId()),
                 new TimeRange(record.getStartAt(), record.getDurationMinutes()),
@@ -26,7 +26,7 @@ final class PersistenceMapper {
     }
 
     static Calendar toCalendar(CalendarsRecord record) {
-        return Calendar.rehydrate(
+        return Calendar.of(
                 CalendarId.of(record.getId()),
                 UserId.of(record.getUserId()),
                 record.getCreatedAt(),

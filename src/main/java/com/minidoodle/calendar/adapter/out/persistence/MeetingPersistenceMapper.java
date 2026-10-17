@@ -15,7 +15,7 @@ final class MeetingPersistenceMapper {
     }
 
     static Meeting toMeeting(MeetingsRecord record, List<Participant> participants) {
-        return Meeting.rehydrate(
+        return Meeting.of(
                 MeetingId.of(record.getId()),
                 SlotId.of(record.getSlotId()),
                 record.getTitle(),

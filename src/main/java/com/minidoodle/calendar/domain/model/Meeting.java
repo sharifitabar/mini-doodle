@@ -56,7 +56,7 @@ public final class Meeting {
         return new Meeting(MeetingId.random(), slotId, title, description, participants, utcNow, utcNow);
     }
 
-    public static Meeting rehydrate(
+    public static Meeting of(
             MeetingId id,
             SlotId slotId,
             String title,

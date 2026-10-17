@@ -72,7 +72,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 - [x] T016 [P] [US1] Define inbound port `GetAvailabilityUseCase` and query `AvailabilityQuery` (`from`, `to`) in `src/main/java/com/minidoodle/calendar/application/port/in/`
 - [x] T017 [US1] Implement `AvailabilityCalculator` FREE path (map free occupancies, clip to the frame, coalesce contiguous free blocks, keep chronological order) in `src/main/java/com/minidoodle/calendar/domain/service/` (depends on T003, T004, T006)
-- [x] T018 [US1] Implement `GetAvailabilityService` (resolve caller calendar, build `TimeFrame`, load occupancies, invoke the calculator) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T008, T009, T016, T017)
+- [x] T018 [US1] Implement `AvailabilityApplicationService` (resolve caller calendar, build `TimeFrame`, load occupancies, invoke the calculator) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T008, T009, T016, T017)
 - [x] T019 [P] [US1] Add web DTOs `AvailabilityResponse` and `AvailabilityIntervalResponse` with `AvailabilityWebMapper` in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
 - [x] T020 [US1] Implement `AvailabilityController` `GET /api/v1/availability` wiring the use case, with the required `X-User-Id` header, in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T018, T019)
 - [x] T021 [US1] Enforce the required `from`/`to` query parameters and ISO-8601-with-offset binding, and confirm the 400/403 surface, in `src/main/java/com/minidoodle/calendar/adapter/in/web/AvailabilityController.java` (depends on T010, T020)
@@ -126,7 +126,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 **Purpose**: Documentation, observability, and end-to-end verification
 
 - [x] T030 [P] Add springdoc `@Operation`/`@ApiResponses` annotations and the required `X-User-Id` header parameter to `AvailabilityController`, and verify Swagger UI matches `specs/003-availability-query/contracts/openapi.yaml`, in `src/main/java/com/minidoodle/calendar/adapter/in/web/AvailabilityController.java`
-- [x] T031 [P] Add `AvailabilityMetrics` (`minidoodle.availability.queries` counter, `minidoodle.availability.query` timer, structured log) wired into `GetAvailabilityService`, in `src/main/java/com/minidoodle/calendar/application/service/`
+- [x] T031 [P] Add `AvailabilityMetrics` (`minidoodle.availability.queries` counter, `minidoodle.availability.query` timer, structured log) wired into `AvailabilityApplicationService`, in `src/main/java/com/minidoodle/calendar/application/service/`
 - [x] T032 [P] Update `README.md` with the availability endpoint, an example, the free/busy/unallocated semantics, and the metric names
 - [x] T033 Run `specs/003-availability-query/quickstart.md` end-to-end against `docker-compose up` and fix any discrepancies
 - [x] T034 Performance check for `specs/003-availability-query/quickstart.md`: verify availability p99 ≤ 300 ms (SC-001, SC-005) against a seeded dataset of thousands of slots

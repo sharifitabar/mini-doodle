@@ -14,14 +14,14 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-class GetAvailabilityService implements GetAvailabilityUseCase {
+class AvailabilityApplicationService implements GetAvailabilityUseCase {
 
     private final CallerCalendarResolver calendarResolver;
     private final AvailabilityRepository occupancies;
     private final AvailabilityMetrics metrics;
     private final AvailabilityCalculator calculator = new AvailabilityCalculator();
 
-    GetAvailabilityService(
+    AvailabilityApplicationService(
             CallerCalendarResolver calendarResolver,
             AvailabilityRepository occupancies,
             AvailabilityMetrics metrics) {
