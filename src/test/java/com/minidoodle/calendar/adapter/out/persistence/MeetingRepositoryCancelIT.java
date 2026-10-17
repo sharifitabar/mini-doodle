@@ -11,46 +11,51 @@ import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.jooq.tables.MeetingParticipants;
 import com.minidoodle.jooq.tables.TimeSlots;
 import com.minidoodle.support.PostgresIntegrationTest;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * Cancelling a meeting deletes it, cascades its participants, and leaves the slot free to
- * be deleted again.
+ * Cancelling a meeting deletes it, cascades its participants, and leaves the slot free to be
+ * deleted again.
  */
 class MeetingRepositoryCancelIT extends PostgresIntegrationTest {
 
-    @Autowired
-    private MeetingRepository meetings;
+    @Autowired private MeetingRepository meetings;
 
-    @Autowired
-    private SlotRepository slots;
+    @Autowired private SlotRepository slots;
 
     @Test
     void cancellingDeletesMeetingCascadesParticipantsAndFreesSlot() {
         Caller caller = createCaller();
         SlotId slotId = insertSlot(caller.calendarId(), SlotStatus.BUSY);
-        Meeting meeting = Meeting.create(
-                slotId,
-                "Standup",
-                null,
-                List.of(new Participant("Ada", "ada@example.com"), new Participant("Grace", null)),
-                OffsetDateTime.now(ZoneOffset.UTC));
+        Meeting meeting =
+                Meeting.create(
+                        slotId,
+                        "Standup",
+                        null,
+                        List.of(
+                                new Participant("Ada", "ada@example.com"),
+                                new Participant("Grace", null)),
+                        OffsetDateTime.now(ZoneOffset.UTC));
         meetings.save(meeting);
 
         meetings.deleteBySlotId(slotId);
 
         assertThat(meetings.findBySlotId(slotId)).isEmpty();
-        int remainingParticipants = dsl.fetchCount(MeetingParticipants.MEETING_PARTICIPANTS
-                .where(MeetingParticipants.MEETING_PARTICIPANTS.MEETING_ID.eq(meeting.id().value())));
+        int remainingParticipants =
+                dsl.fetchCount(
+                        MeetingParticipants.MEETING_PARTICIPANTS.where(
+                                MeetingParticipants.MEETING_PARTICIPANTS.MEETING_ID.eq(
+                                        meeting.id().value())));
         assertThat(remainingParticipants).isZero();
 
         TimeSlot slot = slots.findByIdAndCalendarId(slotId, caller.calendarId()).orElseThrow();

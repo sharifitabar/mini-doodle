@@ -1,14 +1,15 @@
 package com.minidoodle.calendar.adapter.in.web;
 
 import com.minidoodle.support.PostgresIntegrationTest;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -20,17 +21,17 @@ class SlotControllerCreateIT extends PostgresIntegrationTest {
 
     private static final String HEADER = "X-User-Id";
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
     @Test
     void createsSlotWithDefaultFreeStatus() throws Exception {
         Caller caller = createCaller();
 
-        mockMvc.perform(post("/api/v1/slots")
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(60, 30)))
+        mockMvc.perform(
+                        post("/api/v1/slots")
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body(60, 30)))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andExpect(jsonPath("$.id").isNotEmpty())
@@ -42,27 +43,30 @@ class SlotControllerCreateIT extends PostgresIntegrationTest {
 
     @Test
     void rejectsMissingCallerHeader() throws Exception {
-        mockMvc.perform(post("/api/v1/slots")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(60, 30)))
+        mockMvc.perform(
+                        post("/api/v1/slots")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body(60, 30)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void rejectsMalformedCallerHeader() throws Exception {
-        mockMvc.perform(post("/api/v1/slots")
-                        .header(HEADER, "not-a-uuid")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(60, 30)))
+        mockMvc.perform(
+                        post("/api/v1/slots")
+                                .header(HEADER, "not-a-uuid")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body(60, 30)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void rejectsUnknownCaller() throws Exception {
-        mockMvc.perform(post("/api/v1/slots")
-                        .header(HEADER, java.util.UUID.randomUUID())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(60, 30)))
+        mockMvc.perform(
+                        post("/api/v1/slots")
+                                .header(HEADER, java.util.UUID.randomUUID())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body(60, 30)))
                 .andExpect(status().isForbidden());
     }
 
@@ -70,24 +74,28 @@ class SlotControllerCreateIT extends PostgresIntegrationTest {
     void rejectsInvalidDuration() throws Exception {
         Caller caller = createCaller();
 
-        mockMvc.perform(post("/api/v1/slots")
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(60, 0)))
+        mockMvc.perform(
+                        post("/api/v1/slots")
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body(60, 0)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void rejectsStartInThePast() throws Exception {
         Caller caller = createCaller();
-        String pastBody = """
+        String pastBody =
+                """
                 {"startAt":"%s","durationMinutes":30}
-                """.formatted(OffsetDateTime.now(ZoneOffset.UTC).minusDays(1).withNano(0));
+                """
+                        .formatted(OffsetDateTime.now(ZoneOffset.UTC).minusDays(1).withNano(0));
 
-        mockMvc.perform(post("/api/v1/slots")
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(pastBody))
+        mockMvc.perform(
+                        post("/api/v1/slots")
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(pastBody))
                 .andExpect(status().isBadRequest());
     }
 
@@ -95,27 +103,31 @@ class SlotControllerCreateIT extends PostgresIntegrationTest {
     void rejectsOverlappingSlot() throws Exception {
         Caller caller = createCaller();
 
-        mockMvc.perform(post("/api/v1/slots")
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(60, 60)))
+        mockMvc.perform(
+                        post("/api/v1/slots")
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body(60, 60)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/v1/slots")
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(90, 30)))
+        mockMvc.perform(
+                        post("/api/v1/slots")
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body(90, 30)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
     }
 
     private String body(long startOffsetMinutes, int durationMinutes) {
-        OffsetDateTime start = OffsetDateTime.now(ZoneOffset.UTC)
-                .plusDays(30)
-                .plusMinutes(startOffsetMinutes)
-                .withNano(0);
+        OffsetDateTime start =
+                OffsetDateTime.now(ZoneOffset.UTC)
+                        .plusDays(30)
+                        .plusMinutes(startOffsetMinutes)
+                        .withNano(0);
         return """
                 {"startAt":"%s","durationMinutes":%d}
-                """.formatted(start, durationMinutes);
+                """
+                .formatted(start, durationMinutes);
     }
 }

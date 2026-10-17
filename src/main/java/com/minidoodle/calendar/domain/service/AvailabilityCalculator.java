@@ -15,10 +15,10 @@ import java.util.List;
  * Framework-free domain service that turns the caller's slot occupancies into a single,
  * chronologically ordered list of disjoint intervals covering the requested frame exactly.
  *
- * <p>Each occupancy becomes a {@code FREE} or {@code BUSY} block clipped to the frame;
- * same-kind blocks that touch or overlap are coalesced; and the remaining time inside the
- * frame is filled with {@code UNALLOCATED} intervals. A frame with no blocks yields a
- * single {@code UNALLOCATED} interval spanning the whole frame.
+ * <p>Each occupancy becomes a {@code FREE} or {@code BUSY} block clipped to the frame; same-kind
+ * blocks that touch or overlap are coalesced; and the remaining time inside the frame is filled
+ * with {@code UNALLOCATED} intervals. A frame with no blocks yields a single {@code UNALLOCATED}
+ * interval spanning the whole frame.
  */
 public final class AvailabilityCalculator {
 
@@ -34,7 +34,13 @@ public final class AvailabilityCalculator {
             OffsetDateTime start = later(occupancy.range().start(), frame.start());
             OffsetDateTime end = earlier(occupancy.range().end(), frame.end());
             if (end.isAfter(start)) {
-                blocks.add(new Block(start, end, occupancy.isBusy() ? AvailabilityKind.BUSY : AvailabilityKind.FREE));
+                blocks.add(
+                        new Block(
+                                start,
+                                end,
+                                occupancy.isBusy()
+                                        ? AvailabilityKind.BUSY
+                                        : AvailabilityKind.FREE));
             }
         }
         return blocks;
@@ -45,7 +51,9 @@ public final class AvailabilityCalculator {
         for (Block block : sortedBlocks) {
             Block last = merged.isEmpty() ? null : merged.get(merged.size() - 1);
             if (last != null && last.kind() == block.kind() && !block.start().isAfter(last.end())) {
-                merged.set(merged.size() - 1, new Block(last.start(), later(last.end(), block.end()), last.kind()));
+                merged.set(
+                        merged.size() - 1,
+                        new Block(last.start(), later(last.end(), block.end()), last.kind()));
             } else {
                 merged.add(block);
             }
@@ -58,13 +66,16 @@ public final class AvailabilityCalculator {
         OffsetDateTime cursor = frame.start();
         for (Block block : blocks) {
             if (block.start().isAfter(cursor)) {
-                intervals.add(new AvailabilityInterval(cursor, block.start(), AvailabilityKind.UNALLOCATED));
+                intervals.add(
+                        new AvailabilityInterval(
+                                cursor, block.start(), AvailabilityKind.UNALLOCATED));
             }
             intervals.add(new AvailabilityInterval(block.start(), block.end(), block.kind()));
             cursor = block.end();
         }
         if (cursor.isBefore(frame.end())) {
-            intervals.add(new AvailabilityInterval(cursor, frame.end(), AvailabilityKind.UNALLOCATED));
+            intervals.add(
+                    new AvailabilityInterval(cursor, frame.end(), AvailabilityKind.UNALLOCATED));
         }
         return intervals;
     }
@@ -77,6 +88,5 @@ public final class AvailabilityCalculator {
         return a.isBefore(b) ? a : b;
     }
 
-    private record Block(OffsetDateTime start, OffsetDateTime end, AvailabilityKind kind) {
-    }
+    private record Block(OffsetDateTime start, OffsetDateTime end, AvailabilityKind kind) {}
 }

@@ -6,8 +6,8 @@ import com.minidoodle.calendar.domain.model.SlotId;
 import java.util.Optional;
 
 /**
- * Outbound port for persisting {@link Meeting} aggregates. Meetings are addressed
- * through their slot: a slot holds at most one meeting.
+ * Outbound port for persisting {@link Meeting} aggregates. Meetings are addressed through their
+ * slot: a slot holds at most one meeting.
  */
 public interface MeetingRepository {
 

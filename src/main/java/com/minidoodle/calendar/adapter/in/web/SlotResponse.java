@@ -12,5 +12,4 @@ public record SlotResponse(
         int durationMinutes,
         SlotStatus status,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt) {
-}
+        OffsetDateTime updatedAt) {}

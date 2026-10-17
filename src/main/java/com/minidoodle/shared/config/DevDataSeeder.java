@@ -2,6 +2,9 @@ package com.minidoodle.shared.config;
 
 import com.minidoodle.jooq.tables.Calendars;
 import com.minidoodle.jooq.tables.Users;
+
+import java.util.UUID;
+
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,11 +13,9 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
 /**
- * Seeds a demo user and calendar for local development and docker-compose so the API
- * can be exercised immediately. Disabled in tests. Idempotent.
+ * Seeds a demo user and calendar for local development and docker-compose so the API can be
+ * exercised immediately. Disabled in tests. Idempotent.
  */
 @Component
 @ConditionalOnProperty(name = "app.seed-demo-data", havingValue = "true")
@@ -45,6 +46,9 @@ class DevDataSeeder implements ApplicationRunner {
                 .onConflictDoNothing()
                 .execute();
 
-        log.info("Dev demo user ready: X-User-Id={} (calendarId={})", DEMO_USER_ID, DEMO_CALENDAR_ID);
+        log.info(
+                "Dev demo user ready: X-User-Id={} (calendarId={})",
+                DEMO_USER_ID,
+                DEMO_CALENDAR_ID);
     }
 }

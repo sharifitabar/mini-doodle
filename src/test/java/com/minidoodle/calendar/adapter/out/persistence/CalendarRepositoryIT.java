@@ -3,19 +3,19 @@ package com.minidoodle.calendar.adapter.out.persistence;
 import com.minidoodle.calendar.application.port.out.CalendarRepository;
 import com.minidoodle.calendar.domain.model.Calendar;
 import com.minidoodle.support.PostgresIntegrationTest;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The calendar row carries both created_at and updated_at; with no update operation yet the
- * two are equal on insert.
+ * The calendar row carries both created_at and updated_at; with no update operation yet the two are
+ * equal on insert.
  */
 class CalendarRepositoryIT extends PostgresIntegrationTest {
 
-    @Autowired
-    private CalendarRepository calendars;
+    @Autowired private CalendarRepository calendars;
 
     @Test
     void mapsCreatedAndUpdatedTimestamps() {

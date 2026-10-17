@@ -10,13 +10,15 @@ import java.util.List;
 
 final class MeetingWebMapper {
 
-    private MeetingWebMapper() {
-    }
+    private MeetingWebMapper() {}
 
     static BookMeetingCommand toCommand(SlotId slotId, BookMeetingRequest request) {
-        List<Participant> participants = request.participants().stream()
-                .map(participant -> new Participant(participant.name(), participant.email()))
-                .toList();
+        List<Participant> participants =
+                request.participants().stream()
+                        .map(
+                                participant ->
+                                        new Participant(participant.name(), participant.email()))
+                        .toList();
         return new BookMeetingCommand(slotId, request.title(), request.description(), participants);
     }
 
@@ -27,7 +29,10 @@ final class MeetingWebMapper {
                 meeting.title(),
                 meeting.description(),
                 meeting.participants().stream()
-                        .map(participant -> new ParticipantResponse(participant.name(), participant.email()))
+                        .map(
+                                participant ->
+                                        new ParticipantResponse(
+                                                participant.name(), participant.email()))
                         .toList(),
                 view.slotTimeRange().start(),
                 view.slotTimeRange().end(),

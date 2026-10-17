@@ -7,15 +7,16 @@ import com.minidoodle.calendar.domain.model.Participant;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.jooq.tables.MeetingParticipants;
 import com.minidoodle.jooq.tables.Meetings;
-import org.jooq.DSLContext;
-import org.jooq.Query;
-import org.springframework.stereotype.Repository;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.jooq.DSLContext;
+import org.jooq.Query;
+import org.springframework.stereotype.Repository;
 
 @Repository
 class JooqMeetingRepository implements MeetingRepository {
@@ -61,17 +62,18 @@ class JooqMeetingRepository implements MeetingRepository {
         List<Query> inserts = new ArrayList<>(participants.size());
         for (int position = 0; position < participants.size(); position++) {
             Participant participant = participants.get(position);
-            inserts.add(dsl.insertInto(MeetingParticipants.MEETING_PARTICIPANTS)
-                    .columns(
-                            MeetingParticipants.MEETING_PARTICIPANTS.MEETING_ID,
-                            MeetingParticipants.MEETING_PARTICIPANTS.POSITION,
-                            MeetingParticipants.MEETING_PARTICIPANTS.NAME,
-                            MeetingParticipants.MEETING_PARTICIPANTS.EMAIL)
-                    .values(
-                            meeting.id().value(),
-                            (short) position,
-                            participant.name(),
-                            participant.email()));
+            inserts.add(
+                    dsl.insertInto(MeetingParticipants.MEETING_PARTICIPANTS)
+                            .columns(
+                                    MeetingParticipants.MEETING_PARTICIPANTS.MEETING_ID,
+                                    MeetingParticipants.MEETING_PARTICIPANTS.POSITION,
+                                    MeetingParticipants.MEETING_PARTICIPANTS.NAME,
+                                    MeetingParticipants.MEETING_PARTICIPANTS.EMAIL)
+                            .values(
+                                    meeting.id().value(),
+                                    (short) position,
+                                    participant.name(),
+                                    participant.email()));
         }
         dsl.batch(inserts).execute();
     }
@@ -81,15 +83,18 @@ class JooqMeetingRepository implements MeetingRepository {
         return dsl.selectFrom(Meetings.MEETINGS)
                 .where(Meetings.MEETINGS.SLOT_ID.eq(slotId.value()))
                 .fetchOptional()
-                .map(record -> MeetingPersistenceMapper.toMeeting(
-                        record, loadParticipants(record.getId())));
+                .map(
+                        record ->
+                                MeetingPersistenceMapper.toMeeting(
+                                        record, loadParticipants(record.getId())));
     }
 
     @Override
     public boolean existsBySlotId(SlotId slotId) {
-        return dsl.fetchExists(dsl.selectOne()
-                .from(Meetings.MEETINGS)
-                .where(Meetings.MEETINGS.SLOT_ID.eq(slotId.value())));
+        return dsl.fetchExists(
+                dsl.selectOne()
+                        .from(Meetings.MEETINGS)
+                        .where(Meetings.MEETINGS.SLOT_ID.eq(slotId.value())));
     }
 
     @Override

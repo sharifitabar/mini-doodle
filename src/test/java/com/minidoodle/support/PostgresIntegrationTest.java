@@ -3,35 +3,35 @@ package com.minidoodle.support;
 import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.calendar.domain.model.UserId;
+import com.minidoodle.jooq.tables.Calendars;
 import com.minidoodle.jooq.tables.Meetings;
 import com.minidoodle.jooq.tables.TimeSlots;
-import com.minidoodle.jooq.tables.Calendars;
 import com.minidoodle.jooq.tables.Users;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.UUID;
+
 import org.jooq.DSLContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.UUID;
-
 /**
- * Base class for integration tests. Boots the full application context against a
- * throwaway PostgreSQL 16 container (started lazily by the Testcontainers JDBC driver
- * configured in {@code application-test.yml}) with Flyway migrations applied.
+ * Base class for integration tests. Boots the full application context against a throwaway
+ * PostgreSQL 16 container (started lazily by the Testcontainers JDBC driver configured in {@code
+ * application-test.yml}) with Flyway migrations applied.
  *
- * <p>Each test runs in a rolled-back transaction so tests stay isolated. Tests that need
- * committed data or genuine concurrency must not extend this class.
+ * <p>Each test runs in a rolled-back transaction so tests stay isolated. Tests that need committed
+ * data or genuine concurrency must not extend this class.
  */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 public abstract class PostgresIntegrationTest {
 
-    @Autowired
-    protected DSLContext dsl;
+    @Autowired protected DSLContext dsl;
 
     /** Creates a fresh user + calendar and returns the caller identity. */
     protected Caller createCaller() {
@@ -49,7 +49,8 @@ public abstract class PostgresIntegrationTest {
     }
 
     /** Inserts a slot directly and returns its id. */
-    protected UUID insertSlot(CalendarId calendarId, OffsetDateTime start, int durationMinutes, SlotStatus status) {
+    protected UUID insertSlot(
+            CalendarId calendarId, OffsetDateTime start, int durationMinutes, SlotStatus status) {
         UUID id = UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         dsl.insertInto(TimeSlots.TIME_SLOTS)
@@ -80,6 +81,5 @@ public abstract class PostgresIntegrationTest {
                 .execute();
     }
 
-    public record Caller(UserId userId, CalendarId calendarId) {
-    }
+    public record Caller(UserId userId, CalendarId calendarId) {}
 }

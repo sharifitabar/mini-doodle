@@ -7,6 +7,12 @@ import com.minidoodle.calendar.domain.model.TimeRange;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.jooq.tables.Calendars;
 import com.minidoodle.jooq.tables.Users;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.flywaydb.core.Flyway;
 import org.jooq.CloseableDSLContext;
 import org.jooq.impl.DSL;
@@ -15,16 +21,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.Optional;
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Proves slots are durably persisted: a slot written through one connection is still
- * readable through a brand-new connection (simulating a process/DataSource restart).
+ * Proves slots are durably persisted: a slot written through one connection is still readable
+ * through a brand-new connection (simulating a process/DataSource restart).
  */
 class SlotRepositoryPersistenceIT {
 
@@ -55,14 +56,16 @@ class SlotRepositoryPersistenceIT {
         TimeSlot created;
         try (CloseableDSLContext context = connect()) {
             SlotRepository repository = new JooqSlotRepository(context);
-            created = TimeSlot.create(CalendarId.of(calendarId), new TimeRange(now.plusDays(1), 60), now);
+            created =
+                    TimeSlot.create(
+                            CalendarId.of(calendarId), new TimeRange(now.plusDays(1), 60), now);
             repository.insert(created);
         }
 
         try (CloseableDSLContext context = connect()) {
             SlotRepository repository = new JooqSlotRepository(context);
-            Optional<TimeSlot> reloaded = repository.findByIdAndCalendarId(
-                    created.id(), CalendarId.of(calendarId));
+            Optional<TimeSlot> reloaded =
+                    repository.findByIdAndCalendarId(created.id(), CalendarId.of(calendarId));
 
             assertThat(reloaded).isPresent();
             assertThat(reloaded.get().id()).isEqualTo(created.id());

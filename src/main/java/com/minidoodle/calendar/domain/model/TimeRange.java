@@ -8,10 +8,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 /**
- * Immutable half-open time range {@code [start, end)} with a fixed duration in minutes.
- * The start is normalized to UTC and truncated to microsecond precision so that equality
- * and persistence are offset-independent and round-trip exactly (PostgreSQL timestamptz
- * stores microseconds).
+ * Immutable half-open time range {@code [start, end)} with a fixed duration in minutes. The start
+ * is normalized to UTC and truncated to microsecond precision so that equality and persistence are
+ * offset-independent and round-trip exactly (PostgreSQL timestamptz stores microseconds).
  */
 public record TimeRange(OffsetDateTime start, int durationMinutes) {
 
@@ -24,7 +23,8 @@ public record TimeRange(OffsetDateTime start, int durationMinutes) {
             throw new InvalidSlotException("durationMinutes must be positive");
         }
         if (durationMinutes > MAX_DURATION_MINUTES) {
-            throw new InvalidSlotException("durationMinutes must not exceed " + MAX_DURATION_MINUTES);
+            throw new InvalidSlotException(
+                    "durationMinutes must not exceed " + MAX_DURATION_MINUTES);
         }
     }
 

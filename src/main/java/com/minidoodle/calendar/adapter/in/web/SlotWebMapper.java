@@ -8,8 +8,7 @@ import java.util.List;
 
 final class SlotWebMapper {
 
-    private SlotWebMapper() {
-    }
+    private SlotWebMapper() {}
 
     static CreateSlotCommand toCommand(CreateSlotRequest request) {
         return new CreateSlotCommand(request.startAt(), request.durationMinutes());
@@ -27,9 +26,7 @@ final class SlotWebMapper {
     }
 
     static SlotPageResponse toResponse(SlotPage page) {
-        List<SlotResponse> items = page.items().stream()
-                .map(SlotWebMapper::toResponse)
-                .toList();
+        List<SlotResponse> items = page.items().stream().map(SlotWebMapper::toResponse).toList();
         return new SlotPageResponse(items, page.limit(), page.offset(), page.total());
     }
 }

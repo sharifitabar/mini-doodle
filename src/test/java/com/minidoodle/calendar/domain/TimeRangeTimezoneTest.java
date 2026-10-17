@@ -1,13 +1,14 @@
 package com.minidoodle.calendar.domain;
 
 import com.minidoodle.calendar.domain.model.TimeRange;
-import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,8 +20,8 @@ class TimeRangeTimezoneTest {
     void durationIsElapsedTimeAcrossSpringForwardTransition() {
         // Europe/Vienna springs forward on 2026-03-29 at 02:00 local (+01:00 -> +02:00).
         // A 60-minute slot starting just before the gap must still last 60 real minutes.
-        OffsetDateTime beforeGap = ZonedDateTime.of(2026, 3, 29, 1, 30, 0, 0, VIENNA)
-                .toOffsetDateTime();
+        OffsetDateTime beforeGap =
+                ZonedDateTime.of(2026, 3, 29, 1, 30, 0, 0, VIENNA).toOffsetDateTime();
 
         TimeRange range = new TimeRange(beforeGap, 60);
 
@@ -33,8 +34,8 @@ class TimeRangeTimezoneTest {
     @Test
     void durationIsElapsedTimeAcrossFallBackTransition() {
         // Europe/Vienna falls back on 2026-10-25 at 03:00 local (+02:00 -> +01:00).
-        OffsetDateTime beforeFold = ZonedDateTime.of(2026, 10, 25, 1, 30, 0, 0, VIENNA)
-                .toOffsetDateTime();
+        OffsetDateTime beforeFold =
+                ZonedDateTime.of(2026, 10, 25, 1, 30, 0, 0, VIENNA).toOffsetDateTime();
 
         TimeRange range = new TimeRange(beforeFold, 120);
 
@@ -44,8 +45,8 @@ class TimeRangeTimezoneTest {
 
     @Test
     void sameInstantInDifferentOffsetsIsTheSameRange() {
-        OffsetDateTime vienna = ZonedDateTime.of(2026, 6, 1, 10, 0, 0, 0, VIENNA)
-                .toOffsetDateTime();
+        OffsetDateTime vienna =
+                ZonedDateTime.of(2026, 6, 1, 10, 0, 0, 0, VIENNA).toOffsetDateTime();
         OffsetDateTime utc = vienna.withOffsetSameInstant(ZoneOffset.UTC);
 
         assertThat(new TimeRange(vienna, 45)).isEqualTo(new TimeRange(utc, 45));
@@ -53,8 +54,8 @@ class TimeRangeTimezoneTest {
 
     @Test
     void endUsesUtcWallClockAfterNormalization() {
-        OffsetDateTime vienna = ZonedDateTime.of(2026, 6, 1, 10, 0, 0, 0, VIENNA)
-                .toOffsetDateTime();
+        OffsetDateTime vienna =
+                ZonedDateTime.of(2026, 6, 1, 10, 0, 0, 0, VIENNA).toOffsetDateTime();
 
         TimeRange range = new TimeRange(vienna, 90);
 
@@ -66,7 +67,8 @@ class TimeRangeTimezoneTest {
     void startIsTruncatedToMicrosecondPrecision() {
         // PostgreSQL timestamptz stores microseconds; the domain must match so that a
         // range created in memory equals the one reloaded from the database.
-        OffsetDateTime withNanos = OffsetDateTime.of(2026, 6, 1, 10, 0, 0, 123_456_789, ZoneOffset.UTC);
+        OffsetDateTime withNanos =
+                OffsetDateTime.of(2026, 6, 1, 10, 0, 0, 123_456_789, ZoneOffset.UTC);
 
         TimeRange range = new TimeRange(withNanos, 30);
 

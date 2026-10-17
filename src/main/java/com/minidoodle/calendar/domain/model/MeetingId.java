@@ -4,8 +4,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Identity of a {@link Meeting}. A dedicated value object prevents mixing it up with
- * {@link SlotId}, {@link CalendarId}, or {@link UserId}.
+ * Identity of a {@link Meeting}. A dedicated value object prevents mixing it up with {@link
+ * SlotId}, {@link CalendarId}, or {@link UserId}.
  */
 public record MeetingId(UUID value) {
 

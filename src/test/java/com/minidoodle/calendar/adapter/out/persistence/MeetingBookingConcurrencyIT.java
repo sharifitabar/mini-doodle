@@ -2,7 +2,6 @@ package com.minidoodle.calendar.adapter.out.persistence;
 
 import com.minidoodle.calendar.application.port.out.MeetingRepository;
 import com.minidoodle.calendar.domain.exception.MeetingConflictException;
-import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.Meeting;
 import com.minidoodle.calendar.domain.model.Participant;
 import com.minidoodle.calendar.domain.model.SlotId;
@@ -11,12 +10,6 @@ import com.minidoodle.jooq.tables.Calendars;
 import com.minidoodle.jooq.tables.Meetings;
 import com.minidoodle.jooq.tables.TimeSlots;
 import com.minidoodle.jooq.tables.Users;
-import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -28,6 +21,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,11 +42,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("test")
 class MeetingBookingConcurrencyIT {
 
-    @Autowired
-    private DSLContext dsl;
+    @Autowired private DSLContext dsl;
 
-    @Autowired
-    private MeetingRepository meetings;
+    @Autowired private MeetingRepository meetings;
 
     private UUID userId;
     private UUID calendarId;
@@ -57,20 +55,17 @@ class MeetingBookingConcurrencyIT {
             return;
         }
         dsl.deleteFrom(Meetings.MEETINGS)
-                .where(Meetings.MEETINGS.SLOT_ID.in(
-                        dsl.select(TimeSlots.TIME_SLOTS.ID)
-                                .from(TimeSlots.TIME_SLOTS)
-                                .where(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId))))
+                .where(
+                        Meetings.MEETINGS.SLOT_ID.in(
+                                dsl.select(TimeSlots.TIME_SLOTS.ID)
+                                        .from(TimeSlots.TIME_SLOTS)
+                                        .where(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId))))
                 .execute();
         dsl.deleteFrom(TimeSlots.TIME_SLOTS)
                 .where(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId))
                 .execute();
-        dsl.deleteFrom(Calendars.CALENDARS)
-                .where(Calendars.CALENDARS.ID.eq(calendarId))
-                .execute();
-        dsl.deleteFrom(Users.USERS)
-                .where(Users.USERS.ID.eq(userId))
-                .execute();
+        dsl.deleteFrom(Calendars.CALENDARS).where(Calendars.CALENDARS.ID.eq(calendarId)).execute();
+        dsl.deleteFrom(Users.USERS).where(Users.USERS.ID.eq(userId)).execute();
     }
 
     @Test
@@ -94,16 +89,19 @@ class MeetingBookingConcurrencyIT {
         CountDownLatch go = new CountDownLatch(1);
         List<Future<Throwable>> futures = new ArrayList<>();
         for (Meeting meeting : List.of(first, second)) {
-            futures.add(pool.submit((Callable<Throwable>) () -> {
-                ready.countDown();
-                go.await();
-                try {
-                    meetings.save(meeting);
-                    return null;
-                } catch (Throwable error) {
-                    return error;
-                }
-            }));
+            futures.add(
+                    pool.submit(
+                            (Callable<Throwable>)
+                                    () -> {
+                                        ready.countDown();
+                                        go.await();
+                                        try {
+                                            meetings.save(meeting);
+                                            return null;
+                                        } catch (Throwable error) {
+                                            return error;
+                                        }
+                                    }));
         }
 
         ready.await();

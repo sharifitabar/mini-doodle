@@ -16,22 +16,21 @@ import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.calendar.domain.model.UserId;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 /**
- * Implements the meeting use cases. Each inbound port stays a separate interface so the web
- * adapter depends only on the operations it uses, while the implementations are grouped
- * here by the aggregate they act on.
+ * Implements the meeting use cases. Each inbound port stays a separate interface so the web adapter
+ * depends only on the operations it uses, while the implementations are grouped here by the
+ * aggregate they act on.
  */
 @Service
-class MeetingApplicationService implements
-        BookMeetingUseCase,
-        GetMeetingUseCase,
-        CancelMeetingUseCase {
+class MeetingApplicationService
+        implements BookMeetingUseCase, GetMeetingUseCase, CancelMeetingUseCase {
 
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
@@ -53,71 +52,97 @@ class MeetingApplicationService implements
     }
 
     /**
-     * Books a meeting in a single transaction: the slot must be owned by the caller and FREE,
-     * the meeting is inserted (the {@code uq_meetings_slot} constraint is the authoritative
-     * guard against double-booking), and the slot is marked BUSY.
+     * Books a meeting in a single transaction: the slot must be owned by the caller and FREE, the
+     * meeting is inserted (the {@code uq_meetings_slot} constraint is the authoritative guard
+     * against double-booking), and the slot is marked BUSY.
      */
     @Override
     @Transactional
     public MeetingView bookMeeting(UserId caller, BookMeetingCommand command) {
-        return metrics.timeBook(() -> {
-            Calendar calendar = calendarResolver.resolve(caller);
-            TimeSlot slot = slots.findByIdAndCalendarId(command.slotId(), calendar.id())
-                    .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + command.slotId().value()));
-            if (slot.status() != SlotStatus.FREE) {
-                throw new MeetingConflictException("Slot is not available for booking");
-            }
+        return metrics.timeBook(
+                () -> {
+                    Calendar calendar = calendarResolver.resolve(caller);
+                    TimeSlot slot =
+                            slots.findByIdAndCalendarId(command.slotId(), calendar.id())
+                                    .orElseThrow(
+                                            () ->
+                                                    new SlotNotFoundException(
+                                                            "Slot not found: "
+                                                                    + command.slotId().value()));
+                    if (slot.status() != SlotStatus.FREE) {
+                        throw new MeetingConflictException("Slot is not available for booking");
+                    }
 
-            OffsetDateTime now = OffsetDateTime.now(clock);
-            Meeting meeting = Meeting.create(
-                    slot.id(), command.title(), command.description(), command.participants(), now);
-            meetings.save(meeting);
+                    OffsetDateTime now = OffsetDateTime.now(clock);
+                    Meeting meeting =
+                            Meeting.create(
+                                    slot.id(),
+                                    command.title(),
+                                    command.description(),
+                                    command.participants(),
+                                    now);
+                    meetings.save(meeting);
 
-            slot.changeStatus(SlotStatus.BUSY, now);
-            slots.update(slot);
+                    slot.changeStatus(SlotStatus.BUSY, now);
+                    slots.update(slot);
 
-            metrics.meetingBooked(meeting, slot);
-            return new MeetingView(meeting, slot.timeRange());
-        });
+                    metrics.meetingBooked(meeting, slot);
+                    return new MeetingView(meeting, slot.timeRange());
+                });
     }
 
     /**
-     * Reads the meeting on a slot owned by the caller. A slot that does not exist in the
-     * caller's calendar and a slot without a meeting are both reported as not found.
+     * Reads the meeting on a slot owned by the caller. A slot that does not exist in the caller's
+     * calendar and a slot without a meeting are both reported as not found.
      */
     @Override
     public MeetingView getMeeting(UserId caller, SlotId slotId) {
-        return metrics.timeGet(() -> {
-            Calendar calendar = calendarResolver.resolve(caller);
-            TimeSlot slot = slots.findByIdAndCalendarId(slotId, calendar.id())
-                    .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
-            Meeting meeting = meetings.findBySlotId(slotId)
-                    .orElseThrow(() -> new MeetingNotFoundException("No meeting on slot " + slotId.value()));
-            metrics.meetingViewed(slotId);
-            return new MeetingView(meeting, slot.timeRange());
-        });
+        return metrics.timeGet(
+                () -> {
+                    Calendar calendar = calendarResolver.resolve(caller);
+                    TimeSlot slot =
+                            slots.findByIdAndCalendarId(slotId, calendar.id())
+                                    .orElseThrow(
+                                            () ->
+                                                    new SlotNotFoundException(
+                                                            "Slot not found: " + slotId.value()));
+                    Meeting meeting =
+                            meetings.findBySlotId(slotId)
+                                    .orElseThrow(
+                                            () ->
+                                                    new MeetingNotFoundException(
+                                                            "No meeting on slot "
+                                                                    + slotId.value()));
+                    metrics.meetingViewed(slotId);
+                    return new MeetingView(meeting, slot.timeRange());
+                });
     }
 
     /**
-     * Cancels the meeting on a slot owned by the caller in a single transaction: the meeting
-     * (and its participants, by cascade) is deleted and the slot is returned to FREE.
+     * Cancels the meeting on a slot owned by the caller in a single transaction: the meeting (and
+     * its participants, by cascade) is deleted and the slot is returned to FREE.
      */
     @Override
     @Transactional
     public void cancelMeeting(UserId caller, SlotId slotId) {
-        metrics.timeCancel(() -> {
-            Calendar calendar = calendarResolver.resolve(caller);
-            TimeSlot slot = slots.findByIdAndCalendarId(slotId, calendar.id())
-                    .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
-            if (!meetings.existsBySlotId(slotId)) {
-                throw new MeetingNotFoundException("No meeting on slot " + slotId.value());
-            }
+        metrics.timeCancel(
+                () -> {
+                    Calendar calendar = calendarResolver.resolve(caller);
+                    TimeSlot slot =
+                            slots.findByIdAndCalendarId(slotId, calendar.id())
+                                    .orElseThrow(
+                                            () ->
+                                                    new SlotNotFoundException(
+                                                            "Slot not found: " + slotId.value()));
+                    if (!meetings.existsBySlotId(slotId)) {
+                        throw new MeetingNotFoundException("No meeting on slot " + slotId.value());
+                    }
 
-            meetings.deleteBySlotId(slotId);
-            slot.changeStatus(SlotStatus.FREE, OffsetDateTime.now(clock));
-            slots.update(slot);
+                    meetings.deleteBySlotId(slotId);
+                    slot.changeStatus(SlotStatus.FREE, OffsetDateTime.now(clock));
+                    slots.update(slot);
 
-            metrics.meetingCancelled(slotId);
-        });
+                    metrics.meetingCancelled(slotId);
+                });
     }
 }

@@ -1,16 +1,18 @@
 package com.minidoodle.calendar.adapter.in.web;
 
-import com.jayway.jsonpath.JsonPath;
 import com.minidoodle.support.PostgresIntegrationTest;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.UUID;
+import com.jayway.jsonpath.JsonPath;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -23,8 +25,7 @@ class SlotControllerModifyIT extends PostgresIntegrationTest {
 
     private static final String HEADER = "X-User-Id";
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
     @Test
     void updatesDurationKeepingStart() throws Exception {
@@ -32,15 +33,17 @@ class SlotControllerModifyIT extends PostgresIntegrationTest {
         OffsetDateTime start = baseStart();
         String slotId = createSlot(caller, start, 30);
 
-        String response = mockMvc.perform(patch("/api/v1/slots/{slotId}", slotId)
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"durationMinutes\":45}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.durationMinutes").value(45))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+        String response =
+                mockMvc.perform(
+                                patch("/api/v1/slots/{slotId}", slotId)
+                                        .header(HEADER, caller.userId().value())
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("{\"durationMinutes\":45}"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.durationMinutes").value(45))
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
 
         OffsetDateTime returnedStart = OffsetDateTime.parse(JsonPath.read(response, "$.startAt"));
         OffsetDateTime returnedEnd = OffsetDateTime.parse(JsonPath.read(response, "$.endAt"));
@@ -55,10 +58,11 @@ class SlotControllerModifyIT extends PostgresIntegrationTest {
         String slotId = createSlot(caller, start, 30);
         OffsetDateTime newStart = start.plusDays(1);
 
-        mockMvc.perform(patch("/api/v1/slots/{slotId}", slotId)
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"startAt\":\"%s\"}".formatted(newStart)))
+        mockMvc.perform(
+                        patch("/api/v1/slots/{slotId}", slotId)
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"startAt\":\"%s\"}".formatted(newStart)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.durationMinutes").value(30))
                 .andExpect(jsonPath("$.startAt").value(newStart.toString()));
@@ -69,10 +73,11 @@ class SlotControllerModifyIT extends PostgresIntegrationTest {
         Caller caller = createCaller();
         String slotId = createSlot(caller, baseStart(), 30);
 
-        mockMvc.perform(patch("/api/v1/slots/{slotId}", slotId)
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"durationMinutes\":0}"))
+        mockMvc.perform(
+                        patch("/api/v1/slots/{slotId}", slotId)
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"durationMinutes\":0}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -82,10 +87,11 @@ class SlotControllerModifyIT extends PostgresIntegrationTest {
         String slotId = createSlot(caller, baseStart(), 30);
         OffsetDateTime past = OffsetDateTime.now(ZoneOffset.UTC).minusDays(1);
 
-        mockMvc.perform(patch("/api/v1/slots/{slotId}", slotId)
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"startAt\":\"%s\"}".formatted(past)))
+        mockMvc.perform(
+                        patch("/api/v1/slots/{slotId}", slotId)
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"startAt\":\"%s\"}".formatted(past)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -93,10 +99,11 @@ class SlotControllerModifyIT extends PostgresIntegrationTest {
     void rejectsUnknownSlot() throws Exception {
         Caller caller = createCaller();
 
-        mockMvc.perform(patch("/api/v1/slots/{slotId}", UUID.randomUUID())
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"durationMinutes\":45}"))
+        mockMvc.perform(
+                        patch("/api/v1/slots/{slotId}", UUID.randomUUID())
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"durationMinutes\":45}"))
                 .andExpect(status().isNotFound());
     }
 
@@ -107,10 +114,11 @@ class SlotControllerModifyIT extends PostgresIntegrationTest {
         createSlot(caller, start, 60);
         String secondId = createSlot(caller, start.plusMinutes(120), 30);
 
-        mockMvc.perform(patch("/api/v1/slots/{slotId}", secondId)
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"startAt\":\"%s\"}".formatted(start.plusMinutes(30))))
+        mockMvc.perform(
+                        patch("/api/v1/slots/{slotId}", secondId)
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"startAt\":\"%s\"}".formatted(start.plusMinutes(30))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
     }
@@ -119,18 +127,23 @@ class SlotControllerModifyIT extends PostgresIntegrationTest {
         return OffsetDateTime.now(ZoneOffset.UTC).plusDays(30).withNano(0);
     }
 
-    private String createSlot(Caller caller, OffsetDateTime start, int durationMinutes) throws Exception {
-        String body = """
+    private String createSlot(Caller caller, OffsetDateTime start, int durationMinutes)
+            throws Exception {
+        String body =
+                """
                 {"startAt":"%s","durationMinutes":%d}
-                """.formatted(start, durationMinutes);
-        String response = mockMvc.perform(post("/api/v1/slots")
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                """
+                        .formatted(start, durationMinutes);
+        String response =
+                mockMvc.perform(
+                                post("/api/v1/slots")
+                                        .header(HEADER, caller.userId().value())
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(body))
+                        .andExpect(status().isCreated())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
         return JsonPath.read(response, "$.id");
     }
 }

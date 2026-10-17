@@ -12,5 +12,4 @@ public record MeetingResponse(
         OffsetDateTime startAt,
         OffsetDateTime endAt,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt) {
-}
+        OffsetDateTime updatedAt) {}

@@ -4,13 +4,13 @@ import com.minidoodle.calendar.domain.exception.InvalidMeetingException;
 import com.minidoodle.calendar.domain.model.Meeting;
 import com.minidoodle.calendar.domain.model.Participant;
 import com.minidoodle.calendar.domain.model.SlotId;
-import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,7 +37,8 @@ class MeetingTest {
 
     @Test
     void trimsTitle() {
-        assertThat(Meeting.create(SLOT, "  Title  ", null, List.of(ADA), NOW).title()).isEqualTo("Title");
+        assertThat(Meeting.create(SLOT, "  Title  ", null, List.of(ADA), NOW).title())
+                .isEqualTo("Title");
     }
 
     @Test
@@ -71,7 +72,8 @@ class MeetingTest {
 
     @Test
     void truncatesTimestampsToMicrosecondPrecision() {
-        OffsetDateTime withNanos = OffsetDateTime.of(2026, 11, 1, 8, 0, 0, 123_456_789, ZoneOffset.UTC);
+        OffsetDateTime withNanos =
+                OffsetDateTime.of(2026, 11, 1, 8, 0, 0, 123_456_789, ZoneOffset.UTC);
 
         Meeting meeting = Meeting.create(SLOT, "Title", null, List.of(ADA), withNanos);
 

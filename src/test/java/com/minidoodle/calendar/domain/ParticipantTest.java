@@ -2,6 +2,7 @@ package com.minidoodle.calendar.domain;
 
 import com.minidoodle.calendar.domain.exception.InvalidMeetingException;
 import com.minidoodle.calendar.domain.model.Participant;
+
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

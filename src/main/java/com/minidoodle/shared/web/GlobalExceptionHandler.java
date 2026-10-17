@@ -9,7 +9,7 @@ import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.exception.MeetingNotFoundException;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
 import com.minidoodle.calendar.domain.exception.SlotOverlapException;
-import jakarta.validation.ConstraintViolationException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-/**
- * Translates domain and request-binding failures into RFC 7807 problem details.
- */
+import jakarta.validation.ConstraintViolationException;
+
+/** Translates domain and request-binding failures into RFC 7807 problem details. */
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
@@ -30,7 +30,11 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidCallerIdException.class)
     ProblemDetail handleInvalidCaller(InvalidCallerIdException ex) {
-        return problem(HttpStatus.BAD_REQUEST, "invalid-caller", "Invalid caller identity", ex.getMessage());
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "invalid-caller",
+                "Invalid caller identity",
+                ex.getMessage());
     }
 
     @ExceptionHandler(InvalidSlotException.class)
@@ -40,12 +44,17 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidMeetingException.class)
     ProblemDetail handleInvalidMeeting(InvalidMeetingException ex) {
-        return problem(HttpStatus.BAD_REQUEST, "invalid-meeting", "Invalid meeting", ex.getMessage());
+        return problem(
+                HttpStatus.BAD_REQUEST, "invalid-meeting", "Invalid meeting", ex.getMessage());
     }
 
     @ExceptionHandler(InvalidTimeFrameException.class)
     ProblemDetail handleInvalidTimeFrame(InvalidTimeFrameException ex) {
-        return problem(HttpStatus.BAD_REQUEST, "invalid-time-frame", "Invalid time frame", ex.getMessage());
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "invalid-time-frame",
+                "Invalid time frame",
+                ex.getMessage());
     }
 
     @ExceptionHandler(ForbiddenAccessException.class)
@@ -60,58 +69,80 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(MeetingNotFoundException.class)
     ProblemDetail handleMeetingNotFound(MeetingNotFoundException ex) {
-        return problem(HttpStatus.NOT_FOUND, "meeting-not-found", "Meeting not found", ex.getMessage());
+        return problem(
+                HttpStatus.NOT_FOUND, "meeting-not-found", "Meeting not found", ex.getMessage());
     }
 
     @ExceptionHandler(SlotOverlapException.class)
     ProblemDetail handleOverlap(SlotOverlapException ex) {
-        return problem(HttpStatus.CONFLICT, "slot-overlap", "Slot overlaps an existing slot", ex.getMessage());
+        return problem(
+                HttpStatus.CONFLICT,
+                "slot-overlap",
+                "Slot overlaps an existing slot",
+                ex.getMessage());
     }
 
     @ExceptionHandler(MeetingConflictException.class)
     ProblemDetail handleMeetingConflict(MeetingConflictException ex) {
-        return problem(HttpStatus.CONFLICT, "meeting-conflict", "Meeting conflict", ex.getMessage());
+        return problem(
+                HttpStatus.CONFLICT, "meeting-conflict", "Meeting conflict", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
-        String detail = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + " " + error.getDefaultMessage())
-                .findFirst()
-                .orElse("Request validation failed");
+        String detail =
+                ex.getBindingResult().getFieldErrors().stream()
+                        .map(error -> error.getField() + " " + error.getDefaultMessage())
+                        .findFirst()
+                        .orElse("Request validation failed");
         return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed", detail);
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)
     ProblemDetail handleMissingHeader(MissingRequestHeaderException ex) {
-        return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed",
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "validation",
+                "Validation failed",
                 "Missing required header: " + ex.getHeaderName());
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     ProblemDetail handleMissingParameter(MissingServletRequestParameterException ex) {
-        return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed",
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "validation",
+                "Validation failed",
                 "Missing required parameter: " + ex.getParameterName());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed",
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "validation",
+                "Validation failed",
                 "Invalid value for '" + ex.getName() + "'");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ProblemDetail handleUnreadable(HttpMessageNotReadableException ex) {
-        return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed",
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "validation",
+                "Validation failed",
                 "Malformed or unreadable request body");
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
-        String detail = ex.getConstraintViolations().stream()
-                .map(violation -> violation.getPropertyPath() + " " + violation.getMessage())
-                .findFirst()
-                .orElse("Request validation failed");
+        String detail =
+                ex.getConstraintViolations().stream()
+                        .map(
+                                violation ->
+                                        violation.getPropertyPath() + " " + violation.getMessage())
+                        .findFirst()
+                        .orElse("Request validation failed");
         return problem(HttpStatus.BAD_REQUEST, "validation", "Validation failed", detail);
     }
 

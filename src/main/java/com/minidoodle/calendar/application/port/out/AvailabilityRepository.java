@@ -7,9 +7,8 @@ import com.minidoodle.calendar.domain.model.TimeFrame;
 import java.util.List;
 
 /**
- * Read-only port that loads the caller's slot occupancies overlapping a frame, together
- * with whether each slot holds a meeting. Availability is derived from this data and
- * nothing is written.
+ * Read-only port that loads the caller's slot occupancies overlapping a frame, together with
+ * whether each slot holds a meeting. Availability is derived from this data and nothing is written.
  */
 public interface AvailabilityRepository {
 

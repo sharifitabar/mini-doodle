@@ -2,10 +2,11 @@ package com.minidoodle.calendar.domain;
 
 import com.minidoodle.calendar.domain.exception.InvalidTimeFrameException;
 import com.minidoodle.calendar.domain.model.TimeFrame;
-import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,9 +17,10 @@ class TimeFrameTest {
 
     @Test
     void normalizesBoundsToUtc() {
-        TimeFrame frame = new TimeFrame(
-                OffsetDateTime.parse("2026-11-02T02:00:00+02:00"),
-                OffsetDateTime.parse("2026-11-02T03:00:00+02:00"));
+        TimeFrame frame =
+                new TimeFrame(
+                        OffsetDateTime.parse("2026-11-02T02:00:00+02:00"),
+                        OffsetDateTime.parse("2026-11-02T03:00:00+02:00"));
 
         assertThat(frame.start()).isEqualTo(OffsetDateTime.parse("2026-11-02T00:00:00Z"));
         assertThat(frame.end()).isEqualTo(OffsetDateTime.parse("2026-11-02T01:00:00Z"));

@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Meeting aggregate root. A meeting always belongs to exactly one {@link TimeSlot}
- * (one meeting per slot) and carries a title, an optional description, and one or more
- * participants. Framework-free: all invariants are enforced here.
+ * Meeting aggregate root. A meeting always belongs to exactly one {@link TimeSlot} (one meeting per
+ * slot) and carries a title, an optional description, and one or more participants. Framework-free:
+ * all invariants are enforced here.
  */
 public final class Meeting {
 
@@ -52,8 +52,10 @@ public final class Meeting {
         Objects.requireNonNull(now, "now must not be null");
         // PostgreSQL stores timestamptz at microsecond resolution; truncate so the in-memory
         // aggregate equals what is read back (nanosecond clocks, e.g. on Linux, otherwise differ).
-        OffsetDateTime utcNow = now.withOffsetSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS);
-        return new Meeting(MeetingId.random(), slotId, title, description, participants, utcNow, utcNow);
+        OffsetDateTime utcNow =
+                now.withOffsetSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS);
+        return new Meeting(
+                MeetingId.random(), slotId, title, description, participants, utcNow, utcNow);
     }
 
     public static Meeting of(
@@ -73,7 +75,8 @@ public final class Meeting {
         }
         String trimmed = title.strip();
         if (trimmed.length() > MAX_TITLE_LENGTH) {
-            throw new InvalidMeetingException("Meeting title must not exceed " + MAX_TITLE_LENGTH + " characters");
+            throw new InvalidMeetingException(
+                    "Meeting title must not exceed " + MAX_TITLE_LENGTH + " characters");
         }
         return trimmed;
     }
@@ -85,7 +88,9 @@ public final class Meeting {
         String trimmed = description.strip();
         if (trimmed.length() > MAX_DESCRIPTION_LENGTH) {
             throw new InvalidMeetingException(
-                    "Meeting description must not exceed " + MAX_DESCRIPTION_LENGTH + " characters");
+                    "Meeting description must not exceed "
+                            + MAX_DESCRIPTION_LENGTH
+                            + " characters");
         }
         return trimmed;
     }

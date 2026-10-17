@@ -11,8 +11,6 @@ import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.jooq.tables.MeetingParticipants;
 import com.minidoodle.jooq.tables.TimeSlots;
 import com.minidoodle.support.PostgresIntegrationTest;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -20,16 +18,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class MeetingRepositoryIT extends PostgresIntegrationTest {
 
-    @Autowired
-    private MeetingRepository meetings;
+    @Autowired private MeetingRepository meetings;
 
-    @Autowired
-    private SlotRepository slots;
+    @Autowired private SlotRepository slots;
 
     @Test
     void findBySlotIdReturnsMeetingWithParticipantsInOrder() {
@@ -45,10 +44,11 @@ class MeetingRepositoryIT extends PostgresIntegrationTest {
         assertThat(meeting.id()).isEqualTo(saved.id());
         assertThat(meeting.title()).isEqualTo("Sprint planning");
         assertThat(meeting.description()).isEqualTo("Kick off");
-        assertThat(meeting.participants()).containsExactly(
-                new Participant("Ada", "ada@example.com"),
-                new Participant("Grace", null),
-                new Participant(null, "guest@example.com"));
+        assertThat(meeting.participants())
+                .containsExactly(
+                        new Participant("Ada", "ada@example.com"),
+                        new Participant("Grace", null),
+                        new Participant(null, "guest@example.com"));
     }
 
     @Test
@@ -70,8 +70,11 @@ class MeetingRepositoryIT extends PostgresIntegrationTest {
         meetings.deleteBySlotId(slotId);
 
         assertThat(meetings.findBySlotId(slotId)).isEmpty();
-        int remainingParticipants = dsl.fetchCount(MeetingParticipants.MEETING_PARTICIPANTS
-                .where(MeetingParticipants.MEETING_PARTICIPANTS.MEETING_ID.eq(saved.id().value())));
+        int remainingParticipants =
+                dsl.fetchCount(
+                        MeetingParticipants.MEETING_PARTICIPANTS.where(
+                                MeetingParticipants.MEETING_PARTICIPANTS.MEETING_ID.eq(
+                                        saved.id().value())));
         assertThat(remainingParticipants).isZero();
     }
 

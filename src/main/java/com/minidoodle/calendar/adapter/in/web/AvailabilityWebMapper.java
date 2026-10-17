@@ -7,14 +7,13 @@ import java.util.List;
 
 final class AvailabilityWebMapper {
 
-    private AvailabilityWebMapper() {
-    }
+    private AvailabilityWebMapper() {}
 
     static AvailabilityResponse toResponse(Availability availability) {
-        List<AvailabilityIntervalResponse> intervals = availability.intervals().stream()
-                .map(AvailabilityWebMapper::toResponse)
-                .toList();
-        return new AvailabilityResponse(availability.frame().start(), availability.frame().end(), intervals);
+        List<AvailabilityIntervalResponse> intervals =
+                availability.intervals().stream().map(AvailabilityWebMapper::toResponse).toList();
+        return new AvailabilityResponse(
+                availability.frame().start(), availability.frame().end(), intervals);
     }
 
     private static AvailabilityIntervalResponse toResponse(AvailabilityInterval interval) {

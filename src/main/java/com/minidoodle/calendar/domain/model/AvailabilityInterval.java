@@ -7,11 +7,11 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 /**
- * A labeled half-open interval {@code [start, end)} within a requested frame. Bounds are
- * normalized to UTC and truncated to microsecond precision; the end must be strictly after
- * the start.
+ * A labeled half-open interval {@code [start, end)} within a requested frame. Bounds are normalized
+ * to UTC and truncated to microsecond precision; the end must be strictly after the start.
  */
-public record AvailabilityInterval(OffsetDateTime start, OffsetDateTime end, AvailabilityKind kind) {
+public record AvailabilityInterval(
+        OffsetDateTime start, OffsetDateTime end, AvailabilityKind kind) {
 
     public AvailabilityInterval {
         if (start == null || end == null) {

@@ -5,20 +5,20 @@ import com.minidoodle.calendar.domain.model.SlotOccupancy;
 import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.calendar.domain.model.TimeFrame;
 import com.minidoodle.support.PostgresIntegrationTest;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AvailabilityRepositoryIT extends PostgresIntegrationTest {
 
-    @Autowired
-    private AvailabilityRepository availability;
+    @Autowired private AvailabilityRepository availability;
 
     private static final OffsetDateTime BASE =
             OffsetDateTime.now(ZoneOffset.UTC).plusDays(1).withNano(0);
@@ -51,9 +51,7 @@ class AvailabilityRepositoryIT extends PostgresIntegrationTest {
         List<SlotOccupancy> found = availability.findOccupancies(caller.calendarId(), frame());
 
         assertThat(found).hasSize(2);
-        assertThat(found)
-                .extracting(SlotOccupancy::isBusy)
-                .containsExactly(true, true);
+        assertThat(found).extracting(SlotOccupancy::isBusy).containsExactly(true, true);
         assertThat(found.get(0).holdsMeeting()).isFalse();
         assertThat(found.get(1).holdsMeeting()).isTrue();
         assertThat(found.get(0).range().start()).isEqualTo(BASE);
@@ -82,8 +80,9 @@ class AvailabilityRepositoryIT extends PostgresIntegrationTest {
 
         List<SlotOccupancy> found = availability.findOccupancies(caller.calendarId(), frame());
 
-        assertThat(found).extracting(o -> o.range().start()).containsExactly(
-                BASE, BASE.plusHours(1), BASE.plusHours(2));
+        assertThat(found)
+                .extracting(o -> o.range().start())
+                .containsExactly(BASE, BASE.plusHours(1), BASE.plusHours(2));
     }
 
     private static TimeFrame frame() {

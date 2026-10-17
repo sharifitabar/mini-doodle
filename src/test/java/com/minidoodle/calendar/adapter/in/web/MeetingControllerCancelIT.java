@@ -4,15 +4,16 @@ import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.jooq.tables.TimeSlots;
 import com.minidoodle.support.PostgresIntegrationTest;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -24,12 +25,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MeetingControllerCancelIT extends PostgresIntegrationTest {
 
     private static final String HEADER = "X-User-Id";
-    private static final String BODY = """
+    private static final String BODY =
+            """
             {"title":"Standup","participants":[{"name":"Ada"}]}
             """;
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
     @Test
     void cancelRemovesMeetingAndFreesSlot() throws Exception {
@@ -37,10 +38,14 @@ class MeetingControllerCancelIT extends PostgresIntegrationTest {
         UUID slotId = insertFreeSlot(caller.calendarId());
         book(caller, slotId);
 
-        mockMvc.perform(delete("/api/v1/slots/{id}/meeting", slotId).header(HEADER, caller.userId().value()))
+        mockMvc.perform(
+                        delete("/api/v1/slots/{id}/meeting", slotId)
+                                .header(HEADER, caller.userId().value()))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/slots/{id}/meeting", slotId).header(HEADER, caller.userId().value()))
+        mockMvc.perform(
+                        get("/api/v1/slots/{id}/meeting", slotId)
+                                .header(HEADER, caller.userId().value()))
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/v1/slots/{id}", slotId).header(HEADER, caller.userId().value()))
                 .andExpect(status().isOk())
@@ -49,8 +54,9 @@ class MeetingControllerCancelIT extends PostgresIntegrationTest {
 
     @Test
     void rejectsUnknownCaller() throws Exception {
-        mockMvc.perform(delete("/api/v1/slots/{id}/meeting", UUID.randomUUID())
-                        .header(HEADER, UUID.randomUUID()))
+        mockMvc.perform(
+                        delete("/api/v1/slots/{id}/meeting", UUID.randomUUID())
+                                .header(HEADER, UUID.randomUUID()))
                 .andExpect(status().isForbidden());
     }
 
@@ -58,8 +64,9 @@ class MeetingControllerCancelIT extends PostgresIntegrationTest {
     void returnsNotFoundForMissingSlot() throws Exception {
         Caller caller = createCaller();
 
-        mockMvc.perform(delete("/api/v1/slots/{id}/meeting", UUID.randomUUID())
-                        .header(HEADER, caller.userId().value()))
+        mockMvc.perform(
+                        delete("/api/v1/slots/{id}/meeting", UUID.randomUUID())
+                                .header(HEADER, caller.userId().value()))
                 .andExpect(status().isNotFound());
     }
 
@@ -68,7 +75,9 @@ class MeetingControllerCancelIT extends PostgresIntegrationTest {
         Caller caller = createCaller();
         UUID slotId = insertFreeSlot(caller.calendarId());
 
-        mockMvc.perform(delete("/api/v1/slots/{id}/meeting", slotId).header(HEADER, caller.userId().value()))
+        mockMvc.perform(
+                        delete("/api/v1/slots/{id}/meeting", slotId)
+                                .header(HEADER, caller.userId().value()))
                 .andExpect(status().isNotFound());
     }
 
@@ -79,16 +88,18 @@ class MeetingControllerCancelIT extends PostgresIntegrationTest {
         UUID slotId = insertFreeSlot(owner.calendarId());
         book(owner, slotId);
 
-        mockMvc.perform(delete("/api/v1/slots/{id}/meeting", slotId)
-                        .header(HEADER, intruder.userId().value()))
+        mockMvc.perform(
+                        delete("/api/v1/slots/{id}/meeting", slotId)
+                                .header(HEADER, intruder.userId().value()))
                 .andExpect(status().isNotFound());
     }
 
     private void book(Caller caller, UUID slotId) throws Exception {
-        mockMvc.perform(post("/api/v1/slots/{id}/meeting", slotId)
-                        .header(HEADER, caller.userId().value())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(BODY))
+        mockMvc.perform(
+                        post("/api/v1/slots/{id}/meeting", slotId)
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(BODY))
                 .andExpect(status().isCreated());
     }
 
@@ -104,7 +115,14 @@ class MeetingControllerCancelIT extends PostgresIntegrationTest {
                         TimeSlots.TIME_SLOTS.STATUS,
                         TimeSlots.TIME_SLOTS.CREATED_AT,
                         TimeSlots.TIME_SLOTS.UPDATED_AT)
-                .values(id, calendarId.value(), now.plusDays(1), 60, SlotStatus.FREE.name(), now, now)
+                .values(
+                        id,
+                        calendarId.value(),
+                        now.plusDays(1),
+                        60,
+                        SlotStatus.FREE.name(),
+                        now,
+                        now)
                 .execute();
         return id;
     }

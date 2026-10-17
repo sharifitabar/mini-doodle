@@ -9,9 +9,10 @@ import com.minidoodle.calendar.domain.model.SlotOccupancy;
 import com.minidoodle.calendar.domain.model.TimeFrame;
 import com.minidoodle.calendar.domain.model.UserId;
 import com.minidoodle.calendar.domain.service.AvailabilityCalculator;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import org.springframework.stereotype.Service;
 
 @Service
 class AvailabilityApplicationService implements GetAvailabilityUseCase {
@@ -32,13 +33,14 @@ class AvailabilityApplicationService implements GetAvailabilityUseCase {
 
     @Override
     public Availability getAvailability(UserId caller, AvailabilityQuery query) {
-        return metrics.timeQuery(() -> {
-            TimeFrame frame = new TimeFrame(query.from(), query.to());
-            Calendar calendar = calendarResolver.resolve(caller);
-            List<SlotOccupancy> found = occupancies.findOccupancies(calendar.id(), frame);
-            Availability availability = calculator.calculate(frame, found);
-            metrics.recordQuery(availability);
-            return availability;
-        });
+        return metrics.timeQuery(
+                () -> {
+                    TimeFrame frame = new TimeFrame(query.from(), query.to());
+                    Calendar calendar = calendarResolver.resolve(caller);
+                    List<SlotOccupancy> found = occupancies.findOccupancies(calendar.id(), frame);
+                    Availability availability = calculator.calculate(frame, found);
+                    metrics.recordQuery(availability);
+                    return availability;
+                });
     }
 }

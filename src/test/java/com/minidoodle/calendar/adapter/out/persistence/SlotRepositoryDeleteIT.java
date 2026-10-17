@@ -4,18 +4,18 @@ import com.minidoodle.calendar.application.port.out.SlotRepository;
 import com.minidoodle.calendar.domain.model.TimeRange;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.support.PostgresIntegrationTest;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SlotRepositoryDeleteIT extends PostgresIntegrationTest {
 
-    @Autowired
-    private SlotRepository slots;
+    @Autowired private SlotRepository slots;
 
     @Test
     void deletesSlotScopedToCalendar() {
@@ -40,8 +40,9 @@ class SlotRepositoryDeleteIT extends PostgresIntegrationTest {
 
     private TimeSlot insertSlot(Caller caller) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-        TimeSlot slot = TimeSlot.create(
-                caller.calendarId(), new TimeRange(now.plusDays(1).withNano(0), 30), now);
+        TimeSlot slot =
+                TimeSlot.create(
+                        caller.calendarId(), new TimeRange(now.plusDays(1).withNano(0), 30), now);
         slots.insert(slot);
         return slot;
     }

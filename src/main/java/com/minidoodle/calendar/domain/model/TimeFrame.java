@@ -8,11 +8,11 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Immutable half-open time frame {@code [start, end)} the availability query is computed
- * over. Both bounds are required, the end must be strictly after the start, and the span
- * must not exceed {@link #MAX_SPAN}. Bounds are normalized to UTC and truncated to
- * microsecond precision, matching {@link TimeRange}, so interval boundaries compare and
- * serialize identically to the slot data they are derived from.
+ * Immutable half-open time frame {@code [start, end)} the availability query is computed over. Both
+ * bounds are required, the end must be strictly after the start, and the span must not exceed
+ * {@link #MAX_SPAN}. Bounds are normalized to UTC and truncated to microsecond precision, matching
+ * {@link TimeRange}, so interval boundaries compare and serialize identically to the slot data they
+ * are derived from.
  */
 public record TimeFrame(OffsetDateTime start, OffsetDateTime end) {
 
@@ -28,7 +28,8 @@ public record TimeFrame(OffsetDateTime start, OffsetDateTime end) {
             throw new InvalidTimeFrameException("end must be after start");
         }
         if (Duration.between(start, end).compareTo(MAX_SPAN) > 0) {
-            throw new InvalidTimeFrameException("frame must not exceed " + MAX_SPAN.toDays() + " days");
+            throw new InvalidTimeFrameException(
+                    "frame must not exceed " + MAX_SPAN.toDays() + " days");
         }
     }
 }

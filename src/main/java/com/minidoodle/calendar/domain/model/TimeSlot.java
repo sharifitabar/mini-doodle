@@ -7,10 +7,10 @@ import java.time.ZoneOffset;
 import java.util.Objects;
 
 /**
- * Time slot aggregate. Owns the invariants of a single bookable slot:
- * a positive, bounded duration, a start instant in the future relative to the
- * caller's clock, and an availability status. Cross-slot non-overlap is enforced
- * by the database exclusion constraint (the only place with a global view).
+ * Time slot aggregate. Owns the invariants of a single bookable slot: a positive, bounded duration,
+ * a start instant in the future relative to the caller's clock, and an availability status.
+ * Cross-slot non-overlap is enforced by the database exclusion constraint (the only place with a
+ * global view).
  */
 public final class TimeSlot {
 
@@ -40,7 +40,8 @@ public final class TimeSlot {
         Objects.requireNonNull(now, "now must not be null");
         requireFutureStart(timeRange, now);
         OffsetDateTime utcNow = now.withOffsetSameInstant(ZoneOffset.UTC);
-        return new TimeSlot(SlotId.random(), calendarId, timeRange, SlotStatus.FREE, utcNow, utcNow);
+        return new TimeSlot(
+                SlotId.random(), calendarId, timeRange, SlotStatus.FREE, utcNow, utcNow);
     }
 
     public static TimeSlot of(

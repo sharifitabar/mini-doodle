@@ -8,34 +8,35 @@ import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.jooq.tables.TimeSlots;
 import com.minidoodle.support.PostgresIntegrationTest;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MeetingRepositoryReadIT extends PostgresIntegrationTest {
 
-    @Autowired
-    private MeetingRepository meetings;
+    @Autowired private MeetingRepository meetings;
 
     @Test
     void findBySlotIdReturnsMeetingWithAllFieldsAndParticipantsInOrder() {
         Caller caller = createCaller();
         SlotId slotId = insertSlot(caller.calendarId());
-        Meeting saved = Meeting.create(
-                slotId,
-                "Design review",
-                "Review the new booking flow",
-                List.of(
-                        new Participant("Ada", "ada@example.com"),
-                        new Participant("Grace", null),
-                        new Participant(null, "guest@example.com")),
-                OffsetDateTime.now(ZoneOffset.UTC));
+        Meeting saved =
+                Meeting.create(
+                        slotId,
+                        "Design review",
+                        "Review the new booking flow",
+                        List.of(
+                                new Participant("Ada", "ada@example.com"),
+                                new Participant("Grace", null),
+                                new Participant(null, "guest@example.com")),
+                        OffsetDateTime.now(ZoneOffset.UTC));
         meetings.save(saved);
 
         Meeting reloaded = meetings.findBySlotId(slotId).orElseThrow();
@@ -44,10 +45,11 @@ class MeetingRepositoryReadIT extends PostgresIntegrationTest {
         assertThat(reloaded.slotId()).isEqualTo(saved.slotId());
         assertThat(reloaded.title()).isEqualTo("Design review");
         assertThat(reloaded.description()).isEqualTo("Review the new booking flow");
-        assertThat(reloaded.participants()).containsExactly(
-                new Participant("Ada", "ada@example.com"),
-                new Participant("Grace", null),
-                new Participant(null, "guest@example.com"));
+        assertThat(reloaded.participants())
+                .containsExactly(
+                        new Participant("Ada", "ada@example.com"),
+                        new Participant("Grace", null),
+                        new Participant(null, "guest@example.com"));
         assertThat(reloaded.createdAt().toInstant()).isEqualTo(saved.createdAt().toInstant());
         assertThat(reloaded.updatedAt().toInstant()).isEqualTo(saved.updatedAt().toInstant());
     }
@@ -72,7 +74,14 @@ class MeetingRepositoryReadIT extends PostgresIntegrationTest {
                         TimeSlots.TIME_SLOTS.STATUS,
                         TimeSlots.TIME_SLOTS.CREATED_AT,
                         TimeSlots.TIME_SLOTS.UPDATED_AT)
-                .values(id, calendarId.value(), now.plusDays(1), 60, SlotStatus.FREE.name(), now, now)
+                .values(
+                        id,
+                        calendarId.value(),
+                        now.plusDays(1),
+                        60,
+                        SlotStatus.FREE.name(),
+                        now,
+                        now)
                 .execute();
         return SlotId.of(id);
     }

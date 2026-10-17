@@ -3,9 +3,9 @@ package com.minidoodle.calendar.domain.model;
 import java.util.Objects;
 
 /**
- * One of the caller's slots that overlaps a queried frame, with the facts needed to
- * classify it. A slot counts as busy when it is explicitly marked {@link SlotStatus#BUSY}
- * or holds a meeting; otherwise it counts as free.
+ * One of the caller's slots that overlaps a queried frame, with the facts needed to classify it. A
+ * slot counts as busy when it is explicitly marked {@link SlotStatus#BUSY} or holds a meeting;
+ * otherwise it counts as free.
  */
 public record SlotOccupancy(TimeRange range, SlotStatus status, boolean holdsMeeting) {
 

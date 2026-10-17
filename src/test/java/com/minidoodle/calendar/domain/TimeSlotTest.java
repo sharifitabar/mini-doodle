@@ -5,10 +5,11 @@ import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.calendar.domain.model.TimeRange;
 import com.minidoodle.calendar.domain.model.TimeSlot;
-import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

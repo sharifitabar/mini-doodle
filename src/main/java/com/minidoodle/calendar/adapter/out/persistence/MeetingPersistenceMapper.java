@@ -11,8 +11,7 @@ import java.util.List;
 
 final class MeetingPersistenceMapper {
 
-    private MeetingPersistenceMapper() {
-    }
+    private MeetingPersistenceMapper() {}
 
     static Meeting toMeeting(MeetingsRecord record, List<Participant> participants) {
         return Meeting.of(

@@ -3,18 +3,20 @@ package com.minidoodle.calendar.application.service;
 import com.minidoodle.calendar.domain.model.Meeting;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeSlot;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
+
+import java.util.function.Supplier;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.function.Supplier;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 /**
- * Central place for meeting-operation observability: Micrometer counters/timers plus a
- * structured (key=value) log convention. Kept out of the domain and persisted adapters.
+ * Central place for meeting-operation observability: Micrometer counters/timers plus a structured
+ * (key=value) log convention. Kept out of the domain and persisted adapters.
  */
 @Component
 class MeetingMetrics {
@@ -29,24 +31,39 @@ class MeetingMetrics {
     private final Timer cancelTimer;
 
     MeetingMetrics(MeterRegistry registry) {
-        this.booked = Counter.builder("minidoodle.meetings.booked")
-                .description("Number of meetings booked").register(registry);
-        this.viewed = Counter.builder("minidoodle.meetings.viewed")
-                .description("Number of meeting retrievals").register(registry);
-        this.cancelled = Counter.builder("minidoodle.meetings.cancelled")
-                .description("Number of meetings cancelled").register(registry);
-        this.bookTimer = Timer.builder("minidoodle.meetings.book")
-                .description("Latency of booking a meeting").register(registry);
-        this.getTimer = Timer.builder("minidoodle.meetings.get")
-                .description("Latency of retrieving a meeting").register(registry);
-        this.cancelTimer = Timer.builder("minidoodle.meetings.cancel")
-                .description("Latency of cancelling a meeting").register(registry);
+        this.booked =
+                Counter.builder("minidoodle.meetings.booked")
+                        .description("Number of meetings booked")
+                        .register(registry);
+        this.viewed =
+                Counter.builder("minidoodle.meetings.viewed")
+                        .description("Number of meeting retrievals")
+                        .register(registry);
+        this.cancelled =
+                Counter.builder("minidoodle.meetings.cancelled")
+                        .description("Number of meetings cancelled")
+                        .register(registry);
+        this.bookTimer =
+                Timer.builder("minidoodle.meetings.book")
+                        .description("Latency of booking a meeting")
+                        .register(registry);
+        this.getTimer =
+                Timer.builder("minidoodle.meetings.get")
+                        .description("Latency of retrieving a meeting")
+                        .register(registry);
+        this.cancelTimer =
+                Timer.builder("minidoodle.meetings.cancel")
+                        .description("Latency of cancelling a meeting")
+                        .register(registry);
     }
 
     void meetingBooked(Meeting meeting, TimeSlot slot) {
         booked.increment();
-        log.info("event=meeting.booked meetingId={} slotId={} calendarId={} participants={}",
-                meeting.id().value(), slot.id().value(), slot.calendarId().value(),
+        log.info(
+                "event=meeting.booked meetingId={} slotId={} calendarId={} participants={}",
+                meeting.id().value(),
+                slot.id().value(),
+                slot.calendarId().value(),
                 meeting.participants().size());
     }
 

@@ -12,8 +12,7 @@ import com.minidoodle.jooq.tables.records.TimeSlotsRecord;
 
 final class PersistenceMapper {
 
-    private PersistenceMapper() {
-    }
+    private PersistenceMapper() {}
 
     static TimeSlot toTimeSlot(TimeSlotsRecord record) {
         return TimeSlot.of(
