@@ -14,6 +14,8 @@ buildscript {
 
 plugins {
     java
+    checkstyle
+    id("com.diffplug.spotless") version "8.10.4"
     id("org.springframework.boot") version "3.5.16"
     id("io.spring.dependency-management") version "1.1.7"
 }
@@ -54,6 +56,42 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// --- Style gate (feature 005-checkstyle-enforcement) -------------------------
+// Linting and formatting run as part of `check`, hence as part of `build`, hence as part
+// of the `./gradlew build` that .githooks/pre-push and CI already run. No new hook or CI
+// wiring is introduced for this.
+//
+// Division of duties: Spotless owns formatting (indentation, wrapping, whitespace, import
+// order, unused imports). Checkstyle owns non-formatting rules (naming, brace/block and
+// bug-pattern conventions). See config/checkstyle/checkstyle.xml for the curated ruleset.
+checkstyle {
+    toolVersion = "14.3.0"
+    configFile = file("config/checkstyle/checkstyle.xml")
+    isIgnoreFailures = false
+    maxErrors = 0
+    maxWarnings = 0
+}
+
+// The jOOQ output under build/generated-sources/jooq is machine-generated and is added to
+// the compile sources by the sourceSets block below; it must never be linted or reformatted.
+tasks.withType<Checkstyle>().configureEach {
+    exclude("**/com/minidoodle/jooq/**")
+}
+
+spotless {
+    java {
+        // Explicit targets keep the generated jOOQ sources out of the formatter's reach.
+        target("src/main/java/**/*.java", "src/test/java/**/*.java")
+        // AOSP variant: 4-space indentation and a 100-column limit, matching the existing
+        // codebase style. The formatter version is pinned so results are reproducible.
+        googleJavaFormat("1.36.0").aosp()
+        removeUnusedImports()
+        importOrder("com.minidoodle", "java", "javax", "org", "com", "", "\\#")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 val jooqGeneratedDir = layout.buildDirectory.dir("generated-sources/jooq")

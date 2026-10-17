@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+  Curated, non-formatting lint ruleset for mini-doodle (feature 005-checkstyle-enforcement).
+
+  Formatting (indentation, line wrapping/length, whitespace, trailing whitespace, final
+  newline, import order, unused imports) is owned by Spotless + google-java-format (AOSP)
+  and configured in build.gradle.kts. Those concerns are deliberately absent here so the
+  two tools can never contradict each other: no LineLength, no whitespace checks, no
+  FileTabCharacter, no NewlineAtEndOfFile, no ImportOrder/CustomImportOrder, and no
+  UnusedImports.
+
+  Every rule below is AST-based, so all of them nest under TreeWalker; Checker only carries
+  the shared properties. Severity is "error" so any violation fails the build
+  (checkstyleMain/checkstyleTest run as part of `check`, and therefore as part of the
+  `./gradlew build` that the pre-push hook and CI both run).
+-->
+<module name="Checker">
+  <property name="severity" value="error"/>
+  <property name="charset" value="UTF-8"/>
+
+  <module name="TreeWalker">
+    <!-- File shape and imports -->
+    <module name="OuterTypeFilename"/>
+    <module name="AvoidStarImport"/>
+    <module name="RedundantImport"/>
+
+    <!-- Block conventions: google-java-format does not add braces, so NeedBraces adds value
+         without duplicating any formatting concern the formatter owns. -->
+    <module name="NeedBraces"/>
+    <module name="EmptyBlock">
+      <property name="option" value="TEXT"/>
+      <property name="tokens" value="LITERAL_CATCH,LITERAL_TRY,LITERAL_IF,LITERAL_ELSE"/>
+    </module>
+    <module name="OneTopLevelClass"/>
+    <module name="NoFinalizer"/>
+
+    <!-- Bug patterns -->
+    <module name="EmptyStatement"/>
+    <module name="MissingSwitchDefault"/>
+    <module name="FallThrough"/>
+    <module name="DefaultComesLast"/>
+    <module name="EqualsHashCode"/>
+    <module name="StringLiteralEquality"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="InnerAssignment"/>
+
+    <!-- Naming -->
+    <module name="PackageName"/>
+    <module name="TypeName"/>
+    <module name="MethodName"/>
+    <!-- The default pattern rejects the conventional lowercase `log` logger name used by
+         SLF4J; allow it explicitly so the check still catches genuinely misnamed constants. -->
+    <module name="ConstantName">
+      <property name="format" value="^(log|[A-Z][A-Z0-9]*(_[A-Z0-9]+)*)$"/>
+    </module>
+    <module name="StaticVariableName"/>
+    <module name="MemberName"/>
+    <module name="ParameterName"/>
+    <module name="LocalVariableName"/>
+    <!-- Checkstyle 12+ replaced the old TypeParameterName check with per-declaration
+         variants; all four are included so every type parameter is still covered. -->
+    <module name="ClassTypeParameterName"/>
+    <module name="InterfaceTypeParameterName"/>
+    <module name="RecordTypeParameterName"/>
+    <module name="MethodTypeParameterName"/>
+    <module name="CatchParameterName"/>
+  </module>
+</module>

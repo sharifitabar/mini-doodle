@@ -148,6 +148,30 @@ running.
 ./gradlew build     # full build (codegen + tests + boot jar)
 ```
 
+## Code style
+
+Formatting and linting are part of the standard build, so they are enforced by whatever runs
+`./gradlew build` — including the pre-push hook and CI. No separate tooling step is needed.
+
+- **Formatting** — Spotless with google-java-format's **AOSP** variant (4-space indent, 100-column
+  limit), applied only to `src/main/java` and `src/test/java`. It owns indentation, line wrapping,
+  whitespace, import order, and unused-import removal.
+- **Linting** — Checkstyle with a curated ruleset in
+  [`config/checkstyle/checkstyle.xml`](config/checkstyle/checkstyle.xml): naming, brace/block, and
+  bug-pattern rules. It deliberately contains no formatting rules, so the two tools can never
+  contradict each other.
+
+```bash
+./gradlew spotlessApply            # reformat the sources
+./gradlew spotlessCheck checkstyleMain checkstyleTest   # check only (fails on any violation)
+./gradlew check                    # both, as part of the normal check lifecycle
+```
+
+The jOOQ output under `build/generated-sources` is machine-generated and is excluded from both
+tools. The one-time reformat that introduced the gate is recorded in
+[`.git-blame-ignore-revs`](.git-blame-ignore-revs) so it does not pollute `git blame`; enable it with
+`git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+
 ## Design decisions
 
 - **Intervals as `tstzrange`**: overlap is a first-class DB concern enforced by a GIST exclusion

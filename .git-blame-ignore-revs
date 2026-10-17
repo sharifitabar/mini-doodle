@@ -1,0 +1,13 @@
+# Revisions to ignore when running `git blame`, i.e. pure formatting changes that
+# carry no semantic information.
+#
+# Usage:
+#   git blame --ignore-revs-file .git-blame-ignore-revs <file>
+#
+# To make this the default for the repository:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Add a commit SHA below only when the commit is whitespace/style-only.
+
+# style: reformat sources with google-java-format AOSP
+4b7ca8d
