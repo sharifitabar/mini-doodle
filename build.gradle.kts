@@ -51,6 +51,16 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
+    // Architecture conformance rules (feature 006-quality-gates). Test scope only: the rules run
+    // as ordinary JUnit 5 tests, so they ride the existing `test` task inside `check`.
+    //
+    // Pinned to 1.4.1, not the newest. ArchUnit 1.5.x is built against junit-platform-engine
+    // 1.14.4, which drags junit-bom 5.14.4 into the graph and resolves junit-platform-launcher to
+    // 1.14.4 while Spring Boot's dependency management keeps junit-platform-engine at 1.12.2. The
+    // mismatch breaks the Gradle 8.14.3 test worker (NoClassDefFoundError:
+    // org/junit/platform/engine/OutputDirectoryCreator). 1.4.1 needs junit-platform-engine 1.12.2,
+    // which is exactly the Boot-managed version, so the graph stays consistent.
+    testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
