@@ -1,15 +1,14 @@
 package com.minidoodle.calendar.application.service;
 
-import com.minidoodle.calendar.application.port.in.ChangeSlotStatusUseCase;
 import com.minidoodle.calendar.application.port.in.CreateSlotCommand;
 import com.minidoodle.calendar.application.port.in.CreateSlotUseCase;
 import com.minidoodle.calendar.application.port.in.DeleteSlotUseCase;
 import com.minidoodle.calendar.application.port.in.GetSlotUseCase;
 import com.minidoodle.calendar.application.port.in.ListSlotsUseCase;
-import com.minidoodle.calendar.application.port.in.ModifySlotCommand;
-import com.minidoodle.calendar.application.port.in.ModifySlotUseCase;
 import com.minidoodle.calendar.application.port.in.SlotPage;
 import com.minidoodle.calendar.application.port.in.SlotQuery;
+import com.minidoodle.calendar.application.port.in.UpdateSlotCommand;
+import com.minidoodle.calendar.application.port.in.UpdateSlotUseCase;
 import com.minidoodle.calendar.application.port.out.MeetingRepository;
 import com.minidoodle.calendar.application.port.out.SlotFilter;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
@@ -17,11 +16,11 @@ import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
 import com.minidoodle.calendar.domain.model.Calendar;
 import com.minidoodle.calendar.domain.model.SlotId;
-import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.calendar.domain.model.TimeRange;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.calendar.domain.model.UserId;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -37,8 +36,7 @@ class SlotApplicationService implements
         CreateSlotUseCase,
         GetSlotUseCase,
         ListSlotsUseCase,
-        ChangeSlotStatusUseCase,
-        ModifySlotUseCase,
+        UpdateSlotUseCase,
         DeleteSlotUseCase {
 
     private final CallerCalendarResolver calendarResolver;
@@ -91,35 +89,35 @@ class SlotApplicationService implements
         });
     }
 
+    /**
+     * Applies any requested status and time changes to the slot in one transaction: the aggregate
+     * is loaded once, both mutations are validated against the domain invariants, and a single
+     * {@code UPDATE} persists the result. A failing time change (e.g. an overlap rejected by the
+     * database exclusion constraint) therefore cannot leave an already-applied status change behind.
+     */
     @Override
-    public TimeSlot changeStatus(UserId caller, SlotId slotId, SlotStatus newStatus) {
+    @Transactional
+    public TimeSlot updateSlot(UserId caller, SlotId slotId, UpdateSlotCommand command) {
         Calendar calendar = calendarResolver.resolve(caller);
         TimeSlot slot = slots.findByIdAndCalendarId(slotId, calendar.id())
                 .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
         if (meetings.existsBySlotId(slotId)) {
-            throw new MeetingConflictException("Slot has a meeting; cancel it before changing its status");
+            throw new MeetingConflictException("Slot has a meeting; cancel it before updating the slot");
         }
-        slot.changeStatus(newStatus, OffsetDateTime.now(clock));
-        slots.update(slot);
-        metrics.slotUpdated(slot);
-        return slot;
-    }
 
-    @Override
-    public TimeSlot modifySlot(UserId caller, SlotId slotId, ModifySlotCommand command) {
-        Calendar calendar = calendarResolver.resolve(caller);
-        TimeSlot slot = slots.findByIdAndCalendarId(slotId, calendar.id())
-                .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
-        if (meetings.existsBySlotId(slotId)) {
-            throw new MeetingConflictException("Slot has a meeting; cancel it before modifying the slot");
+        OffsetDateTime now = OffsetDateTime.now(clock);
+        if (command.startAt() != null || command.durationMinutes() != null) {
+            TimeRange current = slot.timeRange();
+            OffsetDateTime start = command.startAt() != null ? command.startAt() : current.start();
+            int durationMinutes = command.durationMinutes() != null
+                    ? command.durationMinutes()
+                    : current.durationMinutes();
+            slot.changeTime(new TimeRange(start, durationMinutes), now);
         }
-        TimeRange current = slot.timeRange();
-        OffsetDateTime start = command.startAt() != null ? command.startAt() : current.start();
-        int durationMinutes = command.durationMinutes() != null
-                ? command.durationMinutes()
-                : current.durationMinutes();
+        if (command.status() != null) {
+            slot.changeStatus(command.status(), now);
+        }
 
-        slot.changeTime(new TimeRange(start, durationMinutes), OffsetDateTime.now(clock));
         slots.update(slot);
         metrics.slotUpdated(slot);
         return slot;

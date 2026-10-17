@@ -1,13 +1,12 @@
 package com.minidoodle.calendar.adapter.in.web;
 
-import com.minidoodle.calendar.application.port.in.ChangeSlotStatusUseCase;
 import com.minidoodle.calendar.application.port.in.CreateSlotUseCase;
 import com.minidoodle.calendar.application.port.in.DeleteSlotUseCase;
 import com.minidoodle.calendar.application.port.in.GetSlotUseCase;
 import com.minidoodle.calendar.application.port.in.ListSlotsUseCase;
-import com.minidoodle.calendar.application.port.in.ModifySlotCommand;
-import com.minidoodle.calendar.application.port.in.ModifySlotUseCase;
 import com.minidoodle.calendar.application.port.in.SlotQuery;
+import com.minidoodle.calendar.application.port.in.UpdateSlotCommand;
+import com.minidoodle.calendar.application.port.in.UpdateSlotUseCase;
 import com.minidoodle.calendar.domain.exception.InvalidSlotException;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.SlotStatus;
@@ -53,22 +52,19 @@ class SlotController {
     private final CreateSlotUseCase createSlot;
     private final GetSlotUseCase getSlot;
     private final ListSlotsUseCase listSlots;
-    private final ChangeSlotStatusUseCase changeSlotStatus;
-    private final ModifySlotUseCase modifySlot;
+    private final UpdateSlotUseCase updateSlot;
     private final DeleteSlotUseCase deleteSlot;
 
     SlotController(
             CreateSlotUseCase createSlot,
             GetSlotUseCase getSlot,
             ListSlotsUseCase listSlots,
-            ChangeSlotStatusUseCase changeSlotStatus,
-            ModifySlotUseCase modifySlot,
+            UpdateSlotUseCase updateSlot,
             DeleteSlotUseCase deleteSlot) {
         this.createSlot = createSlot;
         this.getSlot = getSlot;
         this.listSlots = listSlots;
-        this.changeSlotStatus = changeSlotStatus;
-        this.modifySlot = modifySlot;
+        this.updateSlot = updateSlot;
         this.deleteSlot = deleteSlot;
     }
 
@@ -150,14 +146,8 @@ class SlotController {
         if (request.status() == null && request.startAt() == null && request.durationMinutes() == null) {
             throw new InvalidSlotException("At least one of status, startAt or durationMinutes must be provided");
         }
-        TimeSlot updated = null;
-        if (request.status() != null) {
-            updated = changeSlotStatus.changeStatus(caller, id, request.status());
-        }
-        if (request.startAt() != null || request.durationMinutes() != null) {
-            updated = modifySlot.modifySlot(
-                    caller, id, new ModifySlotCommand(request.startAt(), request.durationMinutes()));
-        }
+        TimeSlot updated = updateSlot.updateSlot(
+                caller, id, new UpdateSlotCommand(request.status(), request.startAt(), request.durationMinutes()));
         return SlotWebMapper.toResponse(updated);
     }
 

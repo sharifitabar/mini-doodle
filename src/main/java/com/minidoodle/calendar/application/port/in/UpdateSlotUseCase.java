@@ -4,7 +4,7 @@ import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.calendar.domain.model.UserId;
 
-public interface ModifySlotUseCase {
+public interface UpdateSlotUseCase {
 
-    TimeSlot modifySlot(UserId caller, SlotId slotId, ModifySlotCommand command);
+    TimeSlot updateSlot(UserId caller, SlotId slotId, UpdateSlotCommand command);
 }
