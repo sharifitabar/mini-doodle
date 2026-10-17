@@ -96,7 +96,7 @@ src/main/java/com/minidoodle/
     │   ├── exception/          # domain exceptions (overlap, invalid duration, not found, forbidden)
     │   └── service/            # domain rules (slot creation/modification invariants)
     ├── application/
-    │   ├── port/in/            # use-case interfaces (CreateSlot, ListSlots, GetSlot, ModifySlot, DeleteSlot, ChangeStatus)
+    │   ├── port/in/            # use-case interfaces (CreateSlot, ListSlots, GetSlot, UpdateSlot, DeleteSlot)
     │   ├── port/out/           # SlotRepository, CalendarRepository
     │   └── service/            # use-case implementations (transaction boundary)
     └── adapter/

@@ -69,7 +69,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 ### Implementation for User Story 1
 
 - [x] T016 [P] [US1] Define inbound port `BookMeetingUseCase` and `BookMeetingCommand` (slotId, title, description, participants) in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [x] T017 [US1] Implement `BookMeetingService` (resolve caller calendar, load slot, require FREE and no existing meeting, build aggregate, persist meeting, set slot BUSY in one transaction, translate constraint violations) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T007, T008, T009, T016)
+- [x] T017 [US1] Implement booking in `MeetingApplicationService` (resolve caller calendar, load slot, require FREE and no existing meeting, build aggregate, persist meeting, set slot BUSY in one transaction, translate constraint violations) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T007, T008, T009, T016)
 - [x] T018 [P] [US1] Add web DTOs `BookMeetingRequest`, `ParticipantRequest`, `MeetingResponse`, and `MeetingWebMapper` in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
 - [x] T019 [US1] Implement `MeetingController` `POST /api/v1/slots/{slotId}/meeting` wiring the use case in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T017, T018)
 - [x] T020 [US1] Enforce bean validation on `BookMeetingRequest`/`ParticipantRequest` (title bounds, `@NotEmpty` participants, at least one of name/email) and confirm the 400 surface in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
@@ -92,7 +92,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 ### Implementation for User Story 2
 
 - [x] T023 [P] [US2] Define inbound port `GetMeetingUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [x] T024 [US2] Implement `GetMeetingService` (ownership via caller calendar, map to response, throw `MeetingNotFoundException` when absent) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007)
+- [x] T024 [US2] Implement meeting read in `MeetingApplicationService` (ownership via caller calendar, map to response, throw `MeetingNotFoundException` when absent) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007)
 - [x] T025 [US2] Add the `GET` endpoint to `MeetingController` and a response mapper for the slot time window in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T019, T024)
 
 **Checkpoint**: US1 and US2 both work independently
@@ -114,9 +114,9 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 ### Implementation for User Story 3
 
 - [x] T029 [P] [US3] Define inbound port `CancelMeetingUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [x] T030 [US3] Implement `CancelMeetingService` (ownership, delete meeting, set slot FREE in one transaction) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007, T009)
+- [x] T030 [US3] Implement meeting cancel in `MeetingApplicationService` (ownership, delete meeting, set slot FREE in one transaction) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007, T009)
 - [x] T031 [US3] Add the `DELETE` endpoint to `MeetingController` in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T019, T030)
-- [x] T032 [US3] Add the meeting-exists guard (reject with `409`) to `ModifySlotService`, `ChangeSlotStatusService`, and `DeleteSlotService` in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007, T008, T010)
+- [x] T032 [US3] Add the meeting-exists guard (reject with `409`) to `SlotApplicationService` (slot update and delete) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007, T008, T010)
 
 **Checkpoint**: All three stories independently functional
 
@@ -179,7 +179,7 @@ Task: "Persistence booking/slot-busy/RESTRICT IT in src/test/java/com/minidoodle
 
 # Then in parallel with the service:
 Task: "Web DTOs + mapper in src/main/java/com/minidoodle/calendar/adapter/in/web/"
-Task: "BookMeetingService in src/main/java/com/minidoodle/calendar/application/service/"
+Task: "MeetingApplicationService in src/main/java/com/minidoodle/calendar/application/service/"
 ```
 
 ---

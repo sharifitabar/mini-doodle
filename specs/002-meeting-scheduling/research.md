@@ -103,12 +103,12 @@ per slot" model, so the meeting needs no separate id in the URL. `POST` books, `
 meetings exist independently of slots and adds id-based ownership checks without benefit at
 this scope).
 
-## Decision: Modify/status-change guards in the slot services
+## Decision: Modify/status-change guards in the slot service
 
-**Rationale**: FR-010. `ModifySlotService` and `ChangeSlotStatusService` consult
-`MeetingRepository.existsBySlotId(...)` and reject with a conflict before writing;
-`DeleteSlotService` does the same for a clean error, with the `RESTRICT` FK as the backstop.
-Injecting one outbound port into these services is the smallest change that keeps the rule with
+**Rationale**: FR-010. `SlotApplicationService` (its update and delete operations) consults
+`MeetingRepository.existsBySlotId(...)` and rejects with a conflict before writing, with the
+`RESTRICT` FK as the backstop for deletion.
+Injecting one outbound port into that service is the smallest change that keeps the rule with
 the operation it constrains.
 
 **Alternatives considered**: Marking slots read-only via a DB view/trigger (rejected: obscures

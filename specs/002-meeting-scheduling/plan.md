@@ -102,13 +102,9 @@ src/main/java/com/minidoodle/calendar/
 │   ├── port/out/
 │   │   └── MeetingRepository.java    (+) save, findBySlotId, existsBySlotId, deleteBySlotId
 │   └── service/
-│       ├── BookMeetingService.java   (+) @Transactional: validate slot, insert meeting, set BUSY
-│       ├── GetMeetingService.java    (+) read meeting scoped to caller's calendar
-│       ├── CancelMeetingService.java (+) delete meeting + set slot FREE, one transaction
-│   │   ├── ModifySlotService.java    (~) reject when the slot holds a meeting (409)
-│   │   ├── ChangeSlotStatusService.java (~) reject when the slot holds a meeting (409)
-│   │   ├── DeleteSlotService.java    (~) reject when the slot holds a meeting (409)
-│   │   └── MeetingMetrics.java       (+) booked/viewed/cancelled counters + timers
+│       ├── MeetingApplicationService.java (+) @Transactional: book, get, and cancel; sets slot BUSY/FREE
+│       ├── SlotApplicationService.java    (~) reject slot update/delete when the slot holds a meeting (409)
+│       └── MeetingMetrics.java            (+) booked/viewed/cancelled counters + timers
 └── adapter/
     ├── in/web/
     │   ├── MeetingController.java    (+) POST/GET/DELETE /api/v1/slots/{slotId}/meeting

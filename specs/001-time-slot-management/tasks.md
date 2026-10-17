@@ -81,8 +81,8 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 - [X] T024 [P] [US1] Define inbound ports `CreateSlotUseCase`, `ListSlotsUseCase`, `GetSlotUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
 - [X] T025 [P] [US1] Add web DTOs `CreateSlotRequest`, `SlotResponse`, `SlotPageResponse` and mapper in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
-- [X] T026 [US1] Implement `CreateSlotService` (resolve calendar, build aggregate, persist, translate exclusion violation → `SlotOverlapException`) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T024)
-- [X] T027 [US1] Implement `ListSlotsService` and `GetSlotService` (range/status filters, limit/offset, ownership scoping) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T024, T014)
+- [X] T026 [US1] Implement the create operation in `SlotApplicationService` (resolve calendar, build aggregate, persist, translate exclusion violation → `SlotOverlapException`) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T024)
+- [X] T027 [US1] Implement the list/get operations in `SlotApplicationService` (range/status filters, limit/offset, ownership scoping) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T024, T014)
 - [X] T028 [US1] Implement `SlotController` POST and GET/GET-one endpoints wiring the use cases in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T025, T026, T027)
 - [X] T029 [US1] Map PostgreSQL `exclusion_violation` (23P01) to `SlotOverlapException` in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/` (depends on T014)
 - [X] T030 [US1] Enforce bean validation on `CreateSlotRequest` in `src/main/java/com/minidoodle/calendar/adapter/in/web/CreateSlotRequest.java` (duration bounds, future start, offset date-time) and confirm 400 surface (depends on T016)
@@ -104,8 +104,8 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 ### Implementation for User Story 2
 
-- [X] T033 [P] [US2] Define inbound port `ChangeSlotStatusUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [X] T034 [US2] Implement `ChangeSlotStatusService` (ownership check, idempotent set) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T033)
+- [X] T033 [P] [US2] Define inbound port `UpdateSlotUseCase` with `UpdateSlotCommand` (status, startAt, durationMinutes) in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [X] T034 [US2] Implement the status update in `SlotApplicationService` (ownership check, idempotent set) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T033)
 - [X] T035 [US2] Extend `SlotController` PATCH to handle `status` field in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T034, T028)
 
 **Checkpoint**: US1 and US2 both work independently
@@ -126,8 +126,8 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 ### Implementation for User Story 3
 
-- [X] T039 [P] [US3] Define inbound port `ModifySlotUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [X] T040 [US3] Implement `ModifySlotService` (re-validate invariants, persist, translate overlap → 409) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T039)
+- [X] T039 [P] [US3] Reuse the inbound port `UpdateSlotUseCase` for time changes (`startAt`/`durationMinutes`) in `src/main/java/com/minidoodle/calendar/application/port/in/`
+- [X] T040 [US3] Implement the time modification in `SlotApplicationService` (re-validate invariants, persist, translate overlap → 409) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T039)
 - [X] T041 [US3] Add `UpdateSlotRequest` DTO and extend `SlotController` PATCH for `startAt`/`durationMinutes` in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T040, T035)
 
 **Checkpoint**: US1–US3 independently functional
@@ -148,7 +148,7 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 ### Implementation for User Story 4
 
 - [X] T044 [P] [US4] Define inbound port `DeleteSlotUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [X] T045 [US4] Implement `DeleteSlotService` (ownership check, delete) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T044)
+- [X] T045 [US4] Implement the delete operation in `SlotApplicationService` (ownership check, delete) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T044)
 - [X] T046 [US4] Add DELETE endpoint to `SlotController` in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T045)
 
 **Checkpoint**: All four stories independently functional
