@@ -69,5 +69,25 @@
     <module name="RecordTypeParameterName"/>
     <module name="MethodTypeParameterName"/>
     <module name="CatchParameterName"/>
+
+    <!-- Complexity ceilings (feature 006-quality-gates). These map onto the branch-coverage
+         blind spot the baseline audit found: the code with the worst branch coverage is the
+         code with the most decisions per method. Every ceiling below is satisfied by the tree
+         as it stands, with no SuppressionFilter, no baseline file and no CHECKSTYLE:OFF.
+
+         Measured maxima when the ceilings were set (see specs/006-quality-gates/research.md):
+         cyclomatic 7, NPath 27, method length 65 (a concurrency test), parameters 7. -->
+    <module name="CyclomaticComplexity">
+      <property name="max" value="10"/>
+    </module>
+    <module name="NPathComplexity">
+      <property name="max" value="30"/>
+    </module>
+    <module name="MethodLength">
+      <property name="max" value="70"/>
+    </module>
+    <module name="ParameterNumber">
+      <property name="max" value="7"/>
+    </module>
   </module>
 </module>
