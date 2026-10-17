@@ -3,13 +3,11 @@ package com.minidoodle.calendar.adapter.out.persistence;
 import com.minidoodle.calendar.application.port.out.SlotFilter;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
 import com.minidoodle.calendar.domain.exception.MeetingConflictException;
-import com.minidoodle.calendar.domain.exception.SlotOverlapException;
 import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.jooq.tables.TimeSlots;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,14 +21,16 @@ import org.springframework.stereotype.Repository;
 @Repository
 class JooqSlotRepository implements SlotRepository {
 
-    private static final String EXCLUSION_VIOLATION = "23P01";
     private static final String FOREIGN_KEY_VIOLATION = "23503";
-    private static final String DEADLOCK_DETECTED = "40P01";
-    private static final String SERIALIZATION_FAILURE = "40001";
-    private static final int MAX_ATTEMPTS = 6;
-    private static final long RETRY_BACKOFF_MILLIS = 10L;
 
     private final DSLContext dsl;
+
+    /**
+     * The exclusion-constraint defence is shared by every write here; its behaviour (retry on
+     * transient conflicts, map the definitive exclusion violation to a domain error) is documented
+     * on {@link SlotWriteRetry}.
+     */
+    private final SlotWriteRetry writeRetry = new SlotWriteRetry();
 
     JooqSlotRepository(DSLContext dsl) {
         this.dsl = dsl;
@@ -38,7 +38,7 @@ class JooqSlotRepository implements SlotRepository {
 
     @Override
     public void insert(TimeSlot slot) {
-        execute(() -> insertInternal(slot));
+        writeRetry.run(() -> insertInternal(slot));
     }
 
     private void insertInternal(TimeSlot slot) {
@@ -64,7 +64,7 @@ class JooqSlotRepository implements SlotRepository {
 
     @Override
     public void update(TimeSlot slot) {
-        execute(
+        writeRetry.run(
                 () ->
                         dsl.update(TimeSlots.TIME_SLOTS)
                                 .set(TimeSlots.TIME_SLOTS.START_AT, slot.timeRange().start())
@@ -94,7 +94,7 @@ class JooqSlotRepository implements SlotRepository {
                                     .and(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId.value())))
                     .execute();
         } catch (RuntimeException ex) {
-            if (FOREIGN_KEY_VIOLATION.equals(sqlState(ex))) {
+            if (FOREIGN_KEY_VIOLATION.equals(SlotWriteRetry.sqlState(ex))) {
                 throw new MeetingConflictException(
                         "Slot cannot be deleted while it holds a meeting");
             }
@@ -163,55 +163,5 @@ class JooqSlotRepository implements SlotRepository {
         }
         sql.append(", '[)')");
         return DSL.condition(sql.toString(), bindings.toArray());
-    }
-
-    /**
-     * The database exclusion constraint ({@code ex_slot_no_overlap}) is the authoritative guard
-     * against overlapping slots. When it fires, a domain-level overlap error (409) is surfaced
-     * instead of a raw persistence exception. Concurrent inserts into a GiST exclusion constraint
-     * can also fail with a deadlock or serialization failure; such transient conflicts are retried
-     * a bounded number of times so the write converges on the definitive exclusion violation once
-     * the winning transaction commits. The SQL error may be surfaced as a jOOQ exception or wrapped
-     * as a Spring {@code DataAccessException}, so the whole cause chain is inspected.
-     */
-    private void execute(Runnable action) {
-        for (int attempt = 1; ; attempt++) {
-            try {
-                action.run();
-                return;
-            } catch (RuntimeException ex) {
-                String sqlState = sqlState(ex);
-                if (EXCLUSION_VIOLATION.equals(sqlState)) {
-                    throw new SlotOverlapException(
-                            "Slot overlaps an existing slot in the calendar");
-                }
-                boolean transientConflict =
-                        DEADLOCK_DETECTED.equals(sqlState)
-                                || SERIALIZATION_FAILURE.equals(sqlState);
-                if (transientConflict && attempt < MAX_ATTEMPTS) {
-                    backoff(attempt);
-                    continue;
-                }
-                throw ex;
-            }
-        }
-    }
-
-    private String sqlState(Throwable ex) {
-        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
-            if (cause instanceof SQLException sqlException) {
-                return sqlException.getSQLState();
-            }
-        }
-        return null;
-    }
-
-    private void backoff(int attempt) {
-        try {
-            Thread.sleep(RETRY_BACKOFF_MILLIS * attempt);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while retrying slot write", interrupted);
-        }
     }
 }
