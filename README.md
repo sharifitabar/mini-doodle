@@ -138,7 +138,7 @@ Actuator exposes health, info, and Prometheus metrics. Slot operations emit coun
 `minidoodle.availability.queries` counter and the `minidoodle.availability.query` timer. All use
 structured `event=... key=value` logs.
 
-## Testing
+## Testing and quality gates
 
 The suite uses JUnit 5, AssertJ, MockMvc, and Testcontainers (real PostgreSQL); Docker must be
 running.
@@ -147,6 +147,77 @@ running.
 ./gradlew test      # run the test suite
 ./gradlew build     # full build (codegen + tests + boot jar)
 ```
+
+Every fast gate below rides `./gradlew check`, so the same `./gradlew build` used by the pre-push
+hook and CI enforces all of it. Nothing here needs a separate CI step.
+
+### Coverage floors (JaCoCo)
+
+Coverage is not just reported — it is verified. Floors apply to production classes with jOOQ's
+generated sources excluded.
+
+| Counter | Floor | Measured |
+|---|---|---|
+| Line | 0.95 | 99.07% |
+| Branch | 0.95 | 96.95% |
+| Method | 0.95 | 99.12% |
+| Cyclomatic complexity | 0.95 | 97.74% |
+
+Three classes carry stricter, class-scoped floors, because they hold the error and recovery
+behaviour that a bundle average hides:
+
+| Class | Counter | Floor |
+|---|---|---|
+| `GlobalExceptionHandler` | Line, Method | 1.00 |
+| `JooqSlotRepository` | Line | 0.95 |
+| `JooqSlotRepository` | Branch | 0.90 |
+| `CurrentUserArgumentResolver` | Branch | 1.00 |
+
+The floors are the ratios the suite actually achieves, rounded **down** to the nearest 0.05, so a
+green `test` run is always a green verification and only a real regression can trip one. Measure
+before changing them:
+
+```bash
+./gradlew test jacocoTestReport       # report -> build/reports/jacoco/test/
+./gradlew jacocoTestCoverageVerification
+```
+
+Do not lower a floor to accommodate a regression; raise the coverage or fix the gate deliberately,
+in the same commit, with the measurement beside it.
+
+### Architecture rules (ArchUnit)
+
+`./gradlew test` fails if the layering slips. The rules are ordinary JUnit 5 tests:
+
+| Rule | Meaning |
+|---|---|
+| R1 | No framework types (Spring, Jakarta, jOOQ, Hibernate) in the domain |
+| R2 | The domain depends on the JDK and the domain only |
+| R3 | The application layer does not depend on adapters |
+| R4 | Inbound and outbound adapters do not depend on each other |
+| R5 | Shared infrastructure does not depend on the application or the adapters |
+| R6 | No dependency cycles between the context's packages |
+
+Each rule is also asserted to **fail** against a deliberately violating fixture, so a broken package
+pattern cannot produce a rule that is vacuously green. Failures name the rule and the offending type.
+
+### Complexity ceilings (Checkstyle)
+
+Four metric checks live in [`config/checkstyle/checkstyle.xml`](config/checkstyle/checkstyle.xml):
+`CyclomaticComplexity` 10, `NPathComplexity` 30, `MethodLength` 70, `ParameterNumber` 7. They are
+satisfied with no suppression file and no baseline.
+
+### Mutation testing (on demand)
+
+PIT is scoped to the domain package and is deliberately **not** part of `check` or `build`, so it
+can never block a push:
+
+```bash
+./gradlew pitest   # report -> build/reports/pitest/
+```
+
+It reports a per-package and overall mutation score, plus a list of surviving mutations with their
+locations. There is no threshold: survivors are a triage signal, not a gate.
 
 ## Code style
 

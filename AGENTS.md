@@ -26,6 +26,43 @@ hook or CI step for style.
   Checkstyle casually: google-java-format is capped at `1.36.0` because 1.37.0 breaks Spotless's
   reflective glue (see `specs/005-checkstyle-enforcement/research.md`).
 
+## Quality gates
+
+Four gates ride the same `check` lifecycle as style, so `./gradlew build` is the single enforcement
+point. Do not add a separate hook or CI step for any of them.
+
+- **Coverage floors** (JaCoCo, verified by `jacocoTestCoverageVerification`). Bundle floors are
+  line/branch/method/complexity ≥ 0.95 over production classes; `GlobalExceptionHandler`,
+  `JooqSlotRepository`, and `CurrentUserArgumentResolver` carry stricter class-scoped rules because
+  a bundle average hides the error/recovery paths. **Floors are never lowered to make a change
+  pass.** Raise coverage instead, or change a floor deliberately in the same commit, quoting the
+  fresh measurement. A floor is the achieved ratio rounded down to 0.05 — re-measure with
+  `./gradlew test jacocoTestReport` before touching one.
+- **Architecture rules** (ArchUnit, rules R1–R6 in `src/test/java/com/minidoodle/architecture/`).
+  They run as ordinary tests; a layering violation fails `./gradlew test`. Every rule is also
+  asserted to fail against a deliberately violating fixture — keep that property when adding a rule.
+  The fixture tree is `com.minidoodle.architecture.fixture` (plus the package-cycle pair under
+  `com.minidoodle.calendar.fixture.cyclic`). Test-only controllers must stay **outside**
+  `com.minidoodle`, or the application's component scan will pick them up.
+- **Complexity ceilings** (Checkstyle). Four metric checks in
+  `config/checkstyle/checkstyle.xml`. There is no suppression file and no baseline: a ceiling that
+  fails is fixed in the code, not excused.
+- **Mutation testing** (`./gradlew pitest`) is **on demand only** and must never be wired into
+  `check` or `build` — it must not slow or block a push. It has no threshold; survivors are a
+  triage signal.
+
+Notes that save time:
+
+- ArchUnit is pinned to `1.4.1`. 1.5.x is compiled against `junit-platform-engine` 1.14.4 and breaks
+  the Gradle test worker under Spring Boot's managed 1.12.2 (`NoClassDefFoundError:
+  org/junit/platform/engine/OutputDirectoryCreator`). Do not bump it without re-checking the
+  resolved `junit-platform-*` versions.
+- The accepted coverage residue — `JooqSlotRepository`'s rethrow for a non-foreign-key delete
+  failure — is documented beside its class-scoped rule in `build.gradle.kts`. Do not "fix" it by
+  adding a mocking framework; the project is deliberately integration-first.
+- Full measurements, the rounding rule, and the decision record are in
+  `specs/006-quality-gates/research.md` (see its as-built addendum).
+
 ## Commit Conventions
 
 All commits MUST follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
