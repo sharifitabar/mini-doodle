@@ -14,6 +14,7 @@ buildscript {
 
 plugins {
     java
+    jacoco
     checkstyle
     id("com.diffplug.spotless") version "8.10.4"
     id("org.springframework.boot") version "3.5.16"
@@ -91,6 +92,38 @@ spotless {
         importOrder("com.minidoodle", "java", "javax", "org", "com", "", "\\#")
         trimTrailingWhitespace()
         endWithNewline()
+    }
+}
+
+// --- Coverage (report-only) ---------------------------------------------------
+// JaCoCo is intentionally NOT wired into `check`: it produces reports but never fails
+// the `./gradlew build` that .githooks/pre-push and CI run. It measures instruction,
+// branch, line, cyclomatic-complexity, method, and class coverage.
+//
+//   ./gradlew jacocoTestReport          # tests + report (report also runs after `test`)
+//   open build/reports/jacoco/test/html/index.html
+//   XML (machine-readable): build/reports/jacoco/test/jacocoTestReport.xml
+jacoco {
+    toolVersion = "0.8.15"
+}
+
+tasks.named<Test>("test") {
+    finalizedBy(tasks.named("jacocoTestReport"))
+}
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    // The jOOQ output is machine-generated; it is not ours to cover and would otherwise
+    // dominate the denominator and drag every percentage down. JacocoReport has no
+    // `excludes` property, so filtering is done by rebuilding the class-dir collection.
+    classDirectories.setFrom(
+        files(classDirectories.files.map { dir ->
+            fileTree(dir) { exclude("com/minidoodle/jooq/**") }
+        })
+    )
+    reports {
+        xml.required.set(true)
+        csv.required.set(false)
+        html.required.set(true)
     }
 }
 
