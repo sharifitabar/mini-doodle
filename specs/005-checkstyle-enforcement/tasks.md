@@ -127,7 +127,7 @@ history stays readable.
 - [X] T018 Run the full gate exactly as the pre-push hook and CI do — `./gradlew build --no-daemon --console=plain` — and confirm `BUILD SUCCESSFUL` with zero style findings (SC-003, SC-004, SC-005)
 - [X] T019 Run `./gradlew spotlessApply` a second time and confirm `git diff` is empty, proving the formatter is idempotent (SC-006)
 - [X] T020 **Commit the tooling and documentation** (`build.gradle.kts`, `config/checkstyle/checkstyle.xml`, `.git-blame-ignore-revs`, `README.md`, `AGENTS.md`) as an isolated conventional commit (e.g. `build: enforce code style via Checkstyle and Spotless`) — **AWAIT user approval before committing**; do not bundle the `src/` reformat into it (FR-012)
-- [ ] T021 Do **not** push until the user approves; when approved, confirm `./gradlew build --no-daemon --console=plain` passes locally immediately before pushing (AGENTS.md pre-push rule)
+- [X] T021 Do **not** push until the user approves; when approved, confirm `./gradlew build --no-daemon --console=plain` passes locally immediately before pushing (AGENTS.md pre-push rule)
 
 ---
 
