@@ -29,6 +29,7 @@ final class PersistenceMapper {
         return Calendar.rehydrate(
                 CalendarId.of(record.getId()),
                 UserId.of(record.getUserId()),
-                record.getCreatedAt());
+                record.getCreatedAt(),
+                record.getUpdatedAt());
     }
 }

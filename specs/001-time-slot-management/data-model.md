@@ -11,6 +11,7 @@ is enforced by a database exclusion constraint, not by application code alone.
 ### Calendar
 - **Identity**: `CalendarId` (UUID)
 - **Owner**: `UserId`
+- **Attributes**: `createdAt`, `updatedAt`
 - **Rules**: exactly one calendar per user in this feature.
 
 ### TimeSlot (aggregate root)
@@ -35,7 +36,7 @@ is enforced by a database exclusion constraint, not by application code alone.
 ### UserId / CalendarId / SlotId (value objects)
 - Wrap `UUID`; prevent primitive obsession and cross-id mixups.
 
-## Persistence Schema (Flyway `V1__init.sql`)
+## Persistence Schema (Flyway `V1__init.sql`; `users`/`calendars` `updated_at` added by `V3__add_updated_at_to_users_and_calendars.sql`)
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
@@ -43,13 +44,15 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE TABLE users (
     id          UUID PRIMARY KEY,
     display_name TEXT NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE calendars (
     id          UUID PRIMARY KEY,
     user_id     UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_calendars_user UNIQUE (user_id)
 );
 
@@ -79,6 +82,10 @@ CREATE INDEX ix_time_slots_range ON time_slots USING gist (slot_range);
 ```
 
 ### Notes
+- Every table tracks both `created_at` and `updated_at`. `users` and `calendars` gained
+  `updated_at` in `V3__add_updated_at_to_users_and_calendars.sql`; there is no update
+  operation for them yet, so the value defaults to `now()` on insert (existing rows were
+  backfilled from `created_at`).
 - `btree_gist` is required so a GIST exclusion constraint can mix an equality column
   (`calendar_id`) with a range overlap operator (`&&`).
 - `[)` bounds make adjacent slots (one ending exactly when the next begins) **not**
