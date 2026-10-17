@@ -111,6 +111,24 @@ class SlotControllerReadIT extends PostgresIntegrationTest {
     }
 
     @Test
+    void listsWithAnUpperBoundOnly() throws Exception {
+        Caller caller = createCaller();
+        createSlot(caller, 0, 30); // now + 30d
+        createSlot(caller, 10 * 24 * 60, 30); // now + 40d
+
+        // An upper bound with no lower one exercises the unbounded-start side of the overlap
+        // window predicate; the lower-bound-only case is covered above.
+        String to = OffsetDateTime.now(ZoneOffset.UTC).plusDays(35).withNano(0).toString();
+        mockMvc.perform(
+                        get("/api/v1/slots")
+                                .header(HEADER, caller.userId().value())
+                                .param("to", to))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items.length()").value(1));
+    }
+
+    @Test
     void rejectsInvalidLimit() throws Exception {
         Caller caller = createCaller();
 
