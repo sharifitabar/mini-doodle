@@ -31,8 +31,4 @@ public record TimeRange(OffsetDateTime start, int durationMinutes) {
     public OffsetDateTime end() {
         return start.plusMinutes(durationMinutes);
     }
-
-    public boolean overlaps(TimeRange other) {
-        return start.isBefore(other.end()) && other.start.isBefore(end());
-    }
 }
