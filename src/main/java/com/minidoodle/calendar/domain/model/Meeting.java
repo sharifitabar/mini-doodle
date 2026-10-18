@@ -18,10 +18,7 @@ public final class Meeting {
     public static final int MAX_TITLE_LENGTH = 200;
     public static final int MAX_DESCRIPTION_LENGTH = 2000;
 
-    /**
-     * Practical upper bound on participants. Persistence stores {@code position} as {@code
-     * SMALLINT}; this limit stays well below that type's range and caps request cost.
-     */
+    /** Practical upper bound on participants for a single meeting (product/cost cap). */
     public static final int MAX_PARTICIPANTS = 100;
 
     private final MeetingId id;
