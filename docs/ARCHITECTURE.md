@@ -10,7 +10,8 @@ core results to HTTP DTOs.
 
 TimeSlot and Meeting remain separate aggregate roots, referenced by identifiers. Meeting owns
 its participant values and content validation. TimeSlot owns its time range and manual status.
-Application services coordinate the cross-aggregate booking policy: booking requires a free slot;
+The domain BookingPolicy owns the cross-aggregate booking decisions; application services load
+locked facts and coordinate persistence: booking requires a free slot;
 a booked slot cannot be edited or deleted; cancellation frees it.
 
 These operations require immediate consistency. Update, delete, book and cancel acquire the same

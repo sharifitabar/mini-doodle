@@ -15,13 +15,13 @@ import com.minidoodle.calendar.application.port.out.SlotLimits;
 import com.minidoodle.calendar.application.port.out.SlotMetrics;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
 import com.minidoodle.calendar.domain.exception.InvalidSlotException;
-import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
 import com.minidoodle.calendar.domain.model.Calendar;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeRange;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.calendar.domain.model.UserId;
+import com.minidoodle.calendar.domain.service.BookingPolicy;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -124,10 +124,7 @@ class SlotApplicationService
                                 () ->
                                         new SlotNotFoundException(
                                                 "Slot not found: " + slotId.value()));
-        if (meetings.existsBySlotId(slotId)) {
-            throw new MeetingConflictException(
-                    "Slot has a meeting; cancel it before updating the slot");
-        }
+        BookingPolicy.requireEditable(meetings.existsBySlotId(slotId));
 
         OffsetDateTime now = OffsetDateTime.now(clock);
         if (command.startAt() != null || command.durationMinutes() != null) {
@@ -166,10 +163,7 @@ class SlotApplicationService
         Calendar calendar = calendarResolver.resolve(caller);
         slots.findByIdAndCalendarIdForUpdate(slotId, calendar.id())
                 .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
-        if (meetings.existsBySlotId(slotId)) {
-            throw new MeetingConflictException(
-                    "Slot has a meeting; cancel it before deleting the slot");
-        }
+        BookingPolicy.requireDeletable(meetings.existsBySlotId(slotId));
         slots.deleteByIdAndCalendarId(slotId, calendar.id());
         metrics.slotDeleted(slotId);
     }
