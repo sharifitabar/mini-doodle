@@ -82,7 +82,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 8,
         "x": 0,
         "y": 0
@@ -175,8 +175,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 8,
+        "h": 8,
+        "w": 9,
         "x": 8,
         "y": 0
       },
@@ -268,9 +268,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 8,
-        "x": 16,
+        "h": 8,
+        "w": 7,
+        "x": 17,
         "y": 0
       },
       "id": 3,
@@ -358,9 +358,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
+        "w": 8,
         "x": 0,
-        "y": 6
+        "y": 8
       },
       "id": 4,
       "options": {
@@ -456,9 +456,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 6
+        "w": 9,
+        "x": 8,
+        "y": 8
       },
       "id": 5,
       "options": {
@@ -554,9 +554,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
-        "x": 12,
-        "y": 6
+        "w": 7,
+        "x": 17,
+        "y": 8
       },
       "id": 6,
       "options": {
@@ -643,9 +643,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 6
+        "w": 8,
+        "x": 0,
+        "y": 14
       },
       "id": 7,
       "options": {
@@ -686,7 +686,12 @@
   ],
   "refresh": "10s",
   "schemaVersion": 39,
-  "tags": ["mini-doodle", "golden-signals", "sli", "slo"],
+  "tags": [
+    "mini-doodle",
+    "golden-signals",
+    "sli",
+    "slo"
+  ],
   "templating": {
     "list": []
   },
@@ -698,6 +703,6 @@
   "timezone": "",
   "title": "Mini Doodle - Golden Signals & SLI/SLO",
   "uid": "minidoodle-golden-signals",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
