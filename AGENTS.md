@@ -1,5 +1,17 @@
 # AGENTS.md
 
+## Building, testing, running
+
+- A Java 21 Spring Boot service (Gradle toolchain pins 21) laid out as a hexagon:
+  `com.minidoodle.calendar.{domain,application,adapter}` plus `com.minidoodle.shared`. jOOQ sources
+  are generated into `build/generated-sources` and are never hand-edited.
+- Docker must be running for `./gradlew build`: integration tests use Testcontainers, and the jOOQ
+  code generator starts a `postgres:16` container unless `JOOQ_CODEGEN_URL` points at an existing
+  database.
+- `./gradlew test` runs the suite; `./gradlew build` is the full build (codegen, tests, boot jar)
+  and enforces every gate below. `docker compose up --build` runs the stack locally (app on
+  `http://localhost:8080`, health at `/actuator/health`, OpenAPI at `/swagger-ui.html`).
+
 ## Approval before committing or pushing
 
 - NEVER run `git commit` or `git push` unless the user has explicitly approved it for the current work.
@@ -17,9 +29,10 @@ hook or CI step for style.
 
 - **Before asking to commit**, run `./gradlew spotlessApply` to auto-fix formatting, then
   `./gradlew check` to confirm the gate is green. A red gate is never pushed.
-- Spotless owns formatting (indentation, wrapping, whitespace, import order, unused imports);
-  Checkstyle owns naming/brace/block/bug-pattern rules in `config/checkstyle/checkstyle.xml`.
-  Never "fix" a formatting complaint by hand-editing for style — use `spotlessApply`.
+- Spotless owns formatting (google-java-format's **AOSP** variant: 4-space indent, 100-column
+  limit, import order, unused imports); Checkstyle owns naming/brace/block/bug-pattern rules in
+  `config/checkstyle/checkstyle.xml`. Never "fix" a formatting complaint by hand-editing for style —
+  use `spotlessApply`.
 - Generated jOOQ sources under `build/generated-sources` are excluded from both tools; never add
   manual formatting there or lift the exclusion.
 - Versions are pinned (`build.gradle.kts`). Do not bump Spotless, google-java-format, or
@@ -33,12 +46,13 @@ point. Do not add a separate hook or CI step for any of them.
 
 - **Coverage floors** (JaCoCo, verified by `jacocoTestCoverageVerification`). Bundle floors are
   line/branch/method/complexity ≥ 0.95 over production classes; `GlobalExceptionHandler`,
-  `JooqSlotRepository`, and `CurrentUserArgumentResolver` carry stricter class-scoped rules because
-  a bundle average hides the error/recovery paths. **Floors are never lowered to make a change
-  pass.** Raise coverage instead, or change a floor deliberately in the same commit, quoting the
-  fresh measurement. A floor is the achieved ratio rounded down to 0.05 — re-measure with
+  `JooqSlotRepository`, and `CurrentUserArgumentResolver` each have their own class-scoped rule
+  because a bundle average hides the error/recovery paths. **Floors are never lowered to make a
+  change pass.** Raise coverage instead, or change a floor deliberately in the same commit, quoting
+  the fresh measurement. A floor is the achieved ratio rounded down to 0.05 — re-measure with
   `./gradlew test jacocoTestReport` before touching one.
-- **Architecture rules** (ArchUnit, rules R1–R6 in `src/test/java/com/minidoodle/architecture/`).
+- **Architecture rules** (ArchUnit, defined in
+  `src/test/java/com/minidoodle/architecture/ArchitectureRules.java`).
   They run as ordinary tests; a layering violation fails `./gradlew test`. Every rule is also
   asserted to fail against a deliberately violating fixture — keep that property when adding a rule.
   The fixture tree is `com.minidoodle.architecture.fixture` (plus the package-cycle pair under
@@ -85,6 +99,7 @@ See [docs/CONVENTIONAL_COMMITS.md](docs/CONVENTIONAL_COMMITS.md) for full rules,
 2. Draft 1–3 candidate messages
 3. Explain reasoning
 4. Propose final message only after user confirmation (or as requested)
+
 ## Load testing (k6)
 
 - The load test harness lives in `loadtest/` (SQL, k6 scripts, run scripts, results). It is off the
