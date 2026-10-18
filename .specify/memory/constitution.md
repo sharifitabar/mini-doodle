@@ -1,38 +1,37 @@
 <!--
 Sync Impact Report
 ==================
-Version change: N/A (unfilled template) → 1.0.0
-Bump rationale: Initial ratification. All principles and sections authored from the
-  tech/architecture agreement recorded in the project conversation on 2026-10-15.
+Version change: 1.0.0 (initial ratification, 2026-10-15) → 1.1.0
+Bump rationale: MINOR — the locked Technology Stack table gains the load/performance
+  testing tooling that feature 007 (k6 load test) introduces, and the workflow section
+  states explicitly that load testing is deliberate and off the critical path. No
+  existing principle, decision, or gate is removed or redefined.
 
-Modified principles:
-- I. Domain-Centric Hexagonal Architecture (new)
-- II. Database as Source of Truth (new)
-- III. Test Discipline with Real Dependencies (new)
-- IV. Simplicity & YAGNI at Honest Scale (new)
-- V. Observable & Documented Service (new)
+Modified principles: none
 
-Added sections:
-- Technology Stack (Locked)
-- Development Workflow & Quality Gates
+Added sections: none
+
+Amended sections:
+- Technology Stack (Locked): two rows added — "Load testing" (k6, run locally through a
+  docker-compose profile, results exported to Prometheus/Grafana) and "DB-side metrics"
+  (postgres_exporter sidecar → Prometheus).
+- Development Workflow & Quality Gates: one bullet added — load/performance testing is
+  manual, opt-in, and MUST NOT be wired into check, build, CI, or the pre-push hook.
 
 Removed sections: none
 
 Templates requiring updates:
 - .specify/templates/plan-template.md  ✅ no change (Constitution Check is derived at runtime)
 - .specify/templates/spec-template.md   ✅ no change
-- .specify/templates/tasks-template.md  ✅ no change
+- .specify/templates/tasks-template.md  ✅ no change (the off-critical-path rule is stated here
+  and in AGENTS.md, and is enforced by not wiring anything into check/build)
 - .opencode/commands/speckit.*.md       ✅ no change (constitution loaded at runtime)
 
 Runtime guidance updated:
-- README.md (tech stack + test command aligned to locked decisions)
+- AGENTS.md / README.md gain the load-test run procedure and the "never on the critical path"
+  rule in the same feature (007) that adds the tooling.
 
-Follow-up TODOs: none (ratification date resolved to 2026-10-15)
-
-Sources: README.md (business requirements); user-confirmed technology/architecture
-  decisions (Java 21, Spring Boot 3.5.x, Gradle Kotlin DSL, hexagonal + DDD, jOOQ,
-  Flyway, PostgreSQL exclusion constraints, Spring MVC, X-User-Id demo auth,
-  Testcontainers, Actuator/Micrometer/Prometheus + springdoc OpenAPI, multi-stage Docker).
+Follow-up TODOs: none
 -->
 
 # Mini Doodle Constitution
@@ -135,6 +134,8 @@ amendment (see Governance).
 | API | Spring MVC, JSON REST |
 | Auth | Demo only: `X-User-Id` header identifies the caller; no JWT/OAuth |
 | Testing | JUnit 5, AssertJ, MockMvc, Testcontainers (PostgreSQL) |
+| Load testing | k6, run on demand through a `loadtest` docker-compose profile; results exported to the existing Prometheus/Grafana via remote write |
+| DB-side metrics | postgres_exporter sidecar → Prometheus (connections, sessions, locks, transactions) |
 | Observability | Actuator + Micrometer → Prometheus; structured logging |
 | API docs | springdoc-openapi + Swagger UI |
 | Packaging | Multi-stage Dockerfile (build → JRE) |
@@ -152,6 +153,9 @@ amendment (see Governance).
   pass it (or justify violations) before implementation.
 - Local full-stack run MUST work via `docker-compose up` with all dependencies declared.
 - CI MUST build and run the test suite on pull requests; merge requires green CI.
+- Load and performance testing is deliberate and manual: it runs via the `loadtest`
+  docker-compose profile and MUST NOT be wired into `check`, `build`, CI, or the pre-push
+  hook, so it can never slow or block a push.
 - Quality gates: compiles, unit tests pass, integration tests pass (Testcontainers),
   API documented, README consumption steps accurate.
 
@@ -169,4 +173,4 @@ amendment (see Governance).
   permitted only when recorded in the plan's Complexity Tracking table with justification.
 - Runtime development guidance lives in `AGENTS.md`, `README.md`, and `docs/`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-15 | **Last Amended**: 2026-10-15
+**Version**: 1.1.0 | **Ratified**: 2026-10-15 | **Last Amended**: 2026-10-18

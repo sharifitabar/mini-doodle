@@ -85,3 +85,18 @@ See [docs/CONVENTIONAL_COMMITS.md](docs/CONVENTIONAL_COMMITS.md) for full rules,
 2. Draft 1–3 candidate messages
 3. Explain reasoning
 4. Propose final message only after user confirmation (or as requested)
+## Load testing (k6)
+
+- The load test harness lives in `loadtest/` (SQL, k6 scripts, run scripts, results). It is off the
+  critical path: never add references to `loadtest/` in `build.gradle.kts`, `.github/workflows/*`,
+  `.githooks/*`, or other build/CI paths. `./gradlew build` must not be made to depend on it.
+- Run locally only: `./loadtest/run.sh --smoke` for wiring, `./loadtest/run.sh` for a full run.
+  Never run the load test in CI or on a schedule.
+- Before committing changes that touch the harness or compose, the standard gate applies:
+  `./gradlew spotlessApply` then `./gradlew check`. The gate must be green; no production schema
+  or Gradle changes are expected from this feature.
+- Tuning the service/schema/connection pool to hit targets is explicitly out of scope for this
+  feature; report a red run as a finding (measurement, not optimisation).
+- If the app's metrics are missing `http_server_requests_seconds_bucket`, enable histogram buckets
+  via `management.metrics.distribution.percentiles-histogram.http.server.requests: true` in
+  `src/main/resources/application.yml` (the only production-file change contemplated by the feature).

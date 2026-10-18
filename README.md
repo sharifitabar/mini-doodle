@@ -302,3 +302,61 @@ Services:
 ### Dashboards
 
 - `Mini Doodle - Golden Signals & SLI/SLO`: traffic, latency (p95), error rate, and business metrics with SLI/SLO-oriented panels (error budget proxy).
+
+## Load Test (1000-user booking)
+
+The repository contains a k6 load-test harness in `loadtest/` to simulate 1000 concurrent users
+(each with up to 800 slots and up to 100 meetings) against the booking service. The workload
+is 95% availability checks and 5% manipulations (add a slot → convert it to a meeting). Results
+are recorded in Prometheus and visualised in a dedicated Grafana dashboard.
+
+### Prerequisites
+
+- Docker and Docker Compose
+- At least 8 GB RAM (the seeded dataset and the in-memory Postgres + service use a few GB;
+  `docker compose down -v` frees space if you need it)
+
+### Quick start (smoke, proves wiring in ~1 minute)
+
+```bash
+./loadtest/run.sh --smoke
+```
+
+This provisions 10 users, runs 10 VUs for ~30 s steady state, enforces readiness, prints the
+Grafana URL, and exits with k6's exit code. A green smoke run proves plumbing; it does not prove
+performance.
+
+### Full run (1000 users, 2m ramp + 10m steady + 30s ramp-down)
+
+```bash
+./loadtest/run.sh
+```
+
+Default targets: availability p95 < 300 ms, p99 < 1000 ms; manipulation sequence p95 < 500 ms;
+error rate < 1% (business refusals 409 are excluded); mix 5% ± 1 pt. Defaults can be overridden
+via environment variables passed through `docker compose` (e.g. `TARGET_AVAIL_P95_MS=...`).
+
+### Reset and clean slate
+
+- `./loadtest/reset.sh` — removes only the load-test data (the 10000000-... block). The demo user
+  and any hand-made data survive.
+- `docker compose down -v` — full clean slate (drops volumes). Useful if you want to start
+  completely fresh or reclaim disk space.
+
+### Dashboard
+
+Grafana is at `http://localhost:3000` (admin/admin). The provisioned dashboard is
+`Mini Doodle - Load Test (1000 users)` (uid `minidoodle-load-test`). Select the run's `testid`
+from the template variable; panels show client-side latency (by flow), manipulation sequence
+latency, throughput, service-side percentiles by URI, database pressure (backends, sessions by
+state, locks, deadlocks, rollbacks, blocks read/hit), and checks + http_failed rates.
+
+### Notes
+
+- The harness is off the critical path: `loadtest/` is `.dockerignore`-d, `.gitignore`'d for
+  artifacts, and must never be referenced by Gradle, CI, or the pre-push hook. `./gradlew build`
+  must remain unchanged in behaviour/duration.
+- Readiness is enforced by `run.sh` polling `/actuator/health` (no curl in the runtime image).
+- Seed runs inside a single transaction, is idempotent (`ON CONFLICT DO NOTHING`), and `verify.sql`
+  enforces invariants before load starts. The window passed to k6 is derived from seeded data and
+  formatted as ISO-8601 with `Z`.

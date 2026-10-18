@@ -15,3 +15,5 @@ specs
 docs
 *.md
 !README.md
+# k6 load-test harness: never part of the application image build context
+loadtest

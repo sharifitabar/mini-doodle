@@ -28,7 +28,18 @@ services:
     ports:
       - "8080:8080"
 
-
+  # Database-side pressure for the load test (feature 007). Deliberately in the base stack:
+  # a scrape target that only exists during a load test would leave Prometheus permanently DOWN
+  # on every normal `docker compose up`. ~20 MB, and useful beyond the load test.
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.20.1
+    environment:
+      DATA_SOURCE_NAME: postgresql://minidoodle:minidoodle@db:5432/minidoodle?sslmode=disable
+    ports:
+      - "9187:9187"
+    depends_on:
+      db:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -39,9 +50,12 @@ services:
       - "9090:9090"
     depends_on:
       - app
+      - postgres-exporter
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      # Required by k6's prometheus remote-write output (`-o experimental-prometheus-rw`).
+      - '--web.enable-remote-write-receiver'
 
   grafana:
     image: grafana/grafana:10.4.7
@@ -57,6 +71,75 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     depends_on:
       - prometheus
+
+  # ---------------------------------------------------------------------------------------------
+  # k6 load test (feature 007) — behind the `loadtest` profile, so a plain `docker compose up`
+  # starts exactly the services it always did.
+  #
+  # Every interpolated variable below MUST keep its `:-` default. Compose interpolates the whole
+  # file for every command, including `docker compose up`, so `${SEED_USERS:?}` (or any `:?`
+  # form) would break the ordinary local full-stack run.
+  # ---------------------------------------------------------------------------------------------
+
+  # Dataset provisioning / reset. `seed` runs seed.sql; run.sh reuses it for reset.sql:
+  #   docker compose --profile loadtest run --rm seed /sql/reset.sql
+  seed:
+    profiles: ["loadtest"]
+    image: postgres:16
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: minidoodle
+    volumes:
+      - ./loadtest/sql:/sql:ro
+    entrypoint:
+      - psql
+      - --host=db
+      - --username=minidoodle
+      - --dbname=minidoodle
+      - --no-password
+      - --set=ON_ERROR_STOP=1
+      - --set=user_count=${SEED_USERS:-1000}
+      - --file
+    command: /sql/seed.sql
+
+  # The generator. `user:` is pinned to the invoking user (run.sh exports LOADTEST_UID/GID) so the
+  # summary written to /results lands owned by the person who ran it, not by root or by the image's
+  # own uid 12345 — neither of which can write into a host-owned 755 directory.
+  k6:
+    profiles: ["loadtest"]
+    image: grafana/k6:2.3.0
+    user: "${LOADTEST_UID:-0}:${LOADTEST_GID:-0}"
+    depends_on:
+      - prometheus
+    volumes:
+      - ./loadtest/k6:/scripts:ro
+      - ./loadtest/results:/results
+    environment:
+      BASE_URL: ${K6_BASE_URL:-http://app:8080}
+      TEST_ID: ${TEST_ID:-local}
+      WINDOW_FROM: ${WINDOW_FROM:-}
+      WINDOW_TO: ${WINDOW_TO:-}
+      LOAD_VUS: ${LOAD_VUS:-1000}
+      SEED_USERS: ${SEED_USERS:-1000}
+      LOAD_THINK_TIME_SECONDS: ${LOAD_THINK_TIME_SECONDS:-10}
+      LOAD_BODY_SAMPLE_EVERY: ${LOAD_BODY_SAMPLE_EVERY:-10}
+      LOAD_RAMP_SECONDS: ${LOAD_RAMP_SECONDS:-120}
+      LOAD_STEADY_SECONDS: ${LOAD_STEADY_SECONDS:-600}
+      LOAD_RAMPDOWN_SECONDS: ${LOAD_RAMPDOWN_SECONDS:-30}
+      SMOKE: ${SMOKE:-0}
+      MIX_TOLERANCE: ${MIX_TOLERANCE:-0.01}
+      TARGET_AVAIL_P95_MS: ${TARGET_AVAIL_P95_MS:-300}
+      TARGET_AVAIL_P99_MS: ${TARGET_AVAIL_P99_MS:-1000}
+      TARGET_MANIP_P95_MS: ${TARGET_MANIP_P95_MS:-500}
+      TARGET_ERROR_RATE: ${TARGET_ERROR_RATE:-0.01}
+      K6_PROMETHEUS_RW_SERVER_URL: ${K6_PROMETHEUS_RW_SERVER_URL:-http://prometheus:9090/api/v1/write}
+      # k6 exports only p(99) for trends by default; without this the dashboard's p95 series
+      # simply would not exist.
+      K6_PROMETHEUS_RW_TREND_STATS: ${K6_PROMETHEUS_RW_TREND_STATS:-p(90),p(95),p(99),avg,min,max}
+      K6_PROMETHEUS_RW_PUSH_INTERVAL: ${K6_PROMETHEUS_RW_PUSH_INTERVAL:-5s}
+    command: ["run", "-o", "experimental-prometheus-rw", "/scripts/booking.js"]
 
 volumes:
   db-data:

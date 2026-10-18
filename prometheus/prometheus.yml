@@ -8,3 +8,10 @@ scrape_configs:
     static_configs:
       - targets:
           - app:8080
+
+  # Database-side pressure, so a load-test run can tell "the database was the bottleneck"
+  # from "the service was the bottleneck" on one timeline (feature 007).
+  - job_name: postgres
+    static_configs:
+      - targets:
+          - postgres-exporter:9187

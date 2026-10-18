@@ -15,3 +15,7 @@ build/
 # Spec Kit machine-local state
 .specify/feature.json
 .specify/extensions/*/local-config.yml
+
+# Load-test run artifacts (the harness itself is source and is tracked)
+loadtest/results/*
+!loadtest/results/.gitkeep
