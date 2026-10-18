@@ -114,6 +114,18 @@ class JooqSlotRepository implements SlotRepository {
     }
 
     @Override
+    public Optional<TimeSlot> findByIdAndCalendarIdForUpdate(SlotId slotId, CalendarId calendarId) {
+        return dsl.selectFrom(TimeSlots.TIME_SLOTS)
+                .where(
+                        TimeSlots.TIME_SLOTS
+                                .ID
+                                .eq(slotId.value())
+                                .and(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId.value())))
+                .forUpdate()
+                .fetchOptional(PersistenceMapper::toTimeSlot);
+    }
+
+    @Override
     public List<TimeSlot> find(SlotFilter filter) {
         return dsl.selectFrom(TimeSlots.TIME_SLOTS)
                 .where(conditions(filter))

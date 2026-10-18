@@ -112,7 +112,7 @@ class SlotApplicationService
     public TimeSlot updateSlot(UserId caller, SlotId slotId, UpdateSlotCommand command) {
         Calendar calendar = calendarResolver.resolve(caller);
         TimeSlot slot =
-                slots.findByIdAndCalendarId(slotId, calendar.id())
+                slots.findByIdAndCalendarIdForUpdate(slotId, calendar.id())
                         .orElseThrow(
                                 () ->
                                         new SlotNotFoundException(
@@ -142,9 +142,10 @@ class SlotApplicationService
     }
 
     @Override
+    @Transactional
     public void deleteSlot(UserId caller, SlotId slotId) {
         Calendar calendar = calendarResolver.resolve(caller);
-        slots.findByIdAndCalendarId(slotId, calendar.id())
+        slots.findByIdAndCalendarIdForUpdate(slotId, calendar.id())
                 .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
         if (meetings.existsBySlotId(slotId)) {
             throw new MeetingConflictException(

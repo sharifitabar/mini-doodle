@@ -63,7 +63,7 @@ class MeetingApplicationService
                 () -> {
                     Calendar calendar = calendarResolver.resolve(caller);
                     TimeSlot slot =
-                            slots.findByIdAndCalendarId(command.slotId(), calendar.id())
+                            slots.findByIdAndCalendarIdForUpdate(command.slotId(), calendar.id())
                                     .orElseThrow(
                                             () ->
                                                     new SlotNotFoundException(
@@ -129,7 +129,7 @@ class MeetingApplicationService
                 () -> {
                     Calendar calendar = calendarResolver.resolve(caller);
                     TimeSlot slot =
-                            slots.findByIdAndCalendarId(slotId, calendar.id())
+                            slots.findByIdAndCalendarIdForUpdate(slotId, calendar.id())
                                     .orElseThrow(
                                             () ->
                                                     new SlotNotFoundException(

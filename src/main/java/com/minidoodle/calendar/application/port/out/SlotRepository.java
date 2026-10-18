@@ -17,6 +17,17 @@ public interface SlotRepository {
 
     Optional<TimeSlot> findByIdAndCalendarId(SlotId slotId, CalendarId calendarId);
 
+    /**
+     * Loads the slot owned by the given calendar, acquiring a row lock for update. Callers must use
+     * this variant when performing state-changing operations that may race with booking or
+     * cancellation (update/delete/book/cancel), so the slot's invariant checks observe a consistent
+     * snapshot and the subsequent write does not overwrite a concurrent change.
+     */
+    default Optional<TimeSlot> findByIdAndCalendarIdForUpdate(
+            SlotId slotId, CalendarId calendarId) {
+        return findByIdAndCalendarId(slotId, calendarId);
+    }
+
     List<TimeSlot> find(SlotFilter filter);
 
     long count(SlotFilter filter);
