@@ -1,5 +1,7 @@
 package com.minidoodle.calendar.adapter.in.web;
 
+import com.minidoodle.calendar.domain.model.Meeting;
+
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -10,4 +12,5 @@ import jakarta.validation.constraints.Size;
 public record BookMeetingRequest(
         @NotBlank @Size(max = 200) String title,
         @Size(max = 2000) String description,
-        @NotEmpty @Valid List<ParticipantRequest> participants) {}
+        @NotEmpty @Size(max = Meeting.MAX_PARTICIPANTS) @Valid
+                List<ParticipantRequest> participants) {}

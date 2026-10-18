@@ -90,6 +90,29 @@ class MeetingControllerBookIT extends PostgresIntegrationTest {
     }
 
     @Test
+    void rejectsTooManyParticipants() throws Exception {
+        Caller caller = createCaller();
+        UUID slotId = insertSlot(caller.calendarId(), SlotStatus.FREE);
+        StringBuilder participants = new StringBuilder();
+        for (int i = 0; i < 101; i++) {
+            if (i > 0) {
+                participants.append(',');
+            }
+            participants.append("{\"name\":\"P").append(i).append("\"}");
+        }
+
+        mockMvc.perform(
+                        post("/api/v1/slots/{id}/meeting", slotId)
+                                .header(HEADER, caller.userId().value())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"title\":\"Title\",\"participants\":["
+                                                + participants
+                                                + "]}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void rejectsParticipantWithoutNameOrEmail() throws Exception {
         Caller caller = createCaller();
         UUID slotId = insertSlot(caller.calendarId(), SlotStatus.FREE);

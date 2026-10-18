@@ -14,6 +14,10 @@ import java.util.Objects;
  */
 public record TimeRange(OffsetDateTime start, int durationMinutes) {
 
+    /**
+     * Absolute ceiling matching {@code ck_duration_max} on {@code time_slots}. Configuration may
+     * only lower the allowed duration below this value, never raise it without a schema change.
+     */
     public static final int MAX_DURATION_MINUTES = 1440;
 
     public TimeRange {
@@ -26,6 +30,25 @@ public record TimeRange(OffsetDateTime start, int durationMinutes) {
             throw new InvalidSlotException(
                     "durationMinutes must not exceed " + MAX_DURATION_MINUTES);
         }
+    }
+
+    /**
+     * Builds a range whose duration must also respect a configured (≤ absolute) maximum. Used by
+     * the application layer when creating or updating slots from caller input.
+     */
+    public static TimeRange of(OffsetDateTime start, int durationMinutes, int maxDurationMinutes) {
+        if (maxDurationMinutes < 1 || maxDurationMinutes > MAX_DURATION_MINUTES) {
+            throw new IllegalArgumentException(
+                    "maxDurationMinutes must be between 1 and " + MAX_DURATION_MINUTES);
+        }
+        if (durationMinutes <= 0) {
+            throw new InvalidSlotException("durationMinutes must be positive");
+        }
+        if (durationMinutes > maxDurationMinutes) {
+            throw new InvalidSlotException(
+                    "durationMinutes must not exceed " + maxDurationMinutes);
+        }
+        return new TimeRange(start, durationMinutes);
     }
 
     public OffsetDateTime end() {

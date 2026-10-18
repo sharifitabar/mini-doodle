@@ -71,6 +71,18 @@ class MeetingTest {
     }
 
     @Test
+    void rejectsTooManyParticipants() {
+        List<Participant> tooMany =
+                java.util.stream.IntStream.rangeClosed(1, Meeting.MAX_PARTICIPANTS + 1)
+                        .mapToObj(i -> new Participant("P" + i, null))
+                        .toList();
+
+        assertThatThrownBy(() -> Meeting.create(SLOT, "Title", null, tooMany, NOW))
+                .isInstanceOf(InvalidMeetingException.class)
+                .hasMessageContaining(String.valueOf(Meeting.MAX_PARTICIPANTS));
+    }
+
+    @Test
     void truncatesTimestampsToMicrosecondPrecision() {
         OffsetDateTime withNanos =
                 OffsetDateTime.of(2026, 11, 1, 8, 0, 0, 123_456_789, ZoneOffset.UTC);

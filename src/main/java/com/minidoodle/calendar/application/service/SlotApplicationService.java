@@ -19,6 +19,7 @@ import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeRange;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.calendar.domain.model.UserId;
+import com.minidoodle.shared.config.SlotProperties;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -44,6 +45,7 @@ class SlotApplicationService
     private final SlotRepository slots;
     private final MeetingRepository meetings;
     private final SlotMetrics metrics;
+    private final SlotProperties slotProperties;
     private final Clock clock;
 
     SlotApplicationService(
@@ -51,11 +53,13 @@ class SlotApplicationService
             SlotRepository slots,
             MeetingRepository meetings,
             SlotMetrics metrics,
+            SlotProperties slotProperties,
             Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
         this.meetings = meetings;
         this.metrics = metrics;
+        this.slotProperties = slotProperties;
         this.clock = clock;
     }
 
@@ -65,7 +69,10 @@ class SlotApplicationService
                 () -> {
                     Calendar calendar = calendarResolver.resolve(caller);
                     TimeRange timeRange =
-                            new TimeRange(command.startAt(), command.durationMinutes());
+                            TimeRange.of(
+                                    command.startAt(),
+                                    command.durationMinutes(),
+                                    slotProperties.maxDurationMinutes());
                     TimeSlot slot =
                             TimeSlot.create(calendar.id(), timeRange, OffsetDateTime.now(clock));
                     slots.insert(slot);
@@ -130,7 +137,9 @@ class SlotApplicationService
                     command.durationMinutes() != null
                             ? command.durationMinutes()
                             : current.durationMinutes();
-            slot.changeTime(new TimeRange(start, durationMinutes), now);
+            slot.changeTime(
+                    TimeRange.of(start, durationMinutes, slotProperties.maxDurationMinutes()),
+                    now);
         }
         if (command.status() != null) {
             slot.changeStatus(command.status(), now);

@@ -17,6 +17,11 @@ public final class Meeting {
 
     public static final int MAX_TITLE_LENGTH = 200;
     public static final int MAX_DESCRIPTION_LENGTH = 2000;
+    /**
+     * Practical upper bound on participants. Persistence stores {@code position} as {@code
+     * SMALLINT}; this limit stays well below that type's range and caps request cost.
+     */
+    public static final int MAX_PARTICIPANTS = 100;
 
     private final MeetingId id;
     private final SlotId slotId;
@@ -98,6 +103,10 @@ public final class Meeting {
     private static List<Participant> requireParticipants(List<Participant> participants) {
         if (participants == null || participants.isEmpty()) {
             throw new InvalidMeetingException("A meeting must have at least one participant");
+        }
+        if (participants.size() > MAX_PARTICIPANTS) {
+            throw new InvalidMeetingException(
+                    "A meeting must not have more than " + MAX_PARTICIPANTS + " participants");
         }
         if (participants.stream().anyMatch(Objects::isNull)) {
             throw new InvalidMeetingException("A participant must not be null");
