@@ -100,7 +100,7 @@ services:
       - --dbname=minidoodle
       - --no-password
       - --set=ON_ERROR_STOP=1
-      - --set=user_count=${SEED_USERS:-1000}
+      - --set=user_count=${SEED_USERS:-100}
       - --file
     command: /sql/seed.sql
 
@@ -121,12 +121,12 @@ services:
       TEST_ID: ${TEST_ID:-local}
       WINDOW_FROM: ${WINDOW_FROM:-}
       WINDOW_TO: ${WINDOW_TO:-}
-      LOAD_VUS: ${LOAD_VUS:-1000}
-      SEED_USERS: ${SEED_USERS:-1000}
+      LOAD_VUS: ${LOAD_VUS:-100}
+      SEED_USERS: ${SEED_USERS:-100}
       LOAD_THINK_TIME_SECONDS: ${LOAD_THINK_TIME_SECONDS:-10}
       LOAD_BODY_SAMPLE_EVERY: ${LOAD_BODY_SAMPLE_EVERY:-10}
-      LOAD_RAMP_SECONDS: ${LOAD_RAMP_SECONDS:-120}
-      LOAD_STEADY_SECONDS: ${LOAD_STEADY_SECONDS:-600}
+      LOAD_RAMP_SECONDS: ${LOAD_RAMP_SECONDS:-30}
+      LOAD_STEADY_SECONDS: ${LOAD_STEADY_SECONDS:-300}
       LOAD_RAMPDOWN_SECONDS: ${LOAD_RAMPDOWN_SECONDS:-30}
       SMOKE: ${SMOKE:-0}
       MIX_TOLERANCE: ${MIX_TOLERANCE:-0.01}

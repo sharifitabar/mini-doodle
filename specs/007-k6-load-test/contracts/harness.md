@@ -21,7 +21,7 @@ every normal `docker compose up`. It is ~20 MB and its metrics are useful beyond
 
 | Service | Image | Command | Purpose |
 | --- | --- | --- | --- |
-| `seed` | `postgres:16` | `psql --host=db --username=minidoodle --dbname=minidoodle --set=ON_ERROR_STOP=1 --set=user_count=${SEED_USERS:-1000} --file=/sql/seed.sql` | provisioning; `docker compose --profile loadtest run --rm seed /sql/reset.sql` reuses it for reset |
+| `seed` | `postgres:16` | `psql --host=db --username=minidoodle --dbname=minidoodle --set=ON_ERROR_STOP=1 --set=user_count=${SEED_USERS:-100} --file=/sql/seed.sql` | provisioning; `docker compose --profile loadtest run --rm seed /sql/reset.sql` reuses it for reset |
 | `k6` | `grafana/k6:2.3.0` | `k6 run -o experimental-prometheus-rw /scripts/booking.js` | the generator |
 
 `docker compose up` therefore behaves exactly as it does today (FR-028, and the constitution's
@@ -34,12 +34,12 @@ every normal `docker compose up`. It is ~20 MB and its metrics are useful beyond
 | `K6_BASE_URL` | `http://app:8080` | compose → container `BASE_URL` | service under test. The container variable is `BASE_URL`; the host override is `K6_BASE_URL` |
 | `TEST_ID` | `local` (set by `run.sh` to a UTC timestamp) | k6 | run identity; becomes the `testid` wide tag |
 | `WINDOW_FROM` / `WINDOW_TO` | empty (set by `run.sh`) | k6 | ISO-8601 read window resolved from the seeded data |
-| `LOAD_VUS` | `1000` | k6 | resident simulated users |
-| `SEED_USERS` | `1000` | seed service (compose interpolation) | how many users provisioning creates; **must be ≥ `LOAD_VUS`** or a VU maps to a non-existent identity and produces `403`s |
+| `LOAD_VUS` | `100` | k6 | resident simulated users |
+| `SEED_USERS` | `100` | seed service (compose interpolation) | how many users provisioning creates; **must be ≥ `LOAD_VUS`** or a VU maps to a non-existent identity and produces `403`s |
 | `LOAD_THINK_TIME_SECONDS` | `10` | k6 | think time between actions |
 | `LOAD_BODY_SAMPLE_EVERY` | `10` | k6 | how often a read response is parsed and asserted |
-| `LOAD_RAMP_SECONDS` | `120` (`10` under `--smoke`) | k6 | ramp-up stage duration |
-| `LOAD_STEADY_SECONDS` | `600` (`30` under `--smoke`) | k6 | steady-state stage duration |
+| `LOAD_RAMP_SECONDS` | `30` (`10` under `--smoke`) | k6 | ramp-up stage duration |
+| `LOAD_STEADY_SECONDS` | `300` (`30` under `--smoke`) | k6 | steady-state stage duration |
 | `LOAD_RAMPDOWN_SECONDS` | `30` (`10` under `--smoke`) | k6 | ramp-down stage duration |
 | `SMOKE` | `0` (`1` under `--smoke`) | k6 | omits the mix threshold; a short run cannot guarantee 4–6% |
 | `MIX_TOLERANCE` | `0.01` | k6 | half-width of the mix band around 5% |

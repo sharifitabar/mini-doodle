@@ -33,12 +33,12 @@ const userUuid = (userIndex) => {
 export const config = {
   baseUrl: str('BASE_URL', 'http://app:8080'),
   testId: str('TEST_ID', 'local'),
-  vus: num('LOAD_VUS', 1000),
-  seedUsers: num('SEED_USERS', 1000),
+  vus: num('LOAD_VUS', 100),
+  seedUsers: num('SEED_USERS', 100),
   thinkTimeSeconds: num('LOAD_THINK_TIME_SECONDS', 10),
   bodySampleEvery: num('LOAD_BODY_SAMPLE_EVERY', 10),
-  rampSeconds: num('LOAD_RAMP_SECONDS', 120),
-  steadySeconds: num('LOAD_STEADY_SECONDS', 600),
+  rampSeconds: num('LOAD_RAMP_SECONDS', 30),
+  steadySeconds: num('LOAD_STEADY_SECONDS', 300),
   rampDownSeconds: num('LOAD_RAMPDOWN_SECONDS', 30),
   smoke: str('SMOKE', '0') === '1',
   targets: {

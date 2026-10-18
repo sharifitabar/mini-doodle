@@ -326,7 +326,7 @@ This provisions 10 users, runs 10 VUs for ~30 s steady state, enforces readiness
 Grafana URL, and exits with k6's exit code. A green smoke run proves plumbing; it does not prove
 performance.
 
-### Full run (1000 users, 2m ramp + 10m steady + 30s ramp-down)
+### Full run (100 users, 30s ramp + 5m steady + 30s ramp-down)
 
 ```bash
 ./loadtest/run.sh

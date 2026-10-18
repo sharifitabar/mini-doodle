@@ -76,8 +76,8 @@ docker compose --profile loadtest run --rm \
 | Stack up (build on first run) | 1–5 min first time, ~20 s after | Image build dominates the first run |
 | Readiness wait | seconds | Polls `/actuator/health` until `UP` |
 | Seed | seconds – 2 min | One pass inserts ≈851,000 rows and runs `ANALYZE` |
-| Load | 12.5 min | 2 min ramp-up + 10 min steady state + 30 s ramp-down |
-| Total | ~15 min (first run ~20 min) | Routine runs: about a quarter of an hour |
+| Load | ~6 min | 30 s ramp-up + 5 min steady state + 30 s ramp-down (defaults; override via env) |
+| Total | ~8 min (first run longer if rebuilding) | Scale back up with `SEED_USERS`/`LOAD_VUS`/`LOAD_STEADY_SECONDS` |
 
 ## Where to look while it runs
 

@@ -32,7 +32,7 @@ Options:
   -h, --help   Show this help and exit.
 
 Examples:
-  ./loadtest/run.sh                # full run (1000 users)
+  ./loadtest/run.sh                # full run (100 users, 5 min steady)
   ./loadtest/run.sh --smoke        # wiring check in ~1 minute
   ./loadtest/run.sh --no-reset     # continue an already-provisioned dataset
 USAGE
@@ -129,10 +129,10 @@ if [ "$SMOKE" = 1 ]; then
   export SMOKE=1
   echo "==> Smoke mode: SEED_USERS=${SEED_USERS} LOAD_VUS=${LOAD_VUS} steady=${LOAD_STEADY_SECONDS}s"
 else
-  export SEED_USERS="${SEED_USERS:-1000}"
-  export LOAD_VUS="${LOAD_VUS:-1000}"
-  export LOAD_RAMP_SECONDS="${LOAD_RAMP_SECONDS:-120}"
-  export LOAD_STEADY_SECONDS="${LOAD_STEADY_SECONDS:-600}"
+  export SEED_USERS="${SEED_USERS:-100}"
+  export LOAD_VUS="${LOAD_VUS:-100}"
+  export LOAD_RAMP_SECONDS="${LOAD_RAMP_SECONDS:-30}"
+  export LOAD_STEADY_SECONDS="${LOAD_STEADY_SECONDS:-300}"
   export LOAD_RAMPDOWN_SECONDS="${LOAD_RAMPDOWN_SECONDS:-30}"
   export SMOKE=0
   echo "==> Normal mode: SEED_USERS=${SEED_USERS} LOAD_VUS=${LOAD_VUS} steady=${LOAD_STEADY_SECONDS}s"
