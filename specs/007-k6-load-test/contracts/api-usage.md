@@ -12,7 +12,7 @@ under it.
 | --- | --- |
 | Base URL (in compose) | `http://app:8080` (`BASE_URL`) |
 | Identity header | `X-User-Id: <uuid>` — required on every request |
-| Identity value | the VU's own seeded user, `10000000-0000-4000-8000-000000000{n}` |
+| Identity value | the VU's own seeded user, `10000000-0000-4000-8000-` + `lpad(to_hex(n), 12, '0')` |
 | Content type (writes) | `application/json` |
 
 A missing or malformed header yields `400`; a well-formed header for an unknown user yields `403`.

@@ -15,7 +15,7 @@ verdict) that exist only in k6 and in dashboards.
 
 | Column | Value |
 | --- | --- |
-| `id` | reserved namespace, see §2 — `10000000-0000-4000-8000-000000000{n}` for `n = 1…1000` |
+| `id` | reserved namespace, see §2 — `10000000-0000-4000-8000-` + `lpad(to_hex(n), 12, '0')` for `n = 1…1000` |
 | `display_name` | `Load User {n}` |
 | `created_at`, `updated_at` | database defaults |
 
@@ -25,7 +25,7 @@ is untouched and coexists.
 ### LoadCalendar → `calendars`
 
 One row per load user (`uq_calendars_user` enforces exactly one calendar per user):
-`id = 20000000-0000-4000-8000-000000000{n}`, `user_id = ` the matching load user.
+`id = 20000000-0000-4000-8000-` + `lpad(to_hex(n), 12, '0')`, `user_id =` the matching load user.
 Exactly 1000 rows.
 
 ### LoadTimeSlot → `time_slots`

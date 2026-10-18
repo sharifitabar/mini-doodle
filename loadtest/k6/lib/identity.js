@@ -22,9 +22,11 @@ const requiredStr = (name) => {
 };
 
 const userUuid = (userIndex) => {
-  // Deterministic mapping: VU -> seed user id in the 10000000-0000-4000-8000- namespace
+  // Deterministic mapping: VU -> seed user id in the 10000000-0000-4000-8000- namespace.
+  // Must match seed.sql: lpad(to_hex(n), 12, '0') — decimal padding would invent
+  // non-existent ids for n >= 10 (e.g. …000000000010 vs the real …00000000000a).
   // userIndex is 1-based: ((vuId-1) % seedUsers) + 1
-  const suffix = String(userIndex).padStart(12, '0');
+  const suffix = userIndex.toString(16).padStart(12, '0');
   return `10000000-0000-4000-8000-${suffix}`;
 };
 

@@ -94,7 +94,7 @@
 
 ### Implementation
 
-- [x] T020 [P] [US1] Write `loadtest/k6/lib/identity.js`: `__VU` → user UUID mapping (`10000000-0000-4000-8000-` + zero-padded VU), `LOAD_VUS`/`LOAD_THINK_TIME_SECONDS`/`LOAD_BODY_SAMPLE_EVERY` reading with defaults, and the `WINDOW_FROM`/`WINDOW_TO` injection with a clear failure if unset
+- [x] T020 [P] [US1] Write `loadtest/k6/lib/identity.js`: `__VU` → user UUID mapping (`10000000-0000-4000-8000-` + `lpad(to_hex(n), 12, '0')`), `LOAD_VUS`/`LOAD_THINK_TIME_SECONDS`/`LOAD_BODY_SAMPLE_EVERY` reading with defaults, and the `WINDOW_FROM`/`WINDOW_TO` injection with a clear failure if unset
 - [x] T021 [P] [US1] Write `loadtest/k6/lib/report.js`: `handleSummary` writing `/results/summary-${TEST_ID}.json` plus a stdout summary of request counts, achieved request rate and latency percentiles (the verdict line is completed in T035)
 - [x] T022 [US1] Write `loadtest/k6/booking.js`: `options` with the `booking` scenario (`ramping-vus`, `2m → LOAD_VUS`, `10m → LOAD_VUS`, `30s → 0`, `gracefulRampDown: 30s`), the `testid` wide tag from `__ENV.TEST_ID`, and an `--smoke`-friendly duration override
 - [x] T023 [US1] Implement the availability flow in `loadtest/k6/booking.js`: `GET /api/v1/availability` with the VU's own `X-User-Id` and the injected window, tagged `flow: availability`, `responseType: 'none'` except on every `LOAD_BODY_SAMPLE_EVERY`-th read, and an 8–12 s jittered think time per `contracts/load-scenario.md` §1
