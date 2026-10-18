@@ -2,6 +2,7 @@ package com.minidoodle.calendar.application.service;
 
 import com.minidoodle.calendar.application.port.in.AvailabilityQuery;
 import com.minidoodle.calendar.application.port.in.GetAvailabilityUseCase;
+import com.minidoodle.calendar.application.port.out.AvailabilityMetrics;
 import com.minidoodle.calendar.application.port.out.AvailabilityRepository;
 import com.minidoodle.calendar.domain.model.Availability;
 import com.minidoodle.calendar.domain.model.Calendar;

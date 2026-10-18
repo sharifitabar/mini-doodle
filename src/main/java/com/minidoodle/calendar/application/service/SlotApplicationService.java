@@ -11,7 +11,10 @@ import com.minidoodle.calendar.application.port.in.UpdateSlotCommand;
 import com.minidoodle.calendar.application.port.in.UpdateSlotUseCase;
 import com.minidoodle.calendar.application.port.out.MeetingRepository;
 import com.minidoodle.calendar.application.port.out.SlotFilter;
+import com.minidoodle.calendar.application.port.out.SlotLimits;
+import com.minidoodle.calendar.application.port.out.SlotMetrics;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
+import com.minidoodle.calendar.domain.exception.InvalidSlotException;
 import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
 import com.minidoodle.calendar.domain.model.Calendar;
@@ -19,7 +22,6 @@ import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeRange;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.calendar.domain.model.UserId;
-import com.minidoodle.shared.config.SlotProperties;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -45,7 +47,7 @@ class SlotApplicationService
     private final SlotRepository slots;
     private final MeetingRepository meetings;
     private final SlotMetrics metrics;
-    private final SlotProperties slotProperties;
+    private final SlotLimits slotLimits;
     private final Clock clock;
 
     SlotApplicationService(
@@ -53,13 +55,13 @@ class SlotApplicationService
             SlotRepository slots,
             MeetingRepository meetings,
             SlotMetrics metrics,
-            SlotProperties slotProperties,
+            SlotLimits slotLimits,
             Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
         this.meetings = meetings;
         this.metrics = metrics;
-        this.slotProperties = slotProperties;
+        this.slotLimits = slotLimits;
         this.clock = clock;
     }
 
@@ -69,10 +71,8 @@ class SlotApplicationService
                 () -> {
                     Calendar calendar = calendarResolver.resolve(caller);
                     TimeRange timeRange =
-                            TimeRange.of(
-                                    command.startAt(),
-                                    command.durationMinutes(),
-                                    slotProperties.maxDurationMinutes());
+                            requireDurationWithinLimits(
+                                    command.startAt(), command.durationMinutes());
                     TimeSlot slot =
                             TimeSlot.create(calendar.id(), timeRange, OffsetDateTime.now(clock));
                     slots.insert(slot);
@@ -137,8 +137,7 @@ class SlotApplicationService
                     command.durationMinutes() != null
                             ? command.durationMinutes()
                             : current.durationMinutes();
-            slot.changeTime(
-                    TimeRange.of(start, durationMinutes, slotProperties.maxDurationMinutes()), now);
+            slot.changeTime(requireDurationWithinLimits(start, durationMinutes), now);
         }
         if (command.status() != null) {
             slot.changeStatus(command.status(), now);
@@ -147,6 +146,18 @@ class SlotApplicationService
         slots.update(slot);
         metrics.slotUpdated(slot);
         return slot;
+    }
+
+    /**
+     * Applies the configured duration policy, then the absolute domain ceiling via {@link
+     * TimeRange}. Configured max may only lower the absolute limit.
+     */
+    private TimeRange requireDurationWithinLimits(OffsetDateTime start, int durationMinutes) {
+        int max = slotLimits.maxDurationMinutes();
+        if (durationMinutes > max) {
+            throw new InvalidSlotException("durationMinutes must not exceed " + max);
+        }
+        return new TimeRange(start, durationMinutes);
     }
 
     @Override

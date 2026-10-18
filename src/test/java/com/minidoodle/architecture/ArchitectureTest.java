@@ -42,4 +42,16 @@ class ArchitectureTest {
     @ArchTest
     static final ArchRule THE_CONTEXT_HAS_NO_PACKAGE_CYCLES =
             ArchitectureRules.THE_CONTEXT_HAS_NO_PACKAGE_CYCLES;
+
+    @ArchTest
+    static final ArchRule APPLICATION_DEPENDENCIES_ARE_CLOSED =
+            ArchitectureRules.APPLICATION_DEPENDENCIES_ARE_CLOSED;
+
+    @ArchTest
+    static final ArchRule INBOUND_USES_APPLICATION_INPUT_PORTS =
+            ArchitectureRules.INBOUND_USES_APPLICATION_INPUT_PORTS;
+
+    @ArchTest
+    static final ArchRule OUTBOUND_DOES_NOT_DEPEND_ON_INBOUND =
+            ArchitectureRules.OUTBOUND_DOES_NOT_DEPEND_ON_INBOUND;
 }

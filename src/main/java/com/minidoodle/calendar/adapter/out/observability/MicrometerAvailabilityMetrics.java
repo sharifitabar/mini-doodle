@@ -1,5 +1,6 @@
-package com.minidoodle.calendar.application.service;
+package com.minidoodle.calendar.adapter.out.observability;
 
+import com.minidoodle.calendar.application.port.out.AvailabilityMetrics;
 import com.minidoodle.calendar.domain.model.Availability;
 
 import java.util.function.Supplier;
@@ -17,14 +18,14 @@ import io.micrometer.core.instrument.Timer;
  * convention. Kept out of the domain and persistence adapters.
  */
 @Component
-class AvailabilityMetrics {
+class MicrometerAvailabilityMetrics implements AvailabilityMetrics {
 
-    private static final Logger log = LoggerFactory.getLogger(AvailabilityMetrics.class);
+    private static final Logger log = LoggerFactory.getLogger(MicrometerAvailabilityMetrics.class);
 
     private final Counter queries;
     private final Timer queryTimer;
 
-    AvailabilityMetrics(MeterRegistry registry) {
+    MicrometerAvailabilityMetrics(MeterRegistry registry) {
         this.queries =
                 Counter.builder("minidoodle.availability.queries")
                         .description("Number of availability queries")
@@ -35,11 +36,13 @@ class AvailabilityMetrics {
                         .register(registry);
     }
 
-    <T> T timeQuery(Supplier<T> operation) {
+    @Override
+    public <T> T timeQuery(Supplier<T> operation) {
         return queryTimer.record(operation);
     }
 
-    void recordQuery(Availability availability) {
+    @Override
+    public void recordQuery(Availability availability) {
         queries.increment();
         log.info(
                 "event=availability.query frameStart={} frameEnd={} intervals={}",

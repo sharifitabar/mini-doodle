@@ -1,5 +1,6 @@
-package com.minidoodle.calendar.application.service;
+package com.minidoodle.calendar.adapter.out.observability;
 
+import com.minidoodle.calendar.application.port.out.MeetingMetrics;
 import com.minidoodle.calendar.domain.model.Meeting;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeSlot;
@@ -19,9 +20,9 @@ import io.micrometer.core.instrument.Timer;
  * (key=value) log convention. Kept out of the domain and persisted adapters.
  */
 @Component
-class MeetingMetrics {
+class MicrometerMeetingMetrics implements MeetingMetrics {
 
-    private static final Logger log = LoggerFactory.getLogger(MeetingMetrics.class);
+    private static final Logger log = LoggerFactory.getLogger(MicrometerMeetingMetrics.class);
 
     private final Counter booked;
     private final Counter viewed;
@@ -30,7 +31,7 @@ class MeetingMetrics {
     private final Timer getTimer;
     private final Timer cancelTimer;
 
-    MeetingMetrics(MeterRegistry registry) {
+    MicrometerMeetingMetrics(MeterRegistry registry) {
         this.booked =
                 Counter.builder("minidoodle.meetings.booked")
                         .description("Number of meetings booked")
@@ -57,7 +58,8 @@ class MeetingMetrics {
                         .register(registry);
     }
 
-    void meetingBooked(Meeting meeting, TimeSlot slot) {
+    @Override
+    public void meetingBooked(Meeting meeting, TimeSlot slot) {
         booked.increment();
         log.info(
                 "event=meeting.booked meetingId={} slotId={} calendarId={} participants={}",
@@ -67,25 +69,30 @@ class MeetingMetrics {
                 meeting.participants().size());
     }
 
-    void meetingViewed(SlotId slotId) {
+    @Override
+    public void meetingViewed(SlotId slotId) {
         viewed.increment();
         log.info("event=meeting.viewed slotId={}", slotId.value());
     }
 
-    void meetingCancelled(SlotId slotId) {
+    @Override
+    public void meetingCancelled(SlotId slotId) {
         cancelled.increment();
         log.info("event=meeting.cancelled slotId={}", slotId.value());
     }
 
-    <T> T timeBook(Supplier<T> operation) {
+    @Override
+    public <T> T timeBook(Supplier<T> operation) {
         return bookTimer.record(operation);
     }
 
-    <T> T timeGet(Supplier<T> operation) {
+    @Override
+    public <T> T timeGet(Supplier<T> operation) {
         return getTimer.record(operation);
     }
 
-    void timeCancel(Runnable operation) {
+    @Override
+    public void timeCancel(Runnable operation) {
         cancelTimer.record(operation);
     }
 }

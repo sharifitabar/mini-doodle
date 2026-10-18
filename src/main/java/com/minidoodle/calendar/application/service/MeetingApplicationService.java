@@ -5,6 +5,7 @@ import com.minidoodle.calendar.application.port.in.BookMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.CancelMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.GetMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.MeetingView;
+import com.minidoodle.calendar.application.port.out.MeetingMetrics;
 import com.minidoodle.calendar.application.port.out.MeetingRepository;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
 import com.minidoodle.calendar.domain.exception.MeetingConflictException;

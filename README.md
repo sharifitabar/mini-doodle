@@ -247,7 +247,8 @@ tools. The one-time reformat that introduced the gate is recorded in
 
 - **Intervals as `tstzrange`**: overlap is a first-class DB concern enforced by a GIST exclusion
   constraint (`btree_gist`), so correctness does not rely on application-level checks alone.
-- **Hexagonal architecture**: domain and application layers are framework-free; jOOQ, Spring MVC,
+- **Hexagonal architecture**: the domain and application ports are framework-free; application services retain Spring
+  service/transaction annotations. Configuration and telemetry use outbound ports; jOOQ, Spring MVC,
   and Micrometer live in adapters.
 - **Concurrency**: overlapping concurrent inserts are retried on deadlock/serialization errors and
   eventually surface as a `409`.

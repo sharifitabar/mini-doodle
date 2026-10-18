@@ -1,5 +1,6 @@
-package com.minidoodle.calendar.application.service;
+package com.minidoodle.calendar.adapter.out.observability;
 
+import com.minidoodle.calendar.application.port.out.SlotMetrics;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 
@@ -18,9 +19,9 @@ import io.micrometer.core.instrument.Timer;
  * (key=value) log convention. Kept out of the domain and persisted adapters.
  */
 @Component
-class SlotMetrics {
+class MicrometerSlotMetrics implements SlotMetrics {
 
-    private static final Logger log = LoggerFactory.getLogger(SlotMetrics.class);
+    private static final Logger log = LoggerFactory.getLogger(MicrometerSlotMetrics.class);
 
     private final Counter created;
     private final Counter updated;
@@ -28,7 +29,7 @@ class SlotMetrics {
     private final Timer createTimer;
     private final Timer listTimer;
 
-    SlotMetrics(MeterRegistry registry) {
+    MicrometerSlotMetrics(MeterRegistry registry) {
         this.created =
                 Counter.builder("minidoodle.slots.created")
                         .description("Number of slots created")
@@ -51,7 +52,8 @@ class SlotMetrics {
                         .register(registry);
     }
 
-    void slotCreated(TimeSlot slot) {
+    @Override
+    public void slotCreated(TimeSlot slot) {
         created.increment();
         log.info(
                 "event=slot.created slotId={} calendarId={}",
@@ -59,7 +61,8 @@ class SlotMetrics {
                 slot.calendarId().value());
     }
 
-    void slotUpdated(TimeSlot slot) {
+    @Override
+    public void slotUpdated(TimeSlot slot) {
         updated.increment();
         log.info(
                 "event=slot.updated slotId={} calendarId={} status={} startAt={} durationMinutes={}",
@@ -70,16 +73,19 @@ class SlotMetrics {
                 slot.timeRange().durationMinutes());
     }
 
-    void slotDeleted(SlotId slotId) {
+    @Override
+    public void slotDeleted(SlotId slotId) {
         deleted.increment();
         log.info("event=slot.deleted slotId={}", slotId.value());
     }
 
-    <T> T timeCreate(Supplier<T> operation) {
+    @Override
+    public <T> T timeCreate(Supplier<T> operation) {
         return createTimer.record(operation);
     }
 
-    <T> T timeList(Supplier<T> operation) {
+    @Override
+    public <T> T timeList(Supplier<T> operation) {
         return listTimer.record(operation);
     }
 }

@@ -67,6 +67,27 @@ class ArchitectureRuleEffectivenessTest {
                 ArchitectureRules.THE_CONTEXT_HAS_NO_PACKAGE_CYCLES, "Cycle", CYCLE_FIXTURES);
     }
 
+    @Test
+    void rejectsInfrastructureInApplication() {
+        assertRuleRejects(
+                ArchitectureRules.APPLICATION_DEPENDENCIES_ARE_CLOSED,
+                "ApplicationReachingForInfrastructure");
+    }
+
+    @Test
+    void rejectsOutputPortsInInbound() {
+        assertRuleRejects(
+                ArchitectureRules.INBOUND_USES_APPLICATION_INPUT_PORTS,
+                "InboundReachingForOutputPort");
+    }
+
+    @Test
+    void rejectsInboundInOutbound() {
+        assertRuleRejects(
+                ArchitectureRules.OUTBOUND_DOES_NOT_DEPEND_ON_INBOUND,
+                "OutboundReachingForInbound");
+    }
+
     private static void assertRuleRejects(ArchRule rule, String offendingType) {
         assertRuleRejects(rule, offendingType, FIXTURES);
     }

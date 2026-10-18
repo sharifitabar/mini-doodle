@@ -55,6 +55,38 @@ final class ArchitectureRules {
                     .resideInAPackage("..adapter..")
                     .because("the application layer talks to ports, never to adapters");
 
+    /** Application dependencies are closed except for the deliberate Spring wiring compromise. */
+    static final ArchRule APPLICATION_DEPENDENCIES_ARE_CLOSED =
+            classes()
+                    .that()
+                    .resideInAPackage("..application..")
+                    .should()
+                    .onlyDependOnClassesThat()
+                    .resideInAnyPackage(
+                            "java..",
+                            "..application..",
+                            "..domain..",
+                            "org.springframework.stereotype..",
+                            "org.springframework.transaction.annotation..");
+
+    /** Web adapters call application ports rather than concrete services or outbound ports. */
+    static final ArchRule INBOUND_USES_APPLICATION_INPUT_PORTS =
+            noClasses()
+                    .that()
+                    .resideInAPackage("..adapter.in..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAnyPackage("..application.service..", "..application.port.out..");
+
+    /** Outbound adapters must not reach into inbound delivery mechanisms. */
+    static final ArchRule OUTBOUND_DOES_NOT_DEPEND_ON_INBOUND =
+            noClasses()
+                    .that()
+                    .resideInAPackage("..adapter.out..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAPackage("..adapter.in..");
+
     /** R4 - inbound and outbound adapters must not depend on each other. */
     static final ArchRule ADAPTERS_DO_NOT_DEPEND_ON_EACH_OTHER =
             noClasses()
