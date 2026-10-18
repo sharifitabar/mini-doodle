@@ -45,8 +45,7 @@ public record TimeRange(OffsetDateTime start, int durationMinutes) {
             throw new InvalidSlotException("durationMinutes must be positive");
         }
         if (durationMinutes > maxDurationMinutes) {
-            throw new InvalidSlotException(
-                    "durationMinutes must not exceed " + maxDurationMinutes);
+            throw new InvalidSlotException("durationMinutes must not exceed " + maxDurationMinutes);
         }
         return new TimeRange(start, durationMinutes);
     }

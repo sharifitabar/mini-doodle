@@ -138,8 +138,7 @@ class SlotApplicationService
                             ? command.durationMinutes()
                             : current.durationMinutes();
             slot.changeTime(
-                    TimeRange.of(start, durationMinutes, slotProperties.maxDurationMinutes()),
-                    now);
+                    TimeRange.of(start, durationMinutes, slotProperties.maxDurationMinutes()), now);
         }
         if (command.status() != null) {
             slot.changeStatus(command.status(), now);

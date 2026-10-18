@@ -10,8 +10,8 @@ import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
 /**
- * Caps {@code durationMinutes} at the configured {@code app.slot.max-duration-minutes} value
- * (never above the absolute domain/DB ceiling of 1440).
+ * Caps {@code durationMinutes} at the configured {@code app.slot.max-duration-minutes} value (never
+ * above the absolute domain/DB ceiling of 1440).
  */
 @Documented
 @Constraint(validatedBy = MaxSlotDurationValidator.class)

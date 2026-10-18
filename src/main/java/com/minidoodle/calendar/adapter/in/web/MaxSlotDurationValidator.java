@@ -23,8 +23,7 @@ class MaxSlotDurationValidator implements ConstraintValidator<MaxSlotDuration, I
             return true;
         }
         context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate(
-                        "durationMinutes must not exceed " + max)
+        context.buildConstraintViolationWithTemplate("durationMinutes must not exceed " + max)
                 .addConstraintViolation();
         return false;
     }

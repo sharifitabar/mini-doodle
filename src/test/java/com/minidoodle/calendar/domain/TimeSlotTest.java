@@ -53,6 +53,25 @@ class TimeSlotTest {
     }
 
     @Test
+    void ofRejectsDurationAboveConfiguredMaximum() {
+        assertThatThrownBy(() -> TimeRange.of(NOW.plusDays(1), 61, 60))
+                .isInstanceOf(InvalidSlotException.class)
+                .hasMessageContaining("60");
+    }
+
+    @Test
+    void ofAllowsDurationAtConfiguredMaximum() {
+        assertThat(TimeRange.of(NOW.plusDays(1), 60, 60).durationMinutes()).isEqualTo(60);
+    }
+
+    @Test
+    void ofRejectsConfiguredMaximumAboveAbsoluteCeiling() {
+        assertThatThrownBy(() -> TimeRange.of(NOW.plusDays(1), 30, 1441))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("1440");
+    }
+
+    @Test
     void rejectsStartInThePast() {
         TimeRange past = new TimeRange(NOW.minusMinutes(1), 30);
 
