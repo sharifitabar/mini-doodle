@@ -6,17 +6,13 @@ import com.minidoodle.calendar.application.port.in.CancelMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.GetMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.MeetingView;
 import com.minidoodle.calendar.application.port.out.MeetingMetrics;
-import com.minidoodle.calendar.application.port.out.MeetingRepository;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
-import com.minidoodle.calendar.domain.exception.MeetingNotFoundException;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
 import com.minidoodle.calendar.domain.model.Calendar;
 import com.minidoodle.calendar.domain.model.Meeting;
 import com.minidoodle.calendar.domain.model.SlotId;
-import com.minidoodle.calendar.domain.model.SlotStatus;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.calendar.domain.model.UserId;
-import com.minidoodle.calendar.domain.service.BookingPolicy;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -35,19 +31,16 @@ class MeetingApplicationService
 
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
-    private final MeetingRepository meetings;
     private final MeetingMetrics metrics;
     private final Clock clock;
 
     MeetingApplicationService(
             CallerCalendarResolver calendarResolver,
             SlotRepository slots,
-            MeetingRepository meetings,
             MeetingMetrics metrics,
             Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
-        this.meetings = meetings;
         this.metrics = metrics;
         this.clock = clock;
     }
@@ -70,19 +63,12 @@ class MeetingApplicationService
                                                     new SlotNotFoundException(
                                                             "Slot not found: "
                                                                     + command.slotId().value()));
-                    BookingPolicy.requireBookable(slot);
-
-                    OffsetDateTime now = OffsetDateTime.now(clock);
                     Meeting meeting =
-                            Meeting.create(
-                                    slot.id(),
+                            slot.book(
                                     command.title(),
                                     command.description(),
                                     command.participants(),
-                                    now);
-                    meetings.save(meeting);
-
-                    slot.changeStatus(SlotStatus.BUSY, now);
+                                    OffsetDateTime.now(clock));
                     slots.update(slot);
 
                     metrics.meetingBooked(meeting, slot);
@@ -105,13 +91,7 @@ class MeetingApplicationService
                                             () ->
                                                     new SlotNotFoundException(
                                                             "Slot not found: " + slotId.value()));
-                    Meeting meeting =
-                            meetings.findBySlotId(slotId)
-                                    .orElseThrow(
-                                            () ->
-                                                    new MeetingNotFoundException(
-                                                            "No meeting on slot "
-                                                                    + slotId.value()));
+                    Meeting meeting = slot.requireMeeting();
                     metrics.meetingViewed(slotId);
                     return new MeetingView(meeting, slot.timeRange());
                 });
@@ -133,10 +113,7 @@ class MeetingApplicationService
                                             () ->
                                                     new SlotNotFoundException(
                                                             "Slot not found: " + slotId.value()));
-                    BookingPolicy.requireCancellable(slotId, meetings.existsBySlotId(slotId));
-
-                    meetings.deleteBySlotId(slotId);
-                    slot.changeStatus(SlotStatus.FREE, OffsetDateTime.now(clock));
+                    slot.cancelMeeting(OffsetDateTime.now(clock));
                     slots.update(slot);
 
                     metrics.meetingCancelled(slotId);

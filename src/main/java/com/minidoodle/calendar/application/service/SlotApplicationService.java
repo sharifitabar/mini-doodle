@@ -9,7 +9,6 @@ import com.minidoodle.calendar.application.port.in.SlotPage;
 import com.minidoodle.calendar.application.port.in.SlotQuery;
 import com.minidoodle.calendar.application.port.in.UpdateSlotCommand;
 import com.minidoodle.calendar.application.port.in.UpdateSlotUseCase;
-import com.minidoodle.calendar.application.port.out.MeetingRepository;
 import com.minidoodle.calendar.application.port.out.SlotFilter;
 import com.minidoodle.calendar.application.port.out.SlotLimits;
 import com.minidoodle.calendar.application.port.out.SlotMetrics;
@@ -21,7 +20,6 @@ import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeRange;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.calendar.domain.model.UserId;
-import com.minidoodle.calendar.domain.service.BookingPolicy;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -45,7 +43,6 @@ class SlotApplicationService
 
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
-    private final MeetingRepository meetings;
     private final SlotMetrics metrics;
     private final SlotLimits slotLimits;
     private final Clock clock;
@@ -53,13 +50,11 @@ class SlotApplicationService
     SlotApplicationService(
             CallerCalendarResolver calendarResolver,
             SlotRepository slots,
-            MeetingRepository meetings,
             SlotMetrics metrics,
             SlotLimits slotLimits,
             Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
-        this.meetings = meetings;
         this.metrics = metrics;
         this.slotLimits = slotLimits;
         this.clock = clock;
@@ -124,7 +119,7 @@ class SlotApplicationService
                                 () ->
                                         new SlotNotFoundException(
                                                 "Slot not found: " + slotId.value()));
-        BookingPolicy.requireEditable(meetings.existsBySlotId(slotId));
+        slot.ensureEditable();
 
         OffsetDateTime now = OffsetDateTime.now(clock);
         if (command.startAt() != null || command.durationMinutes() != null) {
@@ -161,9 +156,13 @@ class SlotApplicationService
     @Transactional
     public void deleteSlot(UserId caller, SlotId slotId) {
         Calendar calendar = calendarResolver.resolve(caller);
-        slots.findByIdAndCalendarIdForUpdate(slotId, calendar.id())
-                .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
-        BookingPolicy.requireDeletable(meetings.existsBySlotId(slotId));
+        TimeSlot slot =
+                slots.findByIdAndCalendarIdForUpdate(slotId, calendar.id())
+                        .orElseThrow(
+                                () ->
+                                        new SlotNotFoundException(
+                                                "Slot not found: " + slotId.value()));
+        slot.ensureDeletable();
         slots.deleteByIdAndCalendarId(slotId, calendar.id());
         metrics.slotDeleted(slotId);
     }

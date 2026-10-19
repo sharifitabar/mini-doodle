@@ -7,6 +7,7 @@ import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.SlotId;
 import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.jooq.tables.TimeSlots;
+import com.minidoodle.jooq.tables.records.TimeSlotsRecord;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -17,6 +18,8 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 class JooqSlotRepository implements SlotRepository {
@@ -24,6 +27,7 @@ class JooqSlotRepository implements SlotRepository {
     private static final String FOREIGN_KEY_VIOLATION = "23503";
 
     private final DSLContext dsl;
+    private final JooqMeetingRepository meetings;
 
     /**
      * The exclusion-constraint defence is shared by every write here; its behaviour (retry on
@@ -34,11 +38,21 @@ class JooqSlotRepository implements SlotRepository {
 
     JooqSlotRepository(DSLContext dsl) {
         this.dsl = dsl;
+        this.meetings = new JooqMeetingRepository(dsl);
     }
 
     @Override
     public void insert(TimeSlot slot) {
-        writeRetry.run(() -> insertInternal(slot));
+        // Retry the transaction, not a statement inside an aborted PostgreSQL transaction.
+        writeRetry.run(
+                () ->
+                        dsl.transaction(
+                                configuration -> {
+                                    DSLContext context = DSL.using(configuration);
+                                    new JooqSlotRepository(context).insertInternal(slot);
+                                    slot.findMeeting()
+                                            .ifPresent(new JooqMeetingRepository(context)::save);
+                                }));
     }
 
     private void insertInternal(TimeSlot slot) {
@@ -63,6 +77,7 @@ class JooqSlotRepository implements SlotRepository {
     }
 
     @Override
+    @Transactional
     public void update(TimeSlot slot) {
         writeRetry.run(
                 () ->
@@ -81,6 +96,7 @@ class JooqSlotRepository implements SlotRepository {
                                                         TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(
                                                                 slot.calendarId().value())))
                                 .execute());
+        meetings.synchronize(slot);
     }
 
     @Override
@@ -103,6 +119,7 @@ class JooqSlotRepository implements SlotRepository {
     }
 
     @Override
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Optional<TimeSlot> findByIdAndCalendarId(SlotId slotId, CalendarId calendarId) {
         return dsl.selectFrom(TimeSlots.TIME_SLOTS)
                 .where(
@@ -110,7 +127,7 @@ class JooqSlotRepository implements SlotRepository {
                                 .ID
                                 .eq(slotId.value())
                                 .and(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId.value())))
-                .fetchOptional(PersistenceMapper::toTimeSlot);
+                .fetchOptional(this::restore);
     }
 
     @Override
@@ -122,17 +139,26 @@ class JooqSlotRepository implements SlotRepository {
                                 .eq(slotId.value())
                                 .and(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId.value())))
                 .forUpdate()
-                .fetchOptional(PersistenceMapper::toTimeSlot);
+                .fetchOptional(this::restore);
     }
 
     @Override
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public List<TimeSlot> find(SlotFilter filter) {
-        return dsl.selectFrom(TimeSlots.TIME_SLOTS)
-                .where(conditions(filter))
-                .orderBy(TimeSlots.TIME_SLOTS.START_AT.asc(), TimeSlots.TIME_SLOTS.ID.asc())
-                .limit(filter.limit())
-                .offset(filter.offset())
-                .fetch(PersistenceMapper::toTimeSlot);
+        List<TimeSlot> slots =
+                dsl.selectFrom(TimeSlots.TIME_SLOTS)
+                        .where(conditions(filter))
+                        .orderBy(TimeSlots.TIME_SLOTS.START_AT.asc(), TimeSlots.TIME_SLOTS.ID.asc())
+                        .limit(filter.limit())
+                        .offset(filter.offset())
+                        .fetch(PersistenceMapper::toTimeSlot);
+        var children = meetings.findBySlotIds(slots.stream().map(TimeSlot::id).toList());
+        return slots.stream().map(slot -> TimeSlot.restore(slot, children.get(slot.id()))).toList();
+    }
+
+    private TimeSlot restore(TimeSlotsRecord record) {
+        TimeSlot slot = PersistenceMapper.toTimeSlot(record);
+        return TimeSlot.restore(slot, meetings.findBySlotId(slot.id()).orElse(null));
     }
 
     @Override

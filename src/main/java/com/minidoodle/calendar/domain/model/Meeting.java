@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Meeting aggregate root. A meeting always belongs to exactly one {@link TimeSlot} (one meeting per
- * slot) and carries a title, an optional description, and one or more participants. Framework-free:
- * all invariants are enforced here.
+ * Meeting entity owned by the TimeSlot aggregate. A meeting always belongs to exactly one {@link
+ * TimeSlot} (one meeting per slot) and carries a title, an optional description, and one or more
+ * participants. Framework-free: all invariants are enforced here.
  */
 public final class Meeting {
 

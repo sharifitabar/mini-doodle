@@ -252,6 +252,9 @@ tools. The one-time reformat that introduced the gate is recorded in
   and Micrometer live in adapters.
 - **Concurrency**: overlapping concurrent inserts are retried on deadlock/serialization errors and
   eventually surface as a `409`.
+- **Aggregate ownership**: `TimeSlot` owns the optional `Meeting` entity and its participants.
+  Domain methods enforce booking, cancellation and mutation restrictions; the slot repository
+  persists the complete aggregate atomically.
 - **One meeting per slot**: the `uq_meetings_slot` unique constraint is the authoritative guard
   against double-booking, and cancellation frees the slot in the same transaction that deletes the
   meeting.

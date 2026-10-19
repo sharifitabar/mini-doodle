@@ -1,10 +1,10 @@
 package com.minidoodle.calendar.adapter.out.persistence;
 
-import com.minidoodle.calendar.application.port.out.MeetingRepository;
 import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.model.Meeting;
 import com.minidoodle.calendar.domain.model.Participant;
 import com.minidoodle.calendar.domain.model.SlotId;
+import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.jooq.tables.MeetingParticipants;
 import com.minidoodle.jooq.tables.Meetings;
 
@@ -19,7 +19,7 @@ import org.jooq.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
-class JooqMeetingRepository implements MeetingRepository {
+class JooqMeetingRepository {
 
     private static final String UNIQUE_VIOLATION = "23505";
 
@@ -29,7 +29,6 @@ class JooqMeetingRepository implements MeetingRepository {
         this.dsl = dsl;
     }
 
-    @Override
     public void save(Meeting meeting) {
         try {
             dsl.insertInto(Meetings.MEETINGS)
@@ -78,7 +77,6 @@ class JooqMeetingRepository implements MeetingRepository {
         dsl.batch(inserts).execute();
     }
 
-    @Override
     public Optional<Meeting> findBySlotId(SlotId slotId) {
         return dsl.selectFrom(Meetings.MEETINGS)
                 .where(Meetings.MEETINGS.SLOT_ID.eq(slotId.value()))
@@ -89,7 +87,52 @@ class JooqMeetingRepository implements MeetingRepository {
                                         record, loadParticipants(record.getId())));
     }
 
-    @Override
+    /** Loads child entities in batches so slot listing does not introduce N+1 queries. */
+    java.util.Map<SlotId, Meeting> findBySlotIds(List<SlotId> ids) {
+        if (ids.isEmpty()) {
+            return java.util.Map.of();
+        }
+        var records =
+                dsl.selectFrom(Meetings.MEETINGS)
+                        .where(
+                                Meetings.MEETINGS.SLOT_ID.in(
+                                        ids.stream().map(SlotId::value).toList()))
+                        .fetch();
+        var participants =
+                dsl.selectFrom(MeetingParticipants.MEETING_PARTICIPANTS)
+                        .where(
+                                MeetingParticipants.MEETING_PARTICIPANTS.MEETING_ID.in(
+                                        records.stream().map(record -> record.getId()).toList()))
+                        .orderBy(MeetingParticipants.MEETING_PARTICIPANTS.POSITION)
+                        .fetchGroups(
+                                MeetingParticipants.MEETING_PARTICIPANTS.MEETING_ID,
+                                MeetingPersistenceMapper::toParticipant);
+        java.util.Map<SlotId, Meeting> result = new java.util.HashMap<>();
+        for (var record : records) {
+            List<Participant> values = participants.getOrDefault(record.getId(), List.of());
+            result.put(
+                    SlotId.of(record.getSlotId()),
+                    MeetingPersistenceMapper.toMeeting(record, values));
+        }
+        return result;
+    }
+
+    /**
+     * Persists changes to the child identity, preserving unchanged meetings and participant rows.
+     */
+    void synchronize(TimeSlot slot) {
+        var stored =
+                dsl.select(Meetings.MEETINGS.ID)
+                        .from(Meetings.MEETINGS)
+                        .where(Meetings.MEETINGS.SLOT_ID.eq(slot.id().value()))
+                        .fetchOptional(Meetings.MEETINGS.ID);
+        var desired = slot.findMeeting().map(meeting -> meeting.id().value());
+        if (!stored.equals(desired)) {
+            deleteBySlotId(slot.id());
+            slot.findMeeting().ifPresent(this::save);
+        }
+    }
+
     public boolean existsBySlotId(SlotId slotId) {
         return dsl.fetchExists(
                 dsl.selectOne()
@@ -97,7 +140,6 @@ class JooqMeetingRepository implements MeetingRepository {
                         .where(Meetings.MEETINGS.SLOT_ID.eq(slotId.value())));
     }
 
-    @Override
     public void deleteBySlotId(SlotId slotId) {
         dsl.deleteFrom(Meetings.MEETINGS)
                 .where(Meetings.MEETINGS.SLOT_ID.eq(slotId.value()))

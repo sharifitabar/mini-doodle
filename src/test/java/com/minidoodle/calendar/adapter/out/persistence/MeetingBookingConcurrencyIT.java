@@ -1,6 +1,5 @@
 package com.minidoodle.calendar.adapter.out.persistence;
 
-import com.minidoodle.calendar.application.port.out.MeetingRepository;
 import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.model.Meeting;
 import com.minidoodle.calendar.domain.model.Participant;
@@ -44,7 +43,7 @@ class MeetingBookingConcurrencyIT {
 
     @Autowired private DSLContext dsl;
 
-    @Autowired private MeetingRepository meetings;
+    @Autowired private JooqMeetingRepository meetings;
 
     private UUID userId;
     private UUID calendarId;

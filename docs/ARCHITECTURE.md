@@ -8,17 +8,23 @@ core results to HTTP DTOs.
 
 ## Slot and meeting consistency
 
-TimeSlot and Meeting remain separate aggregate roots, referenced by identifiers. Meeting owns
-its participant values and content validation. TimeSlot owns its time range and manual status.
-The domain BookingPolicy owns the cross-aggregate booking decisions; application services load
-locked facts and coordinate persistence: booking requires a free slot;
-a booked slot cannot be edited or deleted; cancellation frees it.
+TimeSlot is the aggregate root and owns its optional Meeting entity, including participants.
+Meeting validates its content; TimeSlot controls booking, cancellation, manual status/time changes,
+and deletion eligibility. Booking requires a free, unbooked slot. A booked slot cannot be edited
+or deleted. Cancellation removes the meeting and returns the slot to FREE. These rules live in
+TimeSlot methods, not a separate booking policy or application-service checks.
 
-These operations require immediate consistency. Update, delete, book and cancel acquire the same
-slot row lock within a transaction before checking policy and writing. The locking repository port
-requires every implementation to preserve that guarantee. Database exclusion, unique and foreign
-key constraints remain the final integrity guards. Separate aggregates are a deliberate choice;
-we do not introduce eventual consistency for this workflow. New write paths must use this protocol.
+Application services resolve ownership, load the root, invoke domain behavior and save through
+SlotRepository. Meeting persistence is an internal helper of the outbound persistence adapter,
+not a separate application port. Existing tables and database constraints remain unchanged.
+Aggregate insertion/update persists both the root and child in one transaction; cancellation
+cascades participant deletion. Unchanged meeting identities preserve existing participant rows.
+Reads restore the complete aggregate; lists batch child loading to avoid N+1 queries.
+
+Update, delete, book and cancel acquire the same slot row lock before loading its meeting and
+hold it until transaction completion. This prevents two requests from acting on stale aggregate
+state. Ordinary aggregate reads use a repeatable-read transaction for a consistent root/child
+snapshot. New write paths must preserve this locking protocol.
 
 Metrics preserve their existing attempt/success instrumentation semantics; success counters are
 recorded before transaction commit and are not an audit of committed database changes.

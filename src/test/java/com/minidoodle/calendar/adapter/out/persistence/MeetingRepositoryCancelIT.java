@@ -1,6 +1,5 @@
 package com.minidoodle.calendar.adapter.out.persistence;
 
-import com.minidoodle.calendar.application.port.out.MeetingRepository;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
 import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.Meeting;
@@ -29,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  */
 class MeetingRepositoryCancelIT extends PostgresIntegrationTest {
 
-    @Autowired private MeetingRepository meetings;
+    @Autowired private JooqMeetingRepository meetings;
 
     @Autowired private SlotRepository slots;
 
