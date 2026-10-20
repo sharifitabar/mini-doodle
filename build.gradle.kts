@@ -165,10 +165,11 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 // see that. Where a class is fully covered the rounded-down floor lands on 1.00, which pins it.
 //
 // Deliberate residue, so that nobody has to wonder: JooqSlotRepository sits at LINE 98.94% and
-// BRANCH 91.67%. The uncovered line is the `throw ex;` that rethrows a delete failure which is
-// *not* a foreign-key violation - reachable only on an infrastructure fault, and exercised nowhere
-// because this project has no mocking framework and fabricating one for a defensive rethrow would
-// buy less than the floors already do.
+// BRANCH 91.67%, and JooqMeetingRepository at LINE 98.82% and BRANCH 90.00%. In both, the
+// uncovered line is the `throw ex;` that rethrows a failure which is not the mapped conflict -
+// reachable only on an infrastructure fault, and exercised nowhere because this project has no
+// mocking framework and fabricating one for a defensive rethrow would buy less than the floors
+// already do.
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     classDirectories.setFrom(coverageClassDirectories)
     violationRules {
@@ -212,6 +213,20 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
         rule {
             element = "CLASS"
             includes = listOf("com.minidoodle.calendar.adapter.out.persistence.JooqSlotRepository")
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.95".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "0.90".toBigDecimal()
+            }
+        }
+        rule {
+            element = "CLASS"
+            includes = listOf("com.minidoodle.calendar.adapter.out.persistence.JooqMeetingRepository")
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
