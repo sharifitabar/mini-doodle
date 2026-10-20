@@ -23,20 +23,24 @@ The service must distinguish these errors.
 ### The wait cycle
 
 Two clients insert overlapping slots in the same calendar.
+Each transaction inserts only one slot.
+PostgreSQL inserts each index entry before it scans for exclusion conflicts.
+The concurrent operations can occur in this sequence:
 
-1. Transaction 1 starts. Transaction 1 inserts slot A. Transaction 1 holds a lock on the new row.
-2. Transaction 2 starts. Transaction 2 inserts slot B. The range of slot B overlaps the range of
-   slot A. Transaction 2 cannot see row A, because transaction 1 did not commit. The exclusion
-   check of transaction 2 waits for transaction 1.
-3. Transaction 1 inserts slot C. The range of slot C overlaps the range of slot B. Transaction 1
-   cannot see row B. The exclusion check of transaction 1 waits for transaction 2.
-4. Transaction 1 waits for transaction 2. Transaction 2 waits for transaction 1. This is a wait
-   cycle.
-5. The database deadlock detector finds the wait cycle. The detector aborts one transaction. The
-   aborted transaction receives SQLSTATE 40P01.
+1. Transaction 1 inserts slot A and its index entry before it starts its exclusion scan.
+2. Transaction 2 inserts slot B and its index entry before it starts its exclusion scan. Slot B overlaps slot A.
+3. Transaction 1 scans for exclusion conflicts. It finds the uncommitted entry for slot B and waits for transaction 2.
+4. Transaction 2 scans for exclusion conflicts. It finds the uncommitted entry for slot A and waits for transaction 1.
+5. The deadlock detector finds this wait cycle and aborts one transaction. That transaction receives SQLSTATE 40P01.
 
-The database selects the victim. The selection is not related to the request of the client. The
-same request can succeed after a new attempt. The other transaction continues.
+The exclusion scan can find uncommitted index entries.
+It must wait for the other transaction before it can determine the final result.
+This sequence uses one slot write in each transaction.
+This ADR gives no measurement of its duration or frequency.
+
+The database selects the victim. The selection is not related to the request of the client.
+The other transaction continues.
+A new attempt can succeed or find an overlap if the other transaction committed.
 
 A wait cycle needs at least two writers. A single writer cannot cause a 40P01 error.
 The database waits for the period specified by `deadlock_timeout` before it aborts a transaction.
@@ -44,7 +48,8 @@ The default value is 1 second.
 
 ### The single waiter
 
-Most overlaps do not make a wait cycle. Only one transaction waits in this case.
+An overlap can occur without a wait cycle.
+Only one transaction waits in this example.
 
 1. Transaction 1 inserts slot A.
 2. Transaction 2 inserts slot B. The range of slot B overlaps the range of slot A. Transaction 2
@@ -118,8 +123,12 @@ Positive:
 Negative:
 
 - The client MUST send the request again after a 503. This is a new part of the API contract.
-- The load test in `loadtest/` shows 503 responses when the contention is high. The result is a
-  measurement, not a defect. Read the 503 counter together with the success counter.
+- The load test in `loadtest/` records 503 responses separately from business refusals and unexpected failures.
+  A zero counter does not prove that the 503 path operates correctly.
+  On a fresh dataset, the normal workload avoids intentional slot overlap.
+  External writers or stale data can cause conflicts.
+  The recorded runs do not establish a deadlock frequency.
+  Read the 503 counter together with the success counter.
 - `SlotRepositoryConcurrencyIT` asserts that every request that loses a concurrency race receives a slot overlap error. The test
   MUST accept the slot contention error too.
 
@@ -156,3 +165,5 @@ Negative:
 - PostgreSQL, "Deadlocks": https://www.postgresql.org/docs/16/explicit-locking.html#LOCKING-DEADLOCKS
 - PostgreSQL, "Exclusion Constraints":
   https://www.postgresql.org/docs/16/ddl-constraints.html#DDL-CONSTRAINTS-EXCLUSION
+- PostgreSQL 16 source, exclusion checks and the single-insert wait cycle:
+  https://github.com/postgres/postgres/blob/REL_16_STABLE/src/backend/executor/execIndexing.c#L28-L45

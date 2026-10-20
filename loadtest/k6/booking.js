@@ -24,8 +24,8 @@ const slotContention = new Counter('slot_contention');
 const RUN_START_HOUR_MS = Math.floor(Date.now() / 3600000) * 3600000;
 
 // Deterministic future slot start time per iteration across the whole scenario. Each
-// manipulation iteration gets a distinct hour far in the future, so it cannot overlap the
-// past-dated seeded history, and two manipulations never collide.
+// manipulation iteration gets a distinct future hour. On a fresh dataset, these slots do not
+// overlap each other or the past-dated seed data. External writers or stale data can still conflict.
 function nextManipulationSlotStart() {
   const offsetHours = 1 + exec.scenario.iterationInTest;
   return new Date(RUN_START_HOUR_MS + offsetHours * 3600000).toISOString();
@@ -41,6 +41,11 @@ const thresholds = {
   'manipulation_sequence_duration': [`p(95)<${config.targets.manipP95Ms}`],
   'http_req_failed': [`rate<${config.targets.errorRate}`],
   'checks': ['rate>0.99'],
+  // Empty thresholds expose tagged counts to handleSummary without setting refusal-rate limits.
+  'business_refusals{step:create_slot}': [],
+  'business_refusals{step:book_meeting}': [],
+  'slot_contention{step:create_slot}': [],
+  'slot_contention{step:book_meeting}': [],
 };
 
 if (!config.smoke) {
@@ -110,7 +115,7 @@ function checkAvailability(userId) {
   }
 }
 
-function manipulate(userId, vuId, iter) {
+export function manipulate(userId, vuId, iter) {
   const startMs = Date.now();
   const startAt = nextManipulationSlotStart();
 

@@ -422,6 +422,12 @@ The panels show these measurements:
   `verify.sql` makes sure that invariants hold before load starts.
   The k6 time window comes from the seeded data and uses ISO-8601 with `Z`.
 
+## Load-test response checks
+
+To do the local `409` and `503` response checks, run `python3 loadtest/tests/responses.py`.
+The checks use real k6 and a temporary HTTP fixture.
+See [the procedure and expected results](loadtest/tests/README.md).
+
 ## Documentation language
 
 Write documentation in ASD-STE100 Simplified Technical English.
