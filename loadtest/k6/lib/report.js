@@ -26,6 +26,9 @@ export function buildSummary(data, testId, isSmoke) {
   const businessRefusals = metrics.business_refusals?.values || {};
   const businessRefusalsCreate = metrics['business_refusals{step:create_slot}']?.values || {};
   const businessRefusalsBook = metrics['business_refusals{step:book_meeting}']?.values || {};
+  const slotContention = metrics.slot_contention?.values || {};
+  const slotContentionCreate = metrics['slot_contention{step:create_slot}']?.values || {};
+  const slotContentionBook = metrics['slot_contention{step:book_meeting}']?.values || {};
 
   const thresholdFailures = [];
   for (const [name, m] of Object.entries(metrics)) {
@@ -55,6 +58,7 @@ export function buildSummary(data, testId, isSmoke) {
   lines.push(`manipulation_share (rate): ${pct(manipulationShare.rate)} (target 0.04..0.06 in non-smoke)`);
   lines.push(`checks rate: ${pct(checks.rate)}`);
   lines.push(`business_refusals total: ${businessRefusals.count ?? 0} (create_slot ${businessRefusalsCreate.count ?? 0}, book_meeting ${businessRefusalsBook.count ?? 0})`);
+  lines.push(`slot_contention total: ${slotContention.count ?? 0} (create_slot ${slotContentionCreate.count ?? 0}, book_meeting ${slotContentionBook.count ?? 0})`);
   if (thresholdFailures.length === 0) {
     lines.push('VERDICT: PASS');
   } else {

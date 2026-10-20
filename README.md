@@ -350,8 +350,9 @@ performance.
 ```
 
 Default targets: availability p95 < 300 ms, p99 < 1000 ms; manipulation sequence p95 < 500 ms;
-error rate < 1% (business refusals 409 are excluded); mix 5% ± 1 pt. Defaults can be overridden
-via environment variables passed through `docker compose` (e.g. `TARGET_AVAIL_P95_MS=...`).
+error rate < 1% (expected outcomes `409` and `503` are excluded and reported as separate counters);
+mix 5% ± 1 pt. Defaults can be overridden via environment variables passed through `docker compose`
+(e.g. `TARGET_AVAIL_P95_MS=...`).
 
 ### Reset and clean slate
 

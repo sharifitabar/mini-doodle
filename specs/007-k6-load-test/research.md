@@ -51,8 +51,10 @@ profile, always running), configured with
 deadlocks. The application's Micrometer meters describe what the application did, not what the
 database was doing to serve it, so "the database was the bottleneck" (US4 AC4) would be
 unprovable without a database-side exporter. Deadlock and rollback counters matter specifically
-here: `ex_slot_no_overlap` produces serialization/deadlock SQLSTATEs under concurrent writes, and
-the service's `SlotWriteRetry` seam already retries `40P01`/`40001`/`23P01`.
+here: `ex_slot_no_overlap` produces serialization/deadlock SQLSTATEs under concurrent writes, and a
+contended write surfaces as `409` (overlap) or `503` with `Retry-After` (deadlock), because the
+persistence adapter translates those SQLSTATEs instead of retrying the write (see
+`docs/adr/0001-slot-insert-contention.md`).
 
 **Alternatives rejected**:
 - *`pg_stat_statements`* — needs `shared_preload_libraries` plus an extension in the database
@@ -144,15 +146,18 @@ pass/fail.
 
 ## D6 — Distinguishing expected refusals from failures
 
-**Decision**: call `http.setResponseCallback(http.expectedStatuses(200, 201, 204, 409))` (plus the
-default 2xx range) so `http_req_failed` does not count business refusals; additionally record a
-`business_refusals` counter tagged by `reason`; threshold the error rate as
-`http_req_failed: ['rate<0.01']` and *report* the refusal rate without thresholding it.
+**Decision**: call `http.setResponseCallback(http.expectedStatuses(200, 201, 204, 409, 503))` (plus
+the default 2xx range) so `http_req_failed` does not count business refusals or contention;
+additionally record a `business_refusals` counter and a `slot_contention` counter, each tagged by
+`step`; threshold the error rate as `http_req_failed: ['rate<0.01']` and *report* both rates
+without thresholding them.
 
 **Rationale**: FR-020 and the corresponding edge case. At 1000 users with a 5% manipulation rate,
 losing a race for a slot is normal behavior, not a fault; counting it as an error would make every
-run red and hide real 5xx failures. `409` is also the only refusal the spec names (`slot overlap`,
-`slot already holds a meeting`).
+run red and hide real 5xx failures. `409` covers a slot overlap or an already-booked slot. `503` was
+added later: the service no longer retries a write that the database aborted as a deadlock victim,
+it answers `Retry-After` instead (`docs/adr/0001-slot-insert-contention.md`), so a contended write
+is an expected outcome of the harness's own load rather than a fault of the service.
 
 **Alternatives rejected**: a `check()`-only approach (checks are pass/fail assertions, not an error
 rate), and post-processing response codes in the summary (too late to be visible in Grafana).

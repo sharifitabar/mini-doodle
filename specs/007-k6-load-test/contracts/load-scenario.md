@@ -46,9 +46,10 @@ those panels "HTTP calls", not "simulated requests", so the 5/95 statement stays
 Standard status handling is defined once in `contracts/api-usage.md`. Two behaviours are worth
 restating here because they shape the measurements:
 
-- **Expected refusals are not failures.** `http.setResponseCallback(http.expectedStatuses({min:200,max:204}, 409))`
-  makes `409` an expected status, so `http_req_failed` measures real faults only (FR-020). Refusals
-  are also counted separately in `business_refusals{step}` so the contention level is visible.
+- **Expected refusals are not failures.** `http.setResponseCallback(http.expectedStatuses({min:200,max:204}, 409, 503))`
+  makes `409` and `503` expected statuses, so `http_req_failed` measures real faults only (FR-020).
+  `409` is counted in `business_refusals{step}` and `503` in `slot_contention{step}`, so the
+  contention level is visible instead of hidden in the error rate.
 - **Response-body sampling on the read path.** Availability responses carry ≈1,200–1,600 intervals
   (~150–250 KB). Every 10th read (`LOAD_BODY_SAMPLE_EVERY`, default 10) is fully parsed and checked
   for non-triviality; the rest are issued with `responseType: 'none'`. This keeps the generator from

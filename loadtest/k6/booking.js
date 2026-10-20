@@ -1,7 +1,8 @@
 // loadtest/k6/booking.js
 // k6 scenario: 95% availability checks, 5% manipulation (add slot → book meeting on same slot)
-// Flows are tagged `flow=availability` and `flow=manipulation`. 409 refusals are counted
-// separately (business_refusals) and do NOT count as http_req_failed.
+// Flows are tagged `flow=availability` and `flow=manipulation`. Two outcomes are expected and are
+// excluded from http_req_failed: `409` refusals (business_refusals) and `503` contention
+// (slot_contention). Either outcome stops the sequence after the step that produced it.
 
 import http from 'k6/http';
 import { check, sleep } from 'k6';
@@ -10,12 +11,13 @@ import exec from 'k6/execution';
 import { config, userUuid } from './lib/identity.js';
 import { buildSummary } from './lib/report.js';
 
-http.setResponseCallback(http.expectedStatuses({ min: 200, max: 204 }, 409));
+http.setResponseCallback(http.expectedStatuses({ min: 200, max: 204 }, 409, 503));
 
 // Custom metrics (exported by k6; used in thresholds and in the dashboard/report)
 const manipulationShare = new Rate('manipulation_share');
 const manipulationSequenceDuration = new Trend('manipulation_sequence_duration', true);
 const businessRefusals = new Counter('business_refusals');
+const slotContention = new Counter('slot_contention');
 
 // Compute RUN_START_HOUR_MS = start of current hour (or next hour, but module init; toISOString
 // produces a concrete time; using Date.now() at module load is fine in k6)
@@ -132,6 +134,16 @@ function manipulate(userId, vuId, iter) {
     return;
   }
 
+  // 503 is retryable contention: the service answers with Retry-After and never retries the write
+  // itself. The harness records it and stops here, like a 409; the client-side retry policy is not
+  // what this run measures.
+  if (create.status === 503) {
+    slotContention.add(1, { step: 'create_slot' });
+    manipulationSequenceDuration.add(Date.now() - startMs);
+    manipulationShare.add(1);
+    return;
+  }
+
   check(create, { 'slot created': (r) => r.status === 201 });
   let slotId = null;
   try {
@@ -159,6 +171,13 @@ function manipulate(userId, vuId, iter) {
 
   if (book.status === 409) {
     businessRefusals.add(1, { step: 'book_meeting' });
+    manipulationSequenceDuration.add(Date.now() - startMs);
+    manipulationShare.add(1);
+    return;
+  }
+
+  if (book.status === 503) {
+    slotContention.add(1, { step: 'book_meeting' });
     manipulationSequenceDuration.add(Date.now() - startMs);
     manipulationShare.add(1);
     return;

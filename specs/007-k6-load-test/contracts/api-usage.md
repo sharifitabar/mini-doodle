@@ -55,7 +55,8 @@ Content-Type: application/json
 | Placement | a per-(VU, iteration) exclusive hour slot in the future, so one user's manipulations can never collide with each other or with the seeded (past) history |
 | Success | `201`, `Location: /api/v1/slots/{id}`, body `SlotResponse` — the script reads `id` from the body |
 | Expected refusal | `409` overlap (lost a race or a duplicated index) — **not** an error; recorded as a business refusal and the sequence stops after this step |
-| Unexpected | `400` malformed (a bug in the generator), `403` unknown caller, `5xx`, timeout |
+| Expected contention | `503` deadlock with a concurrent write — **not** an error; recorded as `slot_contention` and the sequence stops after this step, as with a `409` |
+| Unexpected | `400` malformed (a bug in the generator), `403` unknown caller, other `5xx`, timeout |
 
 ## Request 2b — convert the slot to a meeting (second half of the 5%)
 
@@ -72,6 +73,7 @@ Content-Type: application/json
 | Validation the script must satisfy | `title` non-blank ≤ 200; `participants` non-empty; each participant has a name or an email |
 | Success | `201`, body `MeetingResponse` |
 | Expected refusal | `409` slot not free / already holds a meeting — **not** an error; recorded as a business refusal |
+| Expected contention | `503` deadlock with a concurrent write — **not** an error; recorded as `slot_contention` |
 | Unexpected | as Request 2a |
 
 A manipulation is one logical unit spanning 2a then 2b (FR-015). It is measured as a sequence and it
@@ -85,10 +87,15 @@ iterations, so raw HTTP request counts sit at roughly 95:10 for reads:manipulati
 | --- | --- | --- |
 | Success | `200`, `201`, `204` | the iteration's success |
 | **Expected refusal** | `409` on 2a or 2b | `business_refusals` counter (tagged by step); **excluded** from `http_req_failed` |
-| Unexpected failure | `400`, `403`, `404`, `5xx`, timeouts | `http_req_failed` → counted against the `< 1%` error-rate target |
+| **Expected contention** | `503` on 2a or 2b | `slot_contention` counter (tagged by step); **excluded** from `http_req_failed` |
+| Unexpected failure | `400`, `403`, `404`, other `5xx`, timeouts | `http_req_failed` → counted against the `< 1%` error-rate target |
 
 `409` is the only business refusal the API can return for these two flows, and it is a legitimate
-concurrent-booking outcome at 1000 users and a 5% write rate (spec edge case 1).
+concurrent-booking outcome at 1000 users and a 5% write rate (spec edge case 1). `503` is not a
+refusal but a transient contention outcome: the database aborted the write as a deadlock victim, the
+service does not retry it, and it answers `Retry-After` (see
+`docs/adr/0001-slot-insert-contention.md`). It is counted separately so that it stays visible
+instead of disappearing into the error rate.
 
 ## Endpoints deliberately not exercised
 
