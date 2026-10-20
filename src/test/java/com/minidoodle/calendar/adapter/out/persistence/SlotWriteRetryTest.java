@@ -52,7 +52,7 @@ class SlotWriteRetryTest {
     @Test
     void retriesAfterADeadlockAndSucceeds() {
         AtomicInteger attempts = new AtomicInteger();
-        RuntimeException deadlock = conflictWith(SlotWriteRetry.DEADLOCK_DETECTED);
+        RuntimeException deadlock = conflictWith(SqlState.DEADLOCK_DETECTED);
 
         retryWith(3)
                 .run(
@@ -69,7 +69,7 @@ class SlotWriteRetryTest {
     @Test
     void retriesAfterASerializationFailureAndSucceeds() {
         AtomicInteger attempts = new AtomicInteger();
-        RuntimeException serializationFailure = conflictWith(SlotWriteRetry.SERIALIZATION_FAILURE);
+        RuntimeException serializationFailure = conflictWith(SqlState.SERIALIZATION_FAILURE);
 
         retryWith(3)
                 .run(
@@ -86,7 +86,7 @@ class SlotWriteRetryTest {
     @Test
     void givesUpAndRethrowsOnceTheAttemptsAreExhausted() {
         AtomicInteger attempts = new AtomicInteger();
-        RuntimeException deadlock = conflictWith(SlotWriteRetry.DEADLOCK_DETECTED);
+        RuntimeException deadlock = conflictWith(SqlState.DEADLOCK_DETECTED);
 
         assertThatThrownBy(
                         () ->
@@ -106,7 +106,7 @@ class SlotWriteRetryTest {
     @Test
     void mapsAnExclusionViolationToADomainOverlapErrorWithoutRetrying() {
         AtomicInteger attempts = new AtomicInteger();
-        RuntimeException exclusionViolation = conflictWith(SlotWriteRetry.EXCLUSION_VIOLATION);
+        RuntimeException exclusionViolation = conflictWith(SqlState.EXCLUSION_VIOLATION);
 
         assertThatThrownBy(
                         () ->
@@ -126,7 +126,7 @@ class SlotWriteRetryTest {
     @Test
     void rethrowsUnexpectedSqlStatesWithoutRetrying() {
         AtomicInteger attempts = new AtomicInteger();
-        RuntimeException foreignKeyViolation = conflictWith("23503");
+        RuntimeException foreignKeyViolation = conflictWith(SqlState.FOREIGN_KEY_VIOLATION);
 
         assertThatThrownBy(
                         () ->
@@ -167,8 +167,7 @@ class SlotWriteRetryTest {
                 new RuntimeException(
                         "outer",
                         new RuntimeException(
-                                "inner",
-                                new SQLException("x", SlotWriteRetry.SERIALIZATION_FAILURE)));
+                                "inner", new SQLException("x", SqlState.SERIALIZATION_FAILURE)));
 
         retryWith(2)
                 .run(
@@ -184,7 +183,7 @@ class SlotWriteRetryTest {
     @Test
     void reportsAnInterruptedBackoffAndRestoresTheInterruptFlag() {
         AtomicInteger attempts = new AtomicInteger();
-        RuntimeException deadlock = conflictWith(SlotWriteRetry.DEADLOCK_DETECTED);
+        RuntimeException deadlock = conflictWith(SqlState.DEADLOCK_DETECTED);
         SlotWriteRetry retry =
                 new SlotWriteRetry(
                         3,

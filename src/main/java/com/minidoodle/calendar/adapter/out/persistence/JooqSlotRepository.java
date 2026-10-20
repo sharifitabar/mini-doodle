@@ -24,8 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 class JooqSlotRepository implements SlotRepository {
 
-    private static final String FOREIGN_KEY_VIOLATION = "23503";
-
     private final DSLContext dsl;
     private final JooqMeetingRepository meetings;
 
@@ -110,7 +108,7 @@ class JooqSlotRepository implements SlotRepository {
                                     .and(TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(calendarId.value())))
                     .execute();
         } catch (RuntimeException ex) {
-            if (FOREIGN_KEY_VIOLATION.equals(SlotWriteRetry.sqlState(ex))) {
+            if (SqlState.FOREIGN_KEY_VIOLATION.equals(SqlState.of(ex))) {
                 throw new MeetingConflictException(
                         "Slot cannot be deleted while it holds a meeting");
             }

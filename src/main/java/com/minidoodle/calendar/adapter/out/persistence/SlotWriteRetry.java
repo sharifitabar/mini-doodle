@@ -2,29 +2,23 @@ package com.minidoodle.calendar.adapter.out.persistence;
 
 import com.minidoodle.calendar.domain.exception.SlotOverlapException;
 
-import java.sql.SQLException;
-
 /**
  * Runs a slot write with bounded retries for the transient concurrency errors PostgreSQL reports
  * when a GiST exclusion constraint is contended.
  *
  * <p>Concurrent inserts into the {@code ex_slot_no_overlap} exclusion constraint can fail with a
- * deadlock ({@value #DEADLOCK_DETECTED}) or a serialization failure ({@value
- * #SERIALIZATION_FAILURE}). Those are transient: retrying lets the write converge on the definitive
- * exclusion violation ({@value #EXCLUSION_VIOLATION}) once the winning transaction commits, which
- * is surfaced as a domain-level overlap error rather than a raw persistence exception. The SQL
- * error may arrive as a jOOQ exception or wrapped as a Spring {@code DataAccessException}, so the
- * whole cause chain is inspected.
+ * deadlock ({@value SqlState#DEADLOCK_DETECTED}) or a serialization failure ({@value
+ * SqlState#SERIALIZATION_FAILURE}). Those are transient: retrying lets the write converge on the
+ * definitive exclusion violation ({@value SqlState#EXCLUSION_VIOLATION}) once the winning
+ * transaction commits, which is surfaced as a domain-level overlap error rather than a raw
+ * persistence exception. The SQL error may arrive as a jOOQ exception or wrapped as a Spring {@code
+ * DataAccessException}, so {@link SqlState#of(Throwable)} inspects the whole cause chain.
  *
  * <p>The sleep strategy is injectable so the retry behaviour can be tested deterministically: real
  * deadlocks cannot be provoked on demand, and a test that only sometimes provokes one would be
  * flaky.
  */
 final class SlotWriteRetry {
-
-    static final String EXCLUSION_VIOLATION = "23P01";
-    static final String DEADLOCK_DETECTED = "40P01";
-    static final String SERIALIZATION_FAILURE = "40001";
 
     static final int DEFAULT_MAX_ATTEMPTS = 6;
     static final long DEFAULT_BACKOFF_MILLIS = 10L;
@@ -55,14 +49,14 @@ final class SlotWriteRetry {
                 action.run();
                 return;
             } catch (RuntimeException ex) {
-                String sqlState = sqlState(ex);
-                if (EXCLUSION_VIOLATION.equals(sqlState)) {
+                String sqlState = SqlState.of(ex);
+                if (SqlState.EXCLUSION_VIOLATION.equals(sqlState)) {
                     throw new SlotOverlapException(
                             "Slot overlaps an existing slot in the calendar");
                 }
                 boolean transientConflict =
-                        DEADLOCK_DETECTED.equals(sqlState)
-                                || SERIALIZATION_FAILURE.equals(sqlState);
+                        SqlState.DEADLOCK_DETECTED.equals(sqlState)
+                                || SqlState.SERIALIZATION_FAILURE.equals(sqlState);
                 if (transientConflict && attempt < maxAttempts) {
                     backoff(attempt);
                     continue;
@@ -70,16 +64,6 @@ final class SlotWriteRetry {
                 throw ex;
             }
         }
-    }
-
-    /** Returns the SQLState of the first {@link SQLException} in the cause chain, if any. */
-    static String sqlState(Throwable ex) {
-        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
-            if (cause instanceof SQLException sqlException) {
-                return sqlException.getSQLState();
-            }
-        }
-        return null;
     }
 
     private void backoff(int attempt) {

@@ -20,8 +20,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 class JooqMeetingRepository {
 
-    private static final String UNIQUE_VIOLATION = "23505";
-
     private final DSLContext dsl;
 
     JooqMeetingRepository(DSLContext dsl) {
@@ -48,7 +46,7 @@ class JooqMeetingRepository {
                     .execute();
             insertParticipants(meeting);
         } catch (RuntimeException ex) {
-            if (UNIQUE_VIOLATION.equals(SlotWriteRetry.sqlState(ex))) {
+            if (SqlState.UNIQUE_VIOLATION.equals(SqlState.of(ex))) {
                 throw new MeetingConflictException("Slot already has a meeting");
             }
             throw ex;
