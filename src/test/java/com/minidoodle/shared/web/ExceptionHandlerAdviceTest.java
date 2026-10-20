@@ -2,12 +2,14 @@ package com.minidoodle.shared.web;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import qualitygate.advice.AdviceProbeController;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,6 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *       domain constructors that throw these can no longer be reached from a real request;
  *   <li>{@code MissingRequestHeaderException} - the API takes its caller identity through a custom
  *       {@code @CurrentUser} argument resolver instead of a declared {@code @RequestHeader}.
+ *   <li>{@code SlotContentionException} - only a database deadlock produces it, and a deadlock
+ *       cannot be requested on demand.
  * </ul>
  *
  * <p>Rather than delete working defensive mappings or pretend the paths are live, they are
@@ -75,5 +79,21 @@ class ExceptionHandlerAdviceTest {
                 .andExpect(jsonPath("$.title").value("Invalid meeting"))
                 .andExpect(
                         jsonPath("$.detail").value("A participant must have a name or an email"));
+    }
+
+    @Test
+    void mapsSlotContentionToAServiceUnavailableProblemWithRetryAfter() throws Exception {
+        mockMvc.perform(get("/unreachable/contention"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string(HttpHeaders.RETRY_AFTER, "1"))
+                .andExpect(jsonPath("$.type").value(PROBLEMS + "slot-contention"))
+                .andExpect(jsonPath("$.status").value(503))
+                .andExpect(
+                        jsonPath("$.title").value("Slot write conflicts with a concurrent write"))
+                .andExpect(
+                        jsonPath("$.detail")
+                                .value(
+                                        "Slot write conflicted with a concurrent write; "
+                                                + "send the request again"));
     }
 }

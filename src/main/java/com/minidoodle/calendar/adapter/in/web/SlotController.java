@@ -87,6 +87,9 @@ class SlotController {
         @ApiResponse(
                 responseCode = "409",
                 description = "Slot overlaps an existing slot in the calendar"),
+        @ApiResponse(
+                responseCode = "503",
+                description = "Database contention aborted the write; retry after Retry-After"),
         @ApiResponse(responseCode = "422", description = "Validation failed")
     })
     ResponseEntity<SlotResponse> create(
@@ -171,7 +174,10 @@ class SlotController {
                 description = "Invalid body, empty update, or missing/malformed X-User-Id"),
         @ApiResponse(responseCode = "403", description = "Caller is not a known user"),
         @ApiResponse(responseCode = "404", description = "Slot not found in the caller's calendar"),
-        @ApiResponse(responseCode = "409", description = "Updated time overlaps another slot")
+        @ApiResponse(responseCode = "409", description = "Updated time overlaps another slot"),
+        @ApiResponse(
+                responseCode = "503",
+                description = "Database contention aborted the write; retry after Retry-After")
     })
     SlotResponse update(
             @Parameter(

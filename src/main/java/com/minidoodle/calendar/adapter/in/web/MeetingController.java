@@ -70,7 +70,10 @@ class MeetingController {
         @ApiResponse(responseCode = "404", description = "Slot not found in the caller's calendar"),
         @ApiResponse(
                 responseCode = "409",
-                description = "Slot is not free or already holds a meeting")
+                description = "Slot is not free or already holds a meeting"),
+        @ApiResponse(
+                responseCode = "503",
+                description = "Database contention aborted the write; retry after Retry-After")
     })
     ResponseEntity<MeetingResponse> book(
             @Parameter(
@@ -127,7 +130,10 @@ class MeetingController {
         @ApiResponse(responseCode = "403", description = "Caller is not a known user"),
         @ApiResponse(
                 responseCode = "404",
-                description = "Slot not found in the caller's calendar or has no meeting")
+                description = "Slot not found in the caller's calendar or has no meeting"),
+        @ApiResponse(
+                responseCode = "503",
+                description = "Database contention aborted the write; retry after Retry-After")
     })
     ResponseEntity<Void> cancel(
             @Parameter(

@@ -102,7 +102,9 @@ curl -sS "http://localhost:8080/api/v1/availability?from=2026-11-02T09:00:00Z&to
 
 Error responses use the RFC 9457 problem-details shape. A slot that overlaps an existing slot in
 the same calendar, booking a slot that is not free, or modifying/deleting a slot that holds a
-meeting are all rejected with `409 Conflict`.
+meeting are all rejected with `409 Conflict`. A write that the database aborts for contention — a
+deadlock with a concurrent write — is answered with `503 Service Unavailable` and
+`Retry-After: 1`; send the same request again.
 
 ## Data model
 
@@ -259,8 +261,10 @@ tools. The one-time reformat that introduced the gate is recorded in
 - **Hexagonal architecture**: the domain and application ports are framework-free; application services retain Spring
   service/transaction annotations. Configuration and telemetry use outbound ports; jOOQ, Spring MVC,
   and Micrometer live in adapters.
-- **Concurrency**: overlapping concurrent inserts are retried on deadlock/serialization errors and
-  eventually surface as a `409`.
+- **Concurrency**: the exclusion constraint arbitrates overlapping concurrent inserts. A write that
+  the database aborts for contention returns `503` with `Retry-After`; the service does not retry it
+  in the request, and the client sends the request again. See
+  [ADR 0001](docs/adr/0001-slot-insert-contention.md).
 - **Aggregate ownership**: `TimeSlot` owns the optional `Meeting` entity and its participants.
   Domain methods enforce booking, cancellation and mutation restrictions; the slot repository
   persists the complete aggregate atomically.

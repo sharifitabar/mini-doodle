@@ -1,6 +1,7 @@
 package com.minidoodle.calendar.adapter.out.persistence;
 
 import com.minidoodle.calendar.application.port.out.SlotRepository;
+import com.minidoodle.calendar.domain.exception.SlotContentionException;
 import com.minidoodle.calendar.domain.exception.SlotOverlapException;
 import com.minidoodle.calendar.domain.model.CalendarId;
 import com.minidoodle.calendar.domain.model.TimeRange;
@@ -32,7 +33,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Genuine concurrency: many mutually overlapping inserts race against the database exclusion
- * constraint. Exactly one must win; the rest must be rejected as overlaps.
+ * constraint. Exactly one must win. Every other insert must be refused: the constraint reports an
+ * overlap, or PostgreSQL aborts the transaction as a deadlock victim. Both outcomes are correct
+ * answers for a write that lost, and the service does not retry either of them.
  *
  * <p>Not transactional on purpose — the inserts must commit for the constraint to arbitrate between
  * concurrent connections.
@@ -124,6 +127,11 @@ class SlotRepositoryConcurrencyIT {
         assertThat(successes).isEqualTo(1);
         assertThat(failures).hasSize(attempts - 1);
         assertThat(failures)
-                .allSatisfy(error -> assertThat(error).isInstanceOf(SlotOverlapException.class));
+                .allSatisfy(
+                        error ->
+                                assertThat(error)
+                                        .isInstanceOfAny(
+                                                SlotOverlapException.class,
+                                                SlotContentionException.class));
     }
 }

@@ -26,5 +26,12 @@ hold it until transaction completion. This prevents two requests from acting on 
 state. Ordinary aggregate reads use a repeatable-read transaction for a consistent root/child
 snapshot. New write paths must preserve this locking protocol.
 
+An insert is different. The row does not exist yet, so there is no row lock to take. The exclusion
+constraint does the check instead, and the check of a new range waits while another transaction
+holds an uncommitted range. Two transactions can wait for each other, and the database then aborts
+one of them with SQLSTATE 40P01. That request was valid, so the error is not a business error. The
+write returns 503 Service Unavailable with `Retry-After`, and the client sends the request again.
+The contract is in [ADR 0001](adr/0001-slot-insert-contention.md).
+
 Metrics preserve their existing attempt/success instrumentation semantics; success counters are
 recorded before transaction commit and are not an audit of committed database changes.

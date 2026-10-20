@@ -62,9 +62,8 @@ class SlotApplicationService
 
     /**
      * Inserts the slot without a method-level {@code @Transactional}: the repository's {@code
-     * insert} opens its own transaction so the whole write (slot plus any meeting) can be retried
-     * as a unit after a transient deadlock, which retrying a statement inside an already-aborted
-     * Spring transaction would not allow. The calendar lookup is a pure read.
+     * insert} opens its own transaction so the slot and its meeting commit or roll back as one
+     * unit. The calendar lookup is a pure read.
      */
     @Override
     public TimeSlot createSlot(UserId caller, CreateSlotCommand command) {

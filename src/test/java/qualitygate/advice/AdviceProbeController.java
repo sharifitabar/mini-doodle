@@ -2,6 +2,7 @@ package qualitygate.advice;
 
 import com.minidoodle.calendar.domain.exception.InvalidMeetingException;
 import com.minidoodle.calendar.domain.exception.InvalidSlotException;
+import com.minidoodle.calendar.domain.exception.SlotContentionException;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -10,8 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * A throwaway controller that provokes the {@code GlobalExceptionHandler} mappings the public API
- * cannot reach: a required header that no request sends, and the two domain exceptions that request
- * bean validation pre-empts in the real API.
+ * cannot reach: a required header that no request sends, the two domain exceptions that request
+ * bean validation pre-empts in the real API, and the contention error that only a database deadlock
+ * produces.
  *
  * <p>It is deliberately <em>not</em> in a {@code com.minidoodle} package. Spring Boot component
  * scans from the application class's package, so anything under {@code com.minidoodle} in the test
@@ -41,5 +43,11 @@ public class AdviceProbeController {
     @GetMapping("/invalid-meeting")
     String throwsInvalidMeeting() {
         throw new InvalidMeetingException("A participant must have a name or an email");
+    }
+
+    @GetMapping("/contention")
+    String throwsContention() {
+        throw new SlotContentionException(
+                "Slot write conflicted with a concurrent write; send the request again");
     }
 }

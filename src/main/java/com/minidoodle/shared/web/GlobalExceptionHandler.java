@@ -7,11 +7,14 @@ import com.minidoodle.calendar.domain.exception.InvalidSlotException;
 import com.minidoodle.calendar.domain.exception.InvalidTimeFrameException;
 import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.exception.MeetingNotFoundException;
+import com.minidoodle.calendar.domain.exception.SlotContentionException;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
 import com.minidoodle.calendar.domain.exception.SlotOverlapException;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -27,6 +30,9 @@ import jakarta.validation.ConstraintViolationException;
 class GlobalExceptionHandler {
 
     private static final String PROBLEM_BASE = "https://minidoodle.example/problems/";
+
+    /** Duration, in seconds, that a client waits before it sends a contended write again. */
+    private static final String RETRY_AFTER_SECONDS = "1";
 
     @ExceptionHandler(InvalidCallerIdException.class)
     ProblemDetail handleInvalidCaller(InvalidCallerIdException ex) {
@@ -86,6 +92,23 @@ class GlobalExceptionHandler {
     ProblemDetail handleMeetingConflict(MeetingConflictException ex) {
         return problem(
                 HttpStatus.CONFLICT, "meeting-conflict", "Meeting conflict", ex.getMessage());
+    }
+
+    /**
+     * A write that the database aborted for contention. The request was valid, so the client can
+     * repeat it; the status and the {@code Retry-After} header say so.
+     */
+    @ExceptionHandler(SlotContentionException.class)
+    ResponseEntity<ProblemDetail> handleContention(SlotContentionException ex) {
+        ProblemDetail problem =
+                problem(
+                        HttpStatus.SERVICE_UNAVAILABLE,
+                        "slot-contention",
+                        "Slot write conflicts with a concurrent write",
+                        ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, RETRY_AFTER_SECONDS)
+                .body(problem);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

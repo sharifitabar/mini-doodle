@@ -27,13 +27,6 @@ class JooqSlotRepository implements SlotRepository {
     private final DSLContext dsl;
     private final JooqMeetingRepository meetings;
 
-    /**
-     * The exclusion-constraint defence is shared by every write here; its behaviour (retry on
-     * transient conflicts, map the definitive exclusion violation to a domain error) is documented
-     * on {@link SlotWriteRetry}.
-     */
-    private final SlotWriteRetry writeRetry = new SlotWriteRetry();
-
     JooqSlotRepository(DSLContext dsl) {
         this.dsl = dsl;
         this.meetings = new JooqMeetingRepository(dsl);
@@ -41,8 +34,8 @@ class JooqSlotRepository implements SlotRepository {
 
     @Override
     public void insert(TimeSlot slot) {
-        // Retry the transaction, not a statement inside an aborted PostgreSQL transaction.
-        writeRetry.run(
+        // One transaction: the slot and its meeting must commit or roll back together.
+        SlotWriteErrors.translate(
                 () ->
                         dsl.transaction(
                                 configuration -> {
@@ -77,24 +70,25 @@ class JooqSlotRepository implements SlotRepository {
     @Override
     @Transactional
     public void update(TimeSlot slot) {
-        writeRetry.run(
-                () ->
-                        dsl.update(TimeSlots.TIME_SLOTS)
-                                .set(TimeSlots.TIME_SLOTS.START_AT, slot.timeRange().start())
-                                .set(
-                                        TimeSlots.TIME_SLOTS.DURATION_MINUTES,
-                                        slot.timeRange().durationMinutes())
-                                .set(TimeSlots.TIME_SLOTS.STATUS, slot.status().name())
-                                .set(TimeSlots.TIME_SLOTS.UPDATED_AT, slot.updatedAt())
-                                .where(
-                                        TimeSlots.TIME_SLOTS
-                                                .ID
-                                                .eq(slot.id().value())
-                                                .and(
-                                                        TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(
-                                                                slot.calendarId().value())))
-                                .execute());
-        meetings.synchronize(slot);
+        SlotWriteErrors.translate(
+                () -> {
+                    dsl.update(TimeSlots.TIME_SLOTS)
+                            .set(TimeSlots.TIME_SLOTS.START_AT, slot.timeRange().start())
+                            .set(
+                                    TimeSlots.TIME_SLOTS.DURATION_MINUTES,
+                                    slot.timeRange().durationMinutes())
+                            .set(TimeSlots.TIME_SLOTS.STATUS, slot.status().name())
+                            .set(TimeSlots.TIME_SLOTS.UPDATED_AT, slot.updatedAt())
+                            .where(
+                                    TimeSlots.TIME_SLOTS
+                                            .ID
+                                            .eq(slot.id().value())
+                                            .and(
+                                                    TimeSlots.TIME_SLOTS.CALENDAR_ID.eq(
+                                                            slot.calendarId().value())))
+                            .execute();
+                    meetings.synchronize(slot);
+                });
     }
 
     @Override
