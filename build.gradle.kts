@@ -153,8 +153,8 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 //
 //   jacocoTestReport -> build/reports/jacoco/test/jacocoTestReport.xml
 //
-//   BUNDLE      LINE 99.07% -> 0.95   BRANCH 95.73% -> 0.95
-//               METHOD 99.12% -> 0.95 COMPLEXITY 97.10% -> 0.95
+//   BUNDLE      LINE 99.16% -> 0.95   BRANCH 97.22% -> 0.95
+//               METHOD 99.19% -> 0.95 COMPLEXITY 97.92% -> 0.95
 //
 // Instruction and class coverage stay measured-and-reported only: instruction is near-perfectly
 // correlated with line coverage, and class coverage is near-binary here.
@@ -164,7 +164,7 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 // classes in the baseline audit while the bundle looked healthy, and only a class-scoped floor can
 // see that. Where a class is fully covered the rounded-down floor lands on 1.00, which pins it.
 //
-// Deliberate residue, so that nobody has to wonder: JooqSlotRepository sits at LINE 98.67% and
+// Deliberate residue, so that nobody has to wonder: JooqSlotRepository sits at LINE 98.94% and
 // BRANCH 91.67%. The uncovered line is the `throw ex;` that rethrows a delete failure which is
 // *not* a foreign-key violation - reachable only on an infrastructure fault, and exercised nowhere
 // because this project has no mocking framework and fabricating one for a defensive rethrow would

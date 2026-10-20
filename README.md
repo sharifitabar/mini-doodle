@@ -158,10 +158,10 @@ generated sources excluded.
 
 | Counter | Floor | Measured |
 |---|---|---|
-| Line | 0.95 | 99.07% |
-| Branch | 0.95 | 96.95% |
-| Method | 0.95 | 99.12% |
-| Cyclomatic complexity | 0.95 | 97.74% |
+| Line | 0.95 | 99.16% |
+| Branch | 0.95 | 97.22% |
+| Method | 0.95 | 99.19% |
+| Cyclomatic complexity | 0.95 | 97.92% |
 
 Three classes carry stricter, class-scoped floors, because they hold the error and recovery
 behaviour that a bundle average hides:
@@ -193,8 +193,8 @@ in the same commit, with the measurement beside it.
 |---|---|
 | R1 | No framework types (Spring, Jakarta, jOOQ, Hibernate) in the domain |
 | R2 | The domain depends on the JDK and the domain only |
-| R3 | The application layer does not depend on adapters |
-| R4 | Inbound and outbound adapters do not depend on each other |
+| R3 | The application layer does not depend on adapters; its only non-JDK, non-domain dependencies are the Spring stereotype and transaction annotations |
+| R4 | Inbound and outbound adapters do not depend on each other; inbound adapters call application input ports, not concrete services or outbound ports |
 | R5 | Shared infrastructure does not depend on the application or the adapters |
 | R6 | No dependency cycles between the context's packages |
 

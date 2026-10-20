@@ -60,6 +60,12 @@ class SlotApplicationService
         this.clock = clock;
     }
 
+    /**
+     * Inserts the slot without a method-level {@code @Transactional}: the repository's {@code
+     * insert} opens its own transaction so the whole write (slot plus any meeting) can be retried
+     * as a unit after a transient deadlock, which retrying a statement inside an already-aborted
+     * Spring transaction would not allow. The calendar lookup is a pure read.
+     */
     @Override
     public TimeSlot createSlot(UserId caller, CreateSlotCommand command) {
         return metrics.timeCreate(
@@ -83,6 +89,11 @@ class SlotApplicationService
                 .orElseThrow(() -> new SlotNotFoundException("Slot not found: " + slotId.value()));
     }
 
+    /**
+     * Lists a page without a transaction: {@code find} and {@code count} run as two independent
+     * reads, so a concurrent insert can make the page total disagree with the returned items. That
+     * is accepted for pagination and keeps both reads non-locking.
+     */
     @Override
     public SlotPage listSlots(UserId caller, SlotQuery query) {
         return metrics.timeList(
