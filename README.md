@@ -163,7 +163,7 @@ generated sources excluded.
 | Method | 0.95 | 99.19% |
 | Cyclomatic complexity | 0.95 | 97.92% |
 
-Three classes carry stricter, class-scoped floors, because they hold the error and recovery
+Four classes carry stricter, class-scoped floors, because they hold the error and recovery
 behaviour that a bundle average hides:
 
 | Class | Counter | Floor |
@@ -171,6 +171,8 @@ behaviour that a bundle average hides:
 | `GlobalExceptionHandler` | Line, Method | 1.00 |
 | `JooqSlotRepository` | Line | 0.95 |
 | `JooqSlotRepository` | Branch | 0.90 |
+| `JooqMeetingRepository` | Line | 0.95 |
+| `JooqMeetingRepository` | Branch | 0.90 |
 | `CurrentUserArgumentResolver` | Branch | 1.00 |
 
 The floors are the ratios the suite actually achieves, rounded **down** to the nearest 0.05, so a
@@ -201,11 +203,18 @@ in the same commit, with the measurement beside it.
 Each rule is also asserted to **fail** against a deliberately violating fixture, so a broken package
 pattern cannot produce a rule that is vacuously green. Failures name the rule and the offending type.
 
+To fix a failure, move the dependency inward (or break the cycle for R6) — the intended direction is
+described in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). If the rule itself is wrong, change the
+rule and its effectiveness fixture together so it stays provable.
+
 ### Complexity ceilings (Checkstyle)
 
 Four metric checks live in [`config/checkstyle/checkstyle.xml`](config/checkstyle/checkstyle.xml):
 `CyclomaticComplexity` 10, `NPathComplexity` 30, `MethodLength` 70, `ParameterNumber` 7. They are
 satisfied with no suppression file and no baseline.
+
+A failure names the check, the measured value, and the ceiling. Split the method (or reduce its
+parameter count); there is no suppression file or baseline to edit.
 
 ### Mutation testing (on demand)
 

@@ -80,7 +80,7 @@ method ≥ 0.95, cyclomatic complexity ≥ 0.95**. Instruction and class coverag
 reported* but are not given bundle-level floors.
 
 **Rationale**:
-- Instruction coverage is a strictly finer-grained view of line coverage (99.47% vs 99.07% today)
+- Instruction coverage is a strictly finer-grained view of line coverage (99.41% vs 99.16% today)
   and moves almost identically; a separate floor adds a second, correlated failure mode with no
   new signal.
 - Class coverage is 100% today only because of the gap-closing work in D5–D8, and it is a
@@ -93,7 +93,7 @@ reported* but are not given bundle-level floors.
   showed matter.
 - **Floor policy (one rule, applied everywhere)**: each floor is the ratio the suite *actually
   achieves*, rounded **down** to the nearest 0.05. Measured after the gap-closing tests landed:
-  line 99.07%, branch 96.95%, method 99.12%, complexity 97.74% → all four floors 0.95. A floor set
+  line 99.16%, branch 97.22%, method 99.19%, complexity 97.92% → all four floors 0.95. A floor set
   this way is always green on a green `test` run, and it can only be tripped by a real regression
   (at least one newly uncovered line/branch pair), which is the spec's
   "regression guard, not a target" assumption made mechanical.
@@ -120,16 +120,19 @@ measured ratio rounded down to the nearest 0.05 (D2):
 | Class | Counter | Floor | Measured after gap-closing |
 |---|---|---|---|
 | `GlobalExceptionHandler` | LINE, METHOD | 1.00 | 40/40 lines, 19/19 methods |
-| `JooqSlotRepository` | LINE | 0.95 | 74/75 = 98.67% |
+| `JooqSlotRepository` | LINE | 0.95 | 93/94 = 98.94% |
 | `JooqSlotRepository` | BRANCH | 0.90 | 11/12 = 91.67% |
+| `JooqMeetingRepository` | LINE | 0.95 | 84/85 = 98.82% |
+| `JooqMeetingRepository` | BRANCH | 0.90 | 9/10 = 90.00% |
 | `CurrentUserArgumentResolver` | BRANCH | 1.00 | 8/8 = 100% |
 
 `TimeRange` and `DevDataSeeder` — the two other classes the baseline flagged — are *not* given
 class-scoped rules: `TimeRange` reaches 100% line/branch once its dead `overlaps()` method is
 deleted (D8), and `DevDataSeeder` reaches 100% line/method once a test enables the seeding property
 (D7). They are held by the bundle floor, which is the honest place for a class with no residue.
-`JooqSlotRepository` is the one class where a residual uncovered line is accepted; it is documented
-in `build.gradle.kts` next to the rule and in the as-built addendum below.
+`JooqSlotRepository` and `JooqMeetingRepository` are the classes where a residual uncovered line is
+accepted; both are documented in `build.gradle.kts` next to their rules and in the as-built
+addendum below.
 
 **Rationale**: FR-006 requires exception/error paths to be *reported as a distinct dimension so
 gaps are visible independently of overall coverage*. JaCoCo has no "error path" counter — the only
@@ -490,28 +493,30 @@ document, which describes the tree *before* the gap-closing tests landed.
 
 | Counter | As built | Covered / total | Floor |
 |---|---|---|---|
-| Instruction | 99.47% | 3546 / 3565 | measured only |
-| Branch | 96.95% | 159 / 164 | 0.95 |
-| Line | 99.07% | 852 / 860 | 0.95 |
-| Cyclomatic complexity | 97.74% | 303 / 310 | 0.95 |
-| Method | 99.12% | 226 / 228 | 0.95 |
-| Class | 100% | 74 / 74 | measured only |
+| Instruction | 99.41% | 3856 / 3879 | measured only |
+| Branch | 97.22% | 175 / 180 | 0.95 |
+| Line | 99.16% | 949 / 957 | 0.95 |
+| Cyclomatic complexity | 97.92% | 330 / 337 | 0.95 |
+| Method | 99.19% | 245 / 247 | 0.95 |
+| Class | 100% | 78 / 78 | measured only |
 
 **The classes the audit flagged:**
 
 | Class | Before | After | Class-scoped floor |
 |---|---|---|---|
 | `GlobalExceptionHandler` | 80.0% line, 73.7% method | 40/40 line, 19/19 method | 1.00 line, 1.00 method |
-| `JooqSlotRepository` | 81.6% line, 46.2% branch | 98.67% line, 91.67% branch | 0.95 line, 0.90 branch |
+| `JooqSlotRepository` | 81.6% line, 46.2% branch | 98.94% line, 91.67% branch | 0.95 line, 0.90 branch |
+| `JooqMeetingRepository` | 96.4% line, 75.0% branch | 98.82% line, 90.00% branch | 0.95 line, 0.90 branch |
 | `CurrentUserArgumentResolver` | 62.5% branch | 100% branch | 1.00 branch |
 | `TimeRange` | 90.0% line, 50.0% branch | 100% / 100% | none needed (dead method deleted) |
 | `DevDataSeeder` | 0% | 100% line, 100% method | none needed |
 
-**Accepted residue** (documented rather than excluded): `JooqSlotRepository:101` — the `throw ex;`
-that rethrows a delete failure which is not a foreign-key violation — and its branch. It is
+**Accepted residue** (documented rather than excluded): the `throw ex;` that rethrows a delete
+failure which is not a foreign-key violation in `JooqSlotRepository`, and the analogous rethrow for
+a failure that is not a unique violation in `JooqMeetingRepository` — plus their branches. Both are
 reachable only on an infrastructure fault, and this project has no mocking framework; fabricating
-one for a defensive rethrow would buy less than the floor already does. The floor is set so this
-residue is visible (the class cannot drop below 0.90 branch) rather than hidden.
+one for a defensive rethrow would buy less than the floors already do. The floors are set so this
+residue is visible (neither class can drop below 0.90 branch) rather than hidden.
 
 **Verification of the whole gate** (`./gradlew check`) — every task present, in order:
 `jooqCodegen`, `compileJava`, `checkstyleMain`, `compileTestJava`, `checkstyleTest`,

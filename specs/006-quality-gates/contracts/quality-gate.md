@@ -64,10 +64,10 @@ measured ratio rounded down to the nearest 0.05 (see `research.md` D2 and its as
 
 | Counter | Floor | As built |
 |---|---|---|
-| `LINE` | 0.95 | 99.07% |
-| `BRANCH` | 0.95 | 96.95% |
-| `METHOD` | 0.95 | 99.12% |
-| `COMPLEXITY` | 0.95 | 97.74% |
+| `LINE` | 0.95 | 99.16% |
+| `BRANCH` | 0.95 | 97.22% |
+| `METHOD` | 0.95 | 99.19% |
+| `COMPLEXITY` | 0.95 | 97.92% |
 
 Class scope (the error-path dimension):
 
@@ -75,8 +75,10 @@ Class scope (the error-path dimension):
 |---|---|---|---|
 | `GlobalExceptionHandler` | `LINE` | 1.00 | 100% |
 | `GlobalExceptionHandler` | `METHOD` | 1.00 | 100% |
-| `JooqSlotRepository` | `LINE` | 0.95 | 98.67% |
+| `JooqSlotRepository` | `LINE` | 0.95 | 98.94% |
 | `JooqSlotRepository` | `BRANCH` | 0.90 | 91.67% |
+| `JooqMeetingRepository` | `LINE` | 0.95 | 98.82% |
+| `JooqMeetingRepository` | `BRANCH` | 0.90 | 90.00% |
 | `CurrentUserArgumentResolver` | `BRANCH` | 1.00 | 100% |
 
 Complexity ceilings (Checkstyle, `severity=error`, no suppression file):

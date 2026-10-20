@@ -23,11 +23,11 @@ One independent measure of test thoroughness. Derived from JaCoCo; nothing is ha
 
 | Counter | As built | Enforced | Floor | Failure it detects |
 |---|---|---|---|---|
-| LINE | 99.07% (852/860) | yes | 0.95 | behaviour that is not executed at all |
-| BRANCH | 96.95% (159/164) | yes | 0.95 | a decision whose outcome is never taken |
-| METHOD | 99.12% (226/228) | yes | 0.95 | an entire method never invoked |
-| COMPLEXITY | 97.74% (303/310) | yes | 0.95 | decision points never exercised |
-| INSTRUCTION | 99.47% | no | — | (correlated with LINE; still reported) |
+| LINE | 99.16% (949/957) | yes | 0.95 | behaviour that is not executed at all |
+| BRANCH | 97.22% (175/180) | yes | 0.95 | a decision whose outcome is never taken |
+| METHOD | 99.19% (245/247) | yes | 0.95 | an entire method never invoked |
+| COMPLEXITY | 97.92% (330/337) | yes | 0.95 | decision points never exercised |
+| INSTRUCTION | 99.41% | no | — | (correlated with LINE; still reported) |
 | CLASS | 100% | no | — | (near-binary; the real concern is §2) |
 
 The "as built" column is the finished tree, after the gap-closing tests of `research.md` D5–D8. The
@@ -64,16 +64,19 @@ A single enforceable coverage constraint. Two scopes exist, and they answer diff
 |---|---|---|---|
 | `GlobalExceptionHandler` | LINE | 1.00 | 40/40 = 100% |
 | `GlobalExceptionHandler` | METHOD | 1.00 | 19/19 = 100% |
-| `JooqSlotRepository` | LINE | 0.95 | 74/75 = 98.67% |
+| `JooqSlotRepository` | LINE | 0.95 | 93/94 = 98.94% |
 | `JooqSlotRepository` | BRANCH | 0.90 | 11/12 = 91.67% |
+| `JooqMeetingRepository` | LINE | 0.95 | 84/85 = 98.82% |
+| `JooqMeetingRepository` | BRANCH | 0.90 | 9/10 = 90.00% |
 | `CurrentUserArgumentResolver` | BRANCH | 1.00 | 8/8 = 100% |
 
 `TimeRange` and `DevDataSeeder` — the other two classes the audit flagged — are held by the bundle
 floor instead: the dead `overlaps()` method is deleted (so `TimeRange` reaches 100%) and the seeder
 is enabled in a test (so it reaches 100%). A class with no residue does not need a rule of its own.
-`JooqSlotRepository` is the one class with accepted residue: the `throw ex;` for a delete failure
-that is not a foreign-key violation, reachable only on an infrastructure fault. It is documented
-next to the rule in `build.gradle.kts`.
+`JooqSlotRepository` and `JooqMeetingRepository` are the classes with accepted residue: the
+`throw ex;` for a delete failure that is not a foreign-key violation, and the analogous rethrow for
+a failure that is not a unique violation, reachable only on an infrastructure fault. Both are
+documented next to their rules in `build.gradle.kts`.
 
 **Validation rules**
 
