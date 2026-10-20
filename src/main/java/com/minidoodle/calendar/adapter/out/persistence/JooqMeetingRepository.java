@@ -8,7 +8,6 @@ import com.minidoodle.calendar.domain.model.TimeSlot;
 import com.minidoodle.jooq.tables.MeetingParticipants;
 import com.minidoodle.jooq.tables.Meetings;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +48,7 @@ class JooqMeetingRepository {
                     .execute();
             insertParticipants(meeting);
         } catch (RuntimeException ex) {
-            if (UNIQUE_VIOLATION.equals(sqlState(ex))) {
+            if (UNIQUE_VIOLATION.equals(SlotWriteRetry.sqlState(ex))) {
                 throw new MeetingConflictException("Slot already has a meeting");
             }
             throw ex;
@@ -151,14 +150,5 @@ class JooqMeetingRepository {
                 .where(MeetingParticipants.MEETING_PARTICIPANTS.MEETING_ID.eq(meetingId))
                 .orderBy(MeetingParticipants.MEETING_PARTICIPANTS.POSITION.asc())
                 .fetch(MeetingPersistenceMapper::toParticipant);
-    }
-
-    private String sqlState(Throwable ex) {
-        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
-            if (cause instanceof SQLException sqlException) {
-                return sqlException.getSQLState();
-            }
-        }
-        return null;
     }
 }
