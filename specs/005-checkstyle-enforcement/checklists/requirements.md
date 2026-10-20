@@ -32,11 +32,11 @@
 ## Notes
 
 - All 3 clarifications resolved on 2026-10-17:
-  - FR-001/FR-002: curated baseline ruleset (not a full published style adopted as-is).
-  - FR-006: enforcement via the standard build only (covers the existing pre-push hook and CI; no new hook/CI wiring).
+  - FR-001/FR-002: selected baseline ruleset (not a full published style adopted without changes).
+  - FR-006: enforcement through the standard build only (covers the existing pre-push hook and CI, no new hook/CI wiring).
   - FR-011: fix all pre-existing violations now, with no baseline/suppression file.
 - Follow-up decisions captured as requirements: Spotless + google-java-format (AOSP, 4-space) owns
-  formatting; Checkstyle owns non-formatting rules (FR-004); the initial reformat lands as an
+  formatting. Checkstyle owns non-formatting rules (FR-004). The initial reformat lands as an
   isolated, blame-ignored change (FR-012).
 - "No implementation details" is satisfied in spirit: the tool names (Checkstyle, Spotless,
   google-java-format) are the user's explicit requirement and chosen decisions, not invented

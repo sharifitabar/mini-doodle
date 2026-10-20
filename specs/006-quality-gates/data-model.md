@@ -11,34 +11,34 @@ preserve), and — where relevant — its lifecycle.
 
 ## 1. Coverage Dimension
 
-One independent measure of test thoroughness. Derived from JaCoCo; nothing is hand-maintained.
+One independent measure of test thoroughness. Derived from JaCoCo. Nothing is hand-maintained.
 
 | Field | Values | Notes |
 |---|---|---|
 | `counter` | `INSTRUCTION`, `BRANCH`, `LINE`, `METHOD`, `CLASS`, `COMPLEXITY` | JaCoCo's six counters |
-| `measured` | ratio | From `jacocoTestReport`; always reported, whatever the enforcement |
+| `measured` | ratio | From `jacocoTestReport`. Always reported, whatever the enforcement |
 | `enforced` | boolean | Whether a bundle-level floor exists for this counter |
 | `baseline` | ratio at time of writing | Recorded in `research.md` and below |
 | `floor` | ratio or absent | Present only when `enforced` |
 
 | Counter | As built | Enforced | Floor | Failure it detects |
 |---|---|---|---|---|
-| LINE | 99.16% (949/957) | yes | 0.95 | behaviour that is not executed at all |
+| LINE | 99.16% (949/957) | yes | 0.95 | behavior that is not executed at all |
 | BRANCH | 97.22% (175/180) | yes | 0.95 | a decision whose outcome is never taken |
 | METHOD | 99.19% (245/247) | yes | 0.95 | an entire method never invoked |
 | COMPLEXITY | 97.92% (330/337) | yes | 0.95 | decision points never exercised |
-| INSTRUCTION | 99.41% | no | — | (correlated with LINE; still reported) |
-| CLASS | 100% | no | — | (near-binary; the real concern is §2) |
+| INSTRUCTION | 99.41% | no | — | (correlated with LINE, still reported) |
+| CLASS | 100% | no | — | (near-binary, the real concern is §2) |
 
 The "as built" column is the finished tree, after the gap-closing tests of `research.md` D5–D8. The
 pre-implementation baseline (LINE 94.1%, BRANCH 85.1%, METHOD 95.1%, COMPLEXITY 90.3%) is kept in
-`research.md`; floors are derived from the as-built ratios, not from the gap-ridden ones.
+`research.md`. Floors are derived from the as-built ratios, not from the gap-ridden ones.
 
 **Validation rules**
 
 - Every counter in the "reported" set MUST appear in the generated report (FR-001).
 - Each floor MUST be the as-built ratio rounded **down** to the nearest 0.05, so the standard build
-  is green on an unmodified tree with no suppression (SC-009, FR-018's spirit).
+  passes on an unmodified tree with no suppression (SC-009, FR-018's spirit).
 - Generated code (jOOQ) MUST NOT contribute to any ratio (FR-004).
 
 ---
@@ -70,7 +70,7 @@ A single enforceable coverage constraint. Two scopes exist, and they answer diff
 | `JooqMeetingRepository` | BRANCH | 0.90 | 9/10 = 90.00% |
 | `CurrentUserArgumentResolver` | BRANCH | 1.00 | 8/8 = 100% |
 
-`TimeRange` and `DevDataSeeder` — the other two classes the audit flagged — are held by the bundle
+`TimeRange` and `DevDataSeeder` — the other two classes the audit identified — are held by the bundle
 floor instead: the dead `overlaps()` method is deleted (so `TimeRange` reaches 100%) and the seeder
 is enabled in a test (so it reaches 100%). A class with no residue does not need a rule of its own.
 `JooqSlotRepository` and `JooqMeetingRepository` are the classes with accepted residue: the
@@ -80,12 +80,12 @@ documented next to their rules in `build.gradle.kts`.
 
 **Validation rules**
 
-- Class-scoped rules MUST name their targets explicitly; there is no package-wide rule (a package
+- Class-scoped rules MUST name their targets explicitly. There is no package-wide rule (a package
   rule mixes error mapping with unrelated code — see research D3).
-- A class-scoped floor of 1.00 is only permitted where the gap-closing tests make it achievable;
-  it is a deliberate "all of this behaviour must be tested" statement.
+- A class-scoped floor of 1.00 is only permitted where the gap-closing tests make it achievable.
+  It is a deliberate "all of this behaviour must be tested" statement.
 - The same `classDirectories` filter (jOOQ excluded) MUST be applied to the verification task as to
-  the report task; otherwise a `CLASS` rule can be satisfied by generated code.
+  the report task. Otherwise a `CLASS` rule can be satisfied by generated code.
 
 **State transition**: each class-scoped floor is expected to move in one direction only. When the
 gap-closing tests land, the floor is *set* at the post-test value and never lowered afterwards.
@@ -94,14 +94,14 @@ gap-closing tests land, the floor is *set* at the post-test value and never lowe
 
 ## 3. Gap-Closing Test
 
-A test added specifically because the baseline audit found behaviour unexercised. Distinguished
+A test added specifically because the baseline audit found behavior not tested. Distinguished
 from ordinary tests because success is defined by a named code location becoming executed.
 
 | Field | Description |
 |---|---|
 | `target` | the code location(s) the test must execute |
-| `trigger` | how the behaviour is provoked |
-| `asserts` | the specific outcome asserted (not merely "no exception") |
+| `trigger` | how the behavior is provoked |
+| `asserts` | the specific outcome asserted (not only "no exception") |
 | `reachable` | whether the trigger exists in production, or a seam is required |
 
 | # | Target | Trigger | Asserts | Reachable |
@@ -112,13 +112,13 @@ from ordinary tests because success is defined by a named code location becoming
 | 4 | `handleUnreadable` | malformed JSON body | 400, type `validation` | yes |
 | 5 | `handleMissingHeader` | test-only controller declaring a required header, with the real advice | 400, type `validation` | **no** — test-only seam |
 | 6 | retry/backoff/give-up | injected seam driven with synthetic `SQLState`s | return / rethrow / `SlotOverlapException` / interrupt restoration | **no** — test-only seam |
-| 7 | `DevDataSeeder` | Spring context with `app.seed-demo-data=true` | demo user + calendar exist; second run is a no-op | yes |
+| 7 | `DevDataSeeder` | Spring context with `app.seed-demo-data=true` | demo user + calendar exist. Second run is a no-op | yes |
 | 8 | `CurrentUserArgumentResolver` blank/malformed header | request with absent / non-UUID `X-User-Id` | 400, type `invalid-caller` | yes |
 
 **Validation rules**
 
 - Every entry MUST assert the specific outcome (FR-011): status *and* problem type where it is an
-  error response; the recovery effect where it is a retry.
+  error response. The recovery effect where it is a retry.
 - No entry may rely on a flaky trigger (constitution III).
 - A test that cannot name the code location it closes MUST NOT be added (this is the anti-goal).
 
@@ -133,7 +133,7 @@ An enforceable statement about which parts of the system may depend on which.
 | `id` | A1–A5 |
 | `statement` | the rule in one sentence |
 | `scope` | packages the rule covers |
-| `failure message` | must name the rule and the offending type (FR-015) |
+| `failure message` | must name the rule and the affected type (FR-015) |
 | `negative control` | a fixture that must make the rule fail (FR-016) |
 | `status today` | PASS/FAIL on the unmodified tree |
 
@@ -155,7 +155,7 @@ An enforceable statement about which parts of the system may depend on which.
   (`@Service`, `@Component`, `@Transactional`), and the constitution's framework-free claim covers
   the domain only. The application is constrained by direction (R3) instead.
 - R6 MUST slice **leaf packages** from the context root, not top-level packages: `calendar` and
-  `shared` reference each other legitimately (inbound adapters use `shared.web.CurrentUser`; the
+  `shared` reference each other legitimately (inbound adapters use `shared.web.CurrentUser`, the
   shared exception advice maps `calendar.domain.exception` types), so a top-level slice rule is red
   on a correct tree. `shared` is outside the pattern because R5 plus R2 already make a cycle through
   it impossible. See research D4.
@@ -164,13 +164,13 @@ An enforceable statement about which parts of the system may depend on which.
 
 ## 5. Negative-Control Fixture
 
-A deliberately non-conforming class living in the test sources, used to prove a rule is not
+A deliberately nonconforming class living in the test sources, used to prove a rule is not
 vacuously satisfied.
 
 | Field | Description |
 |---|---|
 | `violates` | the rule id it breaks |
-| `shape` | e.g. an inner type in the domain shape that references a Spring type |
+| `shape` | for example an inner type in the domain shape that references a Spring type |
 | `assertion` | the rule, evaluated over the fixture, reports a violation |
 
 Because the fixture is in the test sources, the production rules are blind to it, and the
@@ -200,16 +200,16 @@ fixture-scoped evaluation is blind to production. The two cannot interfere.
 - `ceiling` MUST be greater than or equal to `measured max`, with no `SuppressionFilter`, no
   baseline file, and no `// CHECKSTYLE:OFF` (FR-018).
 - The ceilings MUST live in the existing ruleset so they run in the tasks already in `check`.
-- Evaluated-and-excluded checks are recorded in `research.md` D10 with their measured maxima; they
+- Evaluated-and-excluded checks are recorded in `research.md` D10 with their measured maxima. They
   are not silently omitted.
 
 ---
 
 ## 7. Mutation Scope
 
-| Field | Value | Rationale |
+| Field | Value | Reason |
 |---|---|---|
-| `tool` | PIT via `info.solidsoft.pitest` 1.19.0 | see research D9 |
+| `tool` | PIT through `info.solidsoft.pitest` 1.19.0 | see research D9 |
 | `testPlugin` | JUnit 5 (`junit5PluginVersion = 1.2.3`) | the suite is JUnit 5 |
 | `targetClasses` | `com.minidoodle.calendar.domain.*` | the only layer with fast unit tests |
 | `targetTests` | `com.minidoodle.calendar.domain.*` | avoid container startup per mutant |
@@ -237,8 +237,8 @@ fixture-scoped evaluation is blind to production. The two cannot interfere.
 | what | why | scoped to |
 |---|---|---|
 | `com.minidoodle.jooq.**` | machine-generated jOOQ output, not ours to cover (FR-004) | report **and** verification |
-| `ClassFanOutComplexity`, `ClassDataAbstractionCoupling`, `ExecutableStatementCount`, `JavaNCSS` | measured maxima make them either red today or redundant (research D10) | Checkstyle |
-| application-layer framework imports | the application legitimately uses Spring; the constitution's framework-free rule covers the domain | ArchUnit (A1 scope) |
+| `ClassFanOutComplexity`, `ClassDataAbstractionCoupling`, `ExecutableStatementCount`, `JavaNCSS` | measured maxima make them either unable to pass today or redundant (research D10) | Checkstyle |
+| application-layer framework imports | the application legitimately uses Spring. The constitution's framework-free rule covers the domain | ArchUnit (A1 scope) |
 | application/adapter packages in mutation | container startup cost per mutant | `pitest` scope |
 
 **Validation rule**: every exclusion MUST be listed here with a reason. The set of exclusions is a
@@ -266,7 +266,7 @@ Exclusion ──narrows──> every measurement above
 ## Lifecycle
 
 1. **Baseline** (done): measure the six counters and the complexity maxima.
-2. **Close gaps**: add the eight `GapClosingTest` entries; re-measure.
+2. **Close gaps**: add the eight `GapClosingTest` entries. Re-measure.
 3. **Set floors**: bundle floors from §1, class floors from §2 (post-gap values).
-4. **Enforce**: wire verification into `check`; add architecture rules and complexity ceilings.
+4. **Enforce**: wire verification into `check`. Add architecture rules and complexity ceilings.
 5. **Ratchet**: floors may be raised when coverage rises, never lowered to accommodate a regression.

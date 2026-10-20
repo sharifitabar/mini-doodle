@@ -30,7 +30,7 @@ Exactly 1000 rows.
 
 ### LoadTimeSlot → `time_slots`
 
-The bulk of the dataset. Per user `n`, `slots(n) = 600 + (n × 37) mod 201`, i.e. **600…800 slots**
+The bulk of the dataset. Per user `n`, `slots(n) = 600 + (n × 37) mod 201`, that is **600…800 slots**
 with the busiest users exactly at the 800 ceiling required by FR-007.
 
 | Column | Value |
@@ -48,8 +48,8 @@ Total: **600,000 + Σ((n × 37) mod 201) ≈ 700,000 rows**.
 
 ### LoadMeeting → `meetings`
 
-Per user `n`, `meetings(n) = (n × 13) mod 101`, i.e. **0…100 meetings**, never more than that
-user's slot count (min 600). Placed on that user's slots with the smallest `i` (which are therefore
+Per user `n`, `meetings(n) = (n × 13) mod 101`, that is **0…100 meetings**, never more than that
+user's slot count (min 600). Placed on that user's slots with the smallest `i` (which are thus
 the `BUSY` ones — exactly mirroring what `POST /api/v1/slots/{id}/meeting` produces).
 
 | Column | Value |
@@ -73,7 +73,7 @@ Two per meeting, so the dataset carries the same relational weight the API produ
 | `name` | `Participant {position} of {n}` (≤ 100 chars) |
 | `email` | `participant{position}.user{n}@loadtest.local` (≤ 254 chars) |
 
-Total: **≈ 100,000 rows**. Present for honesty of shape; the measured flows never read them.
+Total: **≈ 100,000 rows**. Present for honesty of shape. The measured flows never read them.
 
 ---
 
@@ -89,7 +89,7 @@ The namespace is the contract that makes seeding idempotent and resetting safe.
 | `40000000-0000-4000-8000-000000000000` | `50000000-0000-4000-8000-000000000000` | load meetings |
 
 PostgreSQL compares `uuid` byte-wise, so range predicates on the primary key use the index — unlike
-a `LIKE` on a text cast. The demo user, any hand-made data, and the whole migration history sit
+a `LIKE` on a text cast. The demo user, any manually created data, and the whole migration history sit
 outside these ranges and are never touched by a reset.
 
 ---
@@ -98,11 +98,11 @@ outside these ranges and are never touched by a reset.
 
 | Concept | Where it lives | Definition |
 | --- | --- | --- |
-| **Run** | `TEST_ID` wide tag on every k6 series; the summary artifact filename | One execution: one seeded dataset, one steady-state window, one verdict. |
+| **Run** | `TEST_ID` wide tag on every k6 series. The summary artifact filename | One execution: one seeded dataset, one steady-state window, one verdict. |
 | **Flow** | `flow` tag on every k6 request metric (`availability` \| `manipulation`) | Which of the two request kinds a measurement belongs to. |
 | **Read window** | `WINDOW_FROM` / `WINDOW_TO` passed to the generator | `[min(start_at), max(start_at) + 1 hour]` of the seeded slots — covers every user's whole history, ≈25 days, inside the 31-day `MAX_SPAN` limit. |
 | **Target** | k6 `thresholds` | The five bounds in `contracts/load-scenario.md`. |
-| **Verdict** | k6 exit code + summary artifact | `0` = every threshold held; `99` = at least one breached. |
+| **Verdict** | k6 exit code + summary artifact | `0` = every threshold held. `99` = at least one breached. |
 
 ---
 
@@ -119,7 +119,7 @@ invariant below is asserted by `loadtest/sql/verify.sql` after seeding, and the 
 | I3 | Slot count per user is within 600…800, and at least one user is at exactly 800 | assertion |
 | I4 | Meetings per user ≤ 100 and ≤ that user's slot count | assertion |
 | I5 | Every meeting's slot is `BUSY` and no `BUSY` slot lacks a meeting | assertion (this is the state the booking use case leaves behind) |
-| I6 | Every `BUSY` slot belongs to a slot-holding meeting; every meeting has ≥ 1 participant with a name or an email | *DB-enforced* (`ck_participant_present`) + assertion |
+| I6 | Every `BUSY` slot belongs to a slot-holding meeting. Every meeting has ≥ 1 participant with a name or an email | *DB-enforced* (`ck_participant_present`) + assertion |
 | I7 | All seeded slots are in the past, so the future is free for the manipulation flow | assertion |
 | I8 | The database has fresh statistics before load starts | `ANALYZE` at the end of `seed.sql` |
 | I9 | Re-running the seed changes nothing (same row counts, same shape) | assertion run twice + `ON CONFLICT DO NOTHING` |
@@ -133,7 +133,7 @@ availability flow would describe a planning accident rather than the service.
 ## 5. Seeding and reset semantics
 
 **Seed** (`loadtest/sql/seed.sql`) — single transaction, four `INSERT … SELECT` statements driven by
-`generate_series(1, 1000)`, deterministic UUID computation, `ON CONFLICT DO NOTHING` so a re-run is a
+`generate_series(1, 1000)`, deterministic UUID computation, `ON CONFLICT DO NOTHING` so a run again is a
 no-op, closing `ANALYZE users, calendars, time_slots, meetings, meeting_participants`. The script
 reports elapsed time and row counts.
 
@@ -150,7 +150,7 @@ reports elapsed time and row counts.
 Why step 1 cannot simply use the `40000000-…` meeting namespace: `meetings.slot_id` is
 `ON DELETE RESTRICT`, so deleting a slot that still has a meeting fails — and the meetings created
 by *previous runs of the manipulation flow* are written by the application with random UUIDs, not
-with namespace UUIDs. A namespace-scoped delete would therefore leave meetings behind and the
+with namespace UUIDs. A namespace-scoped delete would thus leave meetings behind and the
 cascade in step 2 would abort with a foreign-key violation. This is the same failure mode
 `JooqSlotRepository` had to handle for non-foreign-key delete failures.
 
@@ -164,6 +164,6 @@ Repeated delete/insert cycles leave dead tuples. That is acceptable for the harn
 | Metric | Value |
 | --- | --- |
 | Rows inserted per seed | ≈ 851,000 (1,000 users + 1,000 calendars + ≈700,000 slots + ≈50,000 meetings + ≈100,000 participants) |
-| On-disk footprint with indexes | ≈ 0.4–0.6 GB |
-| Expected seed wall-clock | seconds to a couple of minutes on a laptop (one pass, no application round-trips) |
+| On-disk scope with indexes | ≈ 0.4–0.6 GB |
+| Expected seed clock | seconds to a couple of minutes on a laptop (one pass, no application round-trips) |
 | Measured-window traffic | ≈ 55,000–60,000 requests, of which ≈ 2,800–3,000 are manipulation sequences |

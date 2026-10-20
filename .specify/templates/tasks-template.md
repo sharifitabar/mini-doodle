@@ -5,6 +5,13 @@ description: "Task list template for feature implementation"
 
 # Tasks: [FEATURE NAME]
 
+<!--
+  Write generated prose in ASD-STE100 Simplified Technical English (STE).
+  Read AGENTS.md and docs/WRITING.md before you write.
+  Preserve recorded input, requirements, identifiers, commands, and code.
+-->
+
+
 **Input**: Design documents from `/specs/[###-feature-name]/`
 
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/

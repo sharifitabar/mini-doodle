@@ -4,7 +4,7 @@
 
 Adds one aggregate — `Meeting` — owned through the existing chain
 `user → calendar → time_slot → meeting`. One meeting per slot is enforced by a database
-`UNIQUE (slot_id)` constraint; a slot holding a meeting cannot be deleted (FK `RESTRICT`).
+`UNIQUE (slot_id)` constraint. A slot holding a meeting cannot be deleted (FK `RESTRICT`).
 Participants are free-form rows (name and/or email) stored in a child table. No new PostgreSQL
 extension is required (`btree_gist` is already installed).
 
@@ -16,21 +16,21 @@ extension is required (`btree_gist` is already installed).
   `participants` (`List<Participant>`, non-empty), `createdAt`, `updatedAt`
 - **Invariants owned by the aggregate**:
   - title is present, non-blank, and ≤ 200 characters — FR-003, FR-011
-  - description is optional; when present it is stored as provided (may be long)
+  - description is optional. When present it is stored as provided (may be long)
   - at least one participant — FR-004, FR-011
   - a meeting always belongs to exactly one slot — FR-002
 
 ### Participant (value object)
 - **Attributes**: `name` (optional, ≤ 100 chars), `email` (optional, ≤ 254 chars)
-- **Invariants**: at least one of `name`/`email` present and non-blank; either field, if
+- **Invariants**: at least one of `name`/`email` present and non-blank. Either field, if
   present, must be non-blank and within its length bound
 - **Equality**: by name + email (order-independent within a meeting)
 
 ### MeetingId (value object)
-- Wraps `UUID`; prevents primitive obsession and mixups with `SlotId`/`UserId`.
+- Wraps `UUID`. Prevents primitive obsession and mixups with `SlotId`/`UserId`.
 
 ### Existing types reused
-- **TimeSlot** (`SlotId`, `SlotStatus`): a meeting's slot; the slot's status is `BUSY` while a
+- **TimeSlot** (`SlotId`, `SlotStatus`): a meeting's slot. The slot's status is `BUSY` while a
   meeting exists and `FREE` afterwards. The existing overlap exclusion constraint is unaffected.
 
 ## Persistence Schema (Flyway `V2__meetings.sql`)
@@ -72,9 +72,9 @@ CREATE INDEX ix_meeting_participants_meeting ON meeting_participants (meeting_id
   meeting fails with SQLSTATE `23503` (`foreign_key_violation`). The application also pre-checks
   for a friendly `409`.
 - `ON DELETE CASCADE` on `meeting_participants.meeting_id` cleans up participants when a
-  meeting is deleted (cancel). `meeting_participants` has no surrogate id; `(meeting_id,
+  meeting is deleted (cancel). `meeting_participants` has no surrogate id. `(Meeting_id,
   position)` is the primary key and preserves ordering.
-- Booking also updates the slot's `status` to `BUSY`; cancellation sets it back to `FREE`. The
+- Booking also updates the slot's `status` to `BUSY`. Cancellation sets it back to `FREE`. The
   adapter never writes generated columns.
 
 ## Validation Rules (from requirements)
@@ -108,8 +108,8 @@ A slot that is BUSY (no meeting) is never bookable: --book--> rejected (409).
 
 ## Query Patterns
 
-- **View meeting for a slot**: `WHERE slot_id = ?`, scoped to the caller's calendar via the
-  slot (`time_slots.calendar_id = :callerCalendar`); missing/foreign slot or no meeting → `404`.
+- **View meeting for a slot**: `WHERE slot_id = ?`, scoped to the caller's calendar through the
+  slot (`time_slots.calendar_id = :callerCalendar`). Missing/foreign slot or no meeting → `404`.
 - **Guard on slot mutation**: `SELECT EXISTS (SELECT 1 FROM meetings WHERE slot_id = ?)` before
   modify/delete/status-change.
 - **Cancel**: delete the meeting row (participants cascade) and set the slot `FREE`, in one

@@ -1,6 +1,6 @@
 # Conventional Commits v1.0.0
 
-This project follows the [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) specification for all Git commit messages.
+Use [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) for all Git commit messages.
 
 ## Format
 
@@ -31,12 +31,13 @@ This project follows the [Conventional Commits v1.0.0](https://www.conventionalc
 ## Rules
 
 1. Use **imperative mood** in the description ("add", "fix", "remove", not "added", "fixed").
-2. Don't end description with a period.
+2. Do not end the description with a period.
 3. Use `!` after type/scope or `BREAKING CHANGE:` in footer for breaking changes.
 4. Keep description short (50–72 characters ideal).
-5. Use body/footer to explain why, not just what.
-6. Reference issues in footers (e.g., `Closes #123`, `Refs #456`).
-7. Make commits atomic and focused.
+5. Use the body or footer to explain the reason for the change.
+   Do not only describe the change.
+6. Reference issues in footers (for example, `Closes #123`, `Refs #456`).
+7. Keep each commit focused on one complete change.
 
 ## Examples
 
@@ -52,4 +53,5 @@ BREAKING CHANGE: All v1 API routes are removed.
 
 ## Validation
 
-Any agentic AI assisting with commits should follow this format. Use `git log --oneline` or staged changes to infer the correct type/scope.
+AI agents that help with commits should use this format.
+Use `git log --oneline` or staged changes to select the type and scope.

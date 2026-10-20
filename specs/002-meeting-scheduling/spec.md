@@ -12,7 +12,7 @@
 
 ### Session 2026-10-16
 
-- Q: Are meeting participants references to existing platform users, or arbitrary free-form people? → A: Participants are recorded as provided; they need not correspond to existing platform users, and are not validated against known users.
+- Q: Are meeting participants references to existing platform users, or arbitrary free-form people? → A: Participants are recorded as provided. They need not correspond to existing platform users, and are not validated against known users.
 - Q: Is meeting cancellation in scope for this feature? → A: Yes — canceling removes the meeting and releases its slot.
 - Q: How should slot management behave for a slot that holds a meeting? → A: Reject conflicting slot operations (modify time/duration, delete, or change status) with a conflict error until the meeting is canceled.
 
@@ -20,16 +20,17 @@
 
 ### User Story 1 - Book a meeting from an available slot (Priority: P1)
 
-A user selects one of their available (free) time slots and converts it into a meeting by
-providing a title, an optional description, and one or more participants. Once booked, the
-slot is occupied by the meeting and is no longer available.
+A user selects one of their available (free) time slots.
+They enter a title, an optional description, and one or more participants to book a meeting.
+The meeting occupies the slot. The slot is no longer available.
 
-**Why this priority**: This is the core value of the platform — turning declared availability
-into an actual scheduled meeting. Without it, the service only manages empty time.
+**Why this priority**: The platform's main purpose is to convert declared availability into scheduled meetings.
+Without booking, the service only manages time without meetings.
 
-**Independent Test**: Create a free slot, book a meeting on it with a title and at least one
-participant, then retrieve the meeting and confirm it is associated with that slot and that the
-slot is no longer available.
+**Independent Test**: Create a free slot.
+Book a meeting on it with a title and at least one participant.
+Retrieve the meeting.
+Make sure that it belongs to that slot and that the slot is no longer available.
 
 **Acceptance Scenarios**:
 
@@ -49,13 +50,13 @@ slot is no longer available.
 
 ### User Story 2 - View meeting details (Priority: P2)
 
-A user views the details of a scheduled meeting — its title, description, participants, and the
-time window of its slot — for one of their own slots.
+A user views a scheduled meeting on one of their own slots.
+The details include the title, description, participants, and slot time window.
 
 **Why this priority**: After booking, users must be able to confirm what was scheduled and who
 is involved. It is simpler than booking and delivers value on its own.
 
-**Independent Test**: Book a meeting, then retrieve the meeting for its slot and confirm the
+**Independent Test**: Book a meeting, then retrieve the meeting for its slot and make sure that the
 title, description, participants, and time window match what was booked.
 
 **Acceptance Scenarios**:
@@ -73,10 +74,11 @@ title, description, participants, and time window match what was booked.
 
 A user cancels a scheduled meeting, removing it and releasing its slot back to available.
 
-**Why this priority**: Plans change, so users need to free up time. Valuable but not required
-for the core booking flow, so it ranks below booking and viewing.
+**Why this priority**: When plans change, users need to make time available again.
+Cancellation is useful but is not required for booking.
+It has a lower priority than booking and viewing.
 
-**Independent Test**: Book a meeting, cancel it, then confirm the meeting no longer exists and
+**Independent Test**: Book a meeting, cancel it, then make sure that the meeting no longer exists and
 the slot is available again.
 
 **Acceptance Scenarios**:
@@ -113,9 +115,8 @@ the slot is available again.
 - **FR-002**: A meeting MUST be associated with exactly one time slot, and a slot MUST hold at
   most one meeting at any time.
 - **FR-003**: A meeting MUST record a title (required) and MAY record a description (optional).
-- **FR-004**: A meeting MUST record one or more participants as provided by the caller; a
-  participant need not correspond to an existing platform user and is not required to resolve to
-  a known user.
+- **FR-004**: A meeting MUST record one or more participants as provided by the caller.
+  A participant does not have to be an existing platform user or resolve to a known user.
 - **FR-005**: The system MUST reject booking a slot that does not exist, is not owned by the
   caller, is not currently free, or already holds a meeting.
 - **FR-006**: When a meeting is booked, its slot MUST become unavailable and MUST NOT be
@@ -126,9 +127,9 @@ the slot is available again.
   another user, nor learn of their existence.
 - **FR-009**: Users MUST be able to cancel a meeting, which removes it and makes its slot
   available again.
-- **FR-010**: While a slot holds a meeting, the system MUST reject any operation that would
-  modify the slot's time or duration, delete the slot, or change the slot's status, returning a
-  conflict error, until the meeting is canceled.
+- **FR-010**: While a slot holds a meeting, the system MUST reject these operations with a conflict error:
+  change its time, duration, or status, or delete it.
+  This restriction applies until the meeting is canceled.
 - **FR-011**: The system MUST reject booking requests with a missing/empty title or with no
   participants.
 - **FR-012**: All meeting data MUST be persisted so it survives application restarts.
@@ -145,7 +146,7 @@ the slot is available again.
   optional description, one or more participants, a reference to its slot, and creation and
   last-update timestamps. At most one meeting exists per slot.
 - **Participant**: A person involved in a meeting, other than or including the organizer,
-  recorded as provided by the caller (e.g., a name and/or contact detail). A participant need not
+  recorded as provided by the caller (for example, a name and/or contact detail). A participant need not
   be an existing platform user. A meeting has at least one participant.
 - **Time Slot** (from time slot management): The block of time a meeting occupies. A slot's
   availability reflects whether it holds a meeting.
@@ -161,7 +162,7 @@ the slot is available again.
 - **SC-002**: No slot ever holds more than one meeting, 100% of the time, including under
   concurrent booking requests.
 - **SC-003**: After a booking succeeds, the slot is reflected as unavailable in every
-  subsequent read immediately after the change.
+  later read immediately after the change.
 - **SC-004**: The system supports hundreds of users each holding thousands of slots, and
   retrieving a meeting completes with p99 latency ≤ 300 ms regardless of total data volume.
 - **SC-005**: Valid meeting operations complete without server errors (5xx response rate below
@@ -169,19 +170,21 @@ the slot is available again.
 
 ## Assumptions
 
-- Users are already identified by the platform; authentication and account management are out
+- Users are already identified by the platform. Authentication and account management are out
   of scope and handled by a separate concern, exactly as in time slot management.
-- Each user has exactly one personal calendar; multi-calendar support is out of scope.
-- Meetings are created only by converting an existing free slot; there is no separate
-  "create a meeting from scratch" flow, and no availability is created by booking a meeting.
-- A meeting inherits its time window from its slot; meetings do not have an independent time
-  range.
+- Each user has exactly one personal calendar.
+  Support for multiple calendars is outside the scope.
+- A meeting requires an existing free slot.
+  There is no separate "create a meeting from scratch" flow.
+  Booking does not create availability.
+- A meeting uses its slot's time window.
+  Meetings do not have an independent time range.
 - Notifications and invitations (email/calendar invites), RSVP responses, recurring meetings,
   locations, and video-conference links are out of scope for this feature.
-- Meeting participants are recorded as provided and need not be existing platform users;
-  notifying participants or requiring their acceptance is out of scope.
+- Meeting participants are recorded as provided and need not be existing platform users.
+  Notifying participants or requiring their acceptance is out of scope.
 - The aggregated free/busy availability query across a time frame is a separate feature and out
   of scope here.
-- A meeting is only bookable on a slot starting in the future; past slots cannot be booked.
+- A meeting is only bookable on a slot starting in the future. Past slots cannot be booked.
 - Time slots and their ownership rules (ownership isolation, no overlap, future start, UTC
   storage) are defined by the time slot management feature and are reused unchanged.

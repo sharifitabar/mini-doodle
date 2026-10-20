@@ -16,7 +16,7 @@ description: "Task list template for feature implementation"
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- **[Story]**: Which user story this task belongs to (for example, US1, US2, US3)
 - Include exact file paths in descriptions
 
 ## Path Conventions
@@ -73,7 +73,7 @@ description: "Task list template for feature implementation"
 
 ## Phase 3: User Story 1 - Run metrics stack with a single command (Priority: P1) 🎯 MVP
 
-**Goal**: Prometheus + Grafana start healthy via `docker compose up` with provisioning-as-code and no manual setup.
+**Goal**: Prometheus + Grafana start healthy through `docker compose up` with provisioning-as-code and no manual setup.
 
 **Independent Test**: After `docker compose up`, Prometheus and Grafana are healthy, Prometheus has a target for `app:8080/actuator/prometheus` UP, and Grafana has a provisioned Prometheus datasource.
 
@@ -81,7 +81,7 @@ description: "Task list template for feature implementation"
 
 - [ ] T009 [US1] Start services with `docker compose up -d` and verify Prometheus targets and Grafana readiness (depends on T003–T007)
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: Now, User Story 1 should be fully functional and testable independently
 
 ---
 
@@ -95,7 +95,7 @@ description: "Task list template for feature implementation"
 
 - [ ] T010 [US2] Verify dashboard JSON renders core metric families and is loaded by Grafana provisioning (depends on T006)
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+**Checkpoint**: Now, User Stories 1 AND 2 should both work independently
 
 ---
 
@@ -121,7 +121,7 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] TXXX [P] Documentation updates in docs/
+- [ ] TXXX [P] Documentation updates in documentation/
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
 - [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/

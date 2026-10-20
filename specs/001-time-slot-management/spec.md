@@ -20,17 +20,17 @@
 
 ### User Story 1 - Create an available time slot (Priority: P1)
 
-A user opens their personal calendar and defines a block of time they are available
-by providing a start date-time and a duration. The new slot is added to their calendar
-and is available by default.
+A user opens their personal calendar.
+They enter a start date-time and duration to define an available period.
+The system adds the new slot to the calendar with an available status.
 
-**Why this priority**: Without the ability to declare availability, no other capability
-(scheduling meetings, availability queries) can exist. This is the foundation of the
-whole platform.
+**Why this priority**: Users must declare availability before they can schedule meetings or query availability.
+This capability is the basis of the platform.
 
-**Independent Test**: Create a slot with a start time and duration, then retrieve the
-user's calendar and confirm the slot is present with status "free". Delivers immediate
-value: the user can express when they are available.
+**Independent Test**: Create a slot with a start time and duration.
+Retrieve the user's calendar.
+Make sure that it contains the slot with status "free".
+This lets the user state when they are available.
 
 **Acceptance Scenarios**:
 
@@ -49,17 +49,19 @@ value: the user can express when they are available.
 A user changes the availability status of an existing slot between "free" and "busy"
 to reflect whether they can be booked during that time.
 
-**Why this priority**: Availability toggling is why slots exist. It is the second most
-valuable behavior after creation, and it is small and independent.
+**Why this priority**: Slots let users change their availability status.
+This is the second most valuable behavior after slot creation.
+It is small and independent.
 
-**Independent Test**: Take an existing free slot, mark it busy, retrieve it, and confirm
-its status is "busy"; then mark it free again and confirm the change.
+**Independent Test**: Mark an existing free slot busy.
+Retrieve it and make sure that its status is "busy".
+Mark it free again. Confirm the change.
 
 **Acceptance Scenarios**:
 
-1. **Given** an existing free slot, **When** the user marks it busy, **Then** subsequent
+1. **Given** an existing free slot, **When** the user marks it busy, **Then** later
    reads report the slot as "busy".
-2. **Given** an existing busy slot, **When** the user marks it free, **Then** subsequent
+2. **Given** an existing busy slot, **When** the user marks it free, **Then** later
    reads report the slot as "free".
 3. **Given** an existing slot, **When** the user sets it to the status it already has,
    **Then** the request succeeds and the status is unchanged.
@@ -74,7 +76,7 @@ availability, without deleting and recreating it.
 **Why this priority**: Real availability changes often. Editing is valuable but not
 required for the MVP, so it ranks below creation and status changes.
 
-**Independent Test**: Change the duration of an existing slot and confirm the stored
+**Independent Test**: Change the duration of an existing slot and make sure that the stored
 slot reflects the new duration and end time.
 
 **Acceptance Scenarios**:
@@ -92,10 +94,10 @@ slot reflects the new duration and end time.
 
 A user removes a slot that is no longer relevant from their calendar.
 
-**Why this priority**: Useful for housekeeping, but the platform remains usable without
-it. Lowest priority of the slice.
+**Why this priority**: Deletion removes slots that are no longer needed.
+The platform remains usable without it, so it has the lowest priority in this feature.
 
-**Independent Test**: Create a slot, delete it, and confirm it no longer appears in the
+**Independent Test**: Create a slot, delete it, and make sure that it no longer appears in the
 user's calendar.
 
 **Acceptance Scenarios**:
@@ -118,7 +120,7 @@ user's calendar.
 - Operating on a slot that does not exist.
 - A duration that exceeds the maximum allowed single-slot length.
 - A slot that spans a daylight-saving time boundary or changes UTC offset.
-- Changing only the duration such that the new end time overlaps a subsequent slot.
+- Changing only the duration such that the new end time overlaps a later slot.
 
 ## Requirements *(mandatory)*
 
@@ -131,14 +133,14 @@ user's calendar.
 - **FR-004**: Users MUST be able to set a slot's status to "free" or "busy".
 - **FR-005**: Users MUST be able to change an existing slot's start time and/or duration.
 - **FR-006**: Users MUST be able to delete an existing slot.
-- **FR-007**: Users MUST be able to retrieve a single slot and list the slots in their
-  calendar; list results MUST be paginated with a bounded page size.
+- **FR-007**: Users MUST be able to retrieve a single slot and list the slots in their calendar.
+  List results MUST use pagination with a bounded page size.
 - **FR-008**: A slot MUST belong to exactly one user's calendar.
 - **FR-009**: Users MUST NOT be able to view, modify, or delete slots that belong to
   another user.
-- **FR-010**: A calendar MUST NOT contain two slots that overlap in time. The system MUST
-  reject any create or modify operation that would introduce an overlap, including when
-  such operations are attempted concurrently.
+- **FR-010**: A calendar MUST NOT contain two slots that overlap in time.
+  The system MUST reject create or modify operations that introduce an overlap.
+  This rule also applies to concurrent operations.
 - **FR-011**: The system MUST reject a slot whose duration is not positive or that
   exceeds a configured maximum single-slot length.
 - **FR-012**: The system MUST reject a slot whose start time is in the past.
@@ -146,7 +148,7 @@ user's calendar.
 - **FR-014**: All date-times MUST be accepted and returned with explicit timezone offset
   information and stored unambiguously (in UTC).
 - **FR-015**: When an operation is rejected, the system MUST return a clear, actionable
-  error that distinguishes validation failures (e.g., invalid duration, overlap) from
+  error that distinguishes validation failures (for example, invalid duration, overlap) from
   authorization failures and not-found cases.
 - **FR-016**: The system MUST reject any request whose caller identity is missing or does
   not resolve to a known user (authorization failure), and MUST NOT treat an unknown
@@ -161,7 +163,7 @@ user's calendar.
   status of "free" or "busy". Belongs to exactly one calendar. The system additionally
   records creation and last-update timestamps for auditability.
 - **User**: The owner of a calendar. In this feature a user is an existing identity the
-  system can distinguish; user account management is out of scope. The user making an
+  system can distinguish. User account management is out of scope. The user making an
   HTTP request is referred to as the *caller* in the API contract.
 
 ## Success Criteria *(mandatory)*
@@ -172,7 +174,7 @@ user's calendar.
   noticeable delay, with p99 latency ≤ 200 ms under the expected load.
 - **SC-002**: The system prevents overlapping slots within the same calendar 100% of the
   time, including under concurrent requests.
-- **SC-003**: A status change (free/busy) is reflected in every subsequent read of that
+- **SC-003**: A status change (free/busy) is reflected in every later read of that
   slot immediately after the change succeeds.
 - **SC-004**: The system supports hundreds of users each holding thousands of slots, and
   listing or inspecting a single user's availability completes with p99 latency ≤ 300 ms
@@ -182,16 +184,17 @@ user's calendar.
 
 ## Assumptions
 
-- Each user has exactly one personal calendar; multi-calendar support is out of scope for
-  this feature.
-- Users are already identified by the platform; authentication and account management are
+- Each user has exactly one personal calendar.
+  Support for multiple calendars is outside this feature's scope.
+- Users are already identified by the platform. Authentication and account management are
   out of scope and handled by a separate concern.
 - A new slot's default status is "free", representing availability.
-- Slots use minute-level granularity; sub-minute precision is not required.
+- Slots use minute-level granularity. Sub-minute precision is not required.
 - The maximum single-slot duration is 24 hours unless configured otherwise.
-- Slots must start in the future; creating slots in the past is not permitted.
+- Slots must start in the future. Creating slots in the past is not permitted.
 - Two slots may not overlap within a calendar, regardless of their free/busy status.
 - Converting a slot into a meeting, and querying aggregated availability across a time
   frame, are separate features and out of scope here.
-- Deleting a slot removes it permanently; there is no soft-delete or undo in this feature.
+- Deleting a slot removes it permanently.
+  This feature has no soft-delete or undo operation.
 - Time offsets supplied by users are honored on input and normalized for storage.

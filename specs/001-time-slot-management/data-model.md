@@ -34,9 +34,9 @@ is enforced by a database exclusion constraint, not by application code alone.
 - `FREE`, `BUSY`
 
 ### UserId / CalendarId / SlotId (value objects)
-- Wrap `UUID`; prevent primitive obsession and cross-id mixups.
+- Wrap `UUID`. Prevent primitive obsession and cross-id mixups.
 
-## Persistence Schema (Flyway `V1__init.sql`; `users`/`calendars` `updated_at` added by `V3__add_updated_at_to_users_and_calendars.sql`)
+## Persistence Schema (Flyway `V1__init.sql`, `users`/`calendars` `updated_at` added by `V3__add_updated_at_to_users_and_calendars.sql`)
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
@@ -83,7 +83,7 @@ CREATE INDEX ix_time_slots_range ON time_slots USING gist (slot_range);
 
 ### Notes
 - Every table tracks both `created_at` and `updated_at`. `users` and `calendars` gained
-  `updated_at` in `V3__add_updated_at_to_users_and_calendars.sql`; there is no update
+  `updated_at` in `V3__add_updated_at_to_users_and_calendars.sql`. There is no update
   operation for them yet, so the value defaults to `now()` on insert (existing rows were
   backfilled from `created_at`).
 - `btree_gist` is required so a GIST exclusion constraint can mix an equality column
@@ -91,14 +91,14 @@ CREATE INDEX ix_time_slots_range ON time_slots USING gist (slot_range);
 - `[)` bounds make adjacent slots (one ending exactly when the next begins) **not**
   overlap, which matches scheduling intuition.
 - The `ex_slot_no_overlap` constraint raises PostgreSQL SQLSTATE `23P01`
-  (`exclusion_violation`); the persistence adapter translates it to a domain overlap
+  (`exclusion_violation`). The persistence adapter translates it to a domain overlap
   exception → HTTP 409.
-- The generated `slot_range` column is not written by the application; jOOQ is configured
+- The generated `slot_range` column is not written by the application. JOOQ is configured
   to exclude generated columns from insert/update.
 - The generated expression normalizes through `AT TIME ZONE 'UTC'` before adding the
   interval because PostgreSQL requires generated columns (and exclusion constraints) to use
   IMMUTABLE expressions. `timestamptz + interval` is STABLE (DST-dependent) and is rejected
-  with `ERROR: generation expression is not immutable`; converting to a UTC `timestamp`,
+  with `ERROR: generation expression is not immutable`. Converting to a UTC `timestamp`,
   adding the interval, then converting back is IMMUTABLE and yields the same end instant.
 
 ## Validation Rules (from requirements)
@@ -128,7 +128,7 @@ FREE|BUSY --delete--> [absent]
 ## Query Patterns
 
 - **List a user's slots**: filter by the caller's `calendar_id`, optional `from`/`to`
-  overlap window (`slot_range && tstzrange(from,to,'[)')`) and optional `status`; ordered
-  by `start_at`; bounded by `limit`/`offset`.
+  overlap window (`slot_range && tstzrange(from,to,'[)')`) and optional `status`. Ordered
+  by `start_at`. Bounded by `limit`/`offset`.
 - **Get/Modify/Delete one slot**: by `id` scoped to the caller's `calendar_id`.
 - Indexes `ix_time_slots_calendar_start` and `ix_time_slots_range` support these patterns.

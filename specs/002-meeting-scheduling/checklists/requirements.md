@@ -32,6 +32,6 @@
 ## Notes
 
 - Clarifications resolved on 2026-10-16 (participants recorded as provided, not validated as
-  known users; cancellation in scope; slot operations on a meeting's slot are rejected as
+  known users, cancellation in scope, slot operations on a meeting's slot are rejected as
   conflicts). See spec.md `## Clarifications`.
 - Items marked incomplete require spec updates before the `/speckit.clarify` or `/speckit.plan` skills

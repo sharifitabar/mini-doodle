@@ -1,6 +1,6 @@
 # Quickstart: Availability Query
 
-How to build, run, and verify the availability query feature locally. It builds on time slot
+How to build and run the availability query feature locally and do the necessary checks. It builds on time slot
 management (and meeting scheduling): availability is derived from the caller's slots and meetings.
 
 ## Prerequisites
@@ -21,7 +21,7 @@ startup (no new migration is added by this feature).
 - Health: `http://localhost:8080/actuator/health`
 - Metrics: `http://localhost:8080/actuator/prometheus`
 
-Seed data (dev profile) provides a demo user; its id is the value to send as `X-User-Id`.
+Seed data (dev profile) provides a demo user. Its id is the value to send as `X-User-Id`.
 
 ## 2. Create some slots to shape availability
 
@@ -70,7 +70,7 @@ meet without merging.
 
 ## 4. Meetings count as busy
 
-Book a meeting on a free slot and re-run the query:
+Book a meeting on a free slot and run again the query:
 
 ```bash
 curl -sS -X POST http://localhost:8080/api/v1/slots/$SLOT_ID/meeting -H "X-User-Id: $USER_ID" \
@@ -117,7 +117,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
 
 The suite runs:
 - domain unit tests (`AvailabilityCalculator`: merging, clipping, gaps, empty frame, free/busy
-  boundary; `TimeFrame` bounds; interval invariants),
+  boundary, `TimeFrame` bounds, interval invariants),
 - a Testcontainers integration test for the range query and the slot↔meeting join, including
   ownership isolation,
 - a MockMvc contract test (status codes, response shape, frame validation, auth).
@@ -125,8 +125,8 @@ The suite runs:
 ## 6. Troubleshooting
 
 - **`400` on a valid-looking frame**: check for a missing bound, an end not after the start, or a
-  span longer than 31 days; times must include an offset.
-- **`FREE` window looks "split"**: only *contiguous* free slots are merged; a busy slot or an
+  span longer than 31 days. Times must include an offset.
+- **`FREE` window looks "split"**: only *contiguous* free slots are merged. A busy slot or an
   unallocated gap between them keeps them separate.
 - **Time appears `UNALLOCATED`**: no slot covers it — the service does not treat undeclared time as
   available.

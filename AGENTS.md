@@ -1,85 +1,112 @@
 # AGENTS.md
 
+## Documentation language
+
+- Write all project documentation in ASD-STE100 Simplified Technical English (STE), Issue 9.
+  This rule applies to README files, architecture decision records (ADRs), specifications,
+  plans, research, task lists, procedures, and agent instructions.
+- Before you write or change documentation, read [the writing rules](docs/WRITING.md).
+  Examine each changed passage against those rules before you finish.
+  Use the rules and dictionary in [the local Issue 9 PDF](docs/ASD-STE100_ISSUE9.pdf).
+- Preserve the meaning, requirement strength, scope, decisions, and technical facts.
+  Keep commands, code, identifiers, links, requirement IDs, and recorded input unchanged.
+- Use the STE dictionary and the project's technical terms. Use one term for each concept.
+  Make sure that word meanings and parts of speech agree with the PDF.
+  If you cannot resolve a word or rule, report the limitation. Do not claim full STE compliance
+  from a readability score or an automated word check.
+
 ## Building, testing, running
 
-- A Java 21 Spring Boot service (Gradle toolchain pins 21) laid out as a hexagon:
-  `com.minidoodle.calendar.{domain,application,adapter}` plus `com.minidoodle.shared`. jOOQ sources
-  are generated into `build/generated-sources` and are never hand-edited.
-- Docker must be running for `./gradlew build`: integration tests use Testcontainers, and the jOOQ
-  code generator starts a `postgres:16` container unless `JOOQ_CODEGEN_URL` points at an existing
-  database.
-- `./gradlew test` runs the suite; `./gradlew build` is the full build (codegen, tests, boot jar)
-  and enforces every gate below. `docker compose up --build` runs the stack locally (app on
-  `http://localhost:8080`, health at `/actuator/health`, OpenAPI at `/swagger-ui.html`).
+- This service uses Java 21 and Spring Boot. The Gradle toolchain specifies Java 21.
+  It uses hexagonal architecture in `com.minidoodle.calendar.{domain,application,adapter}`
+  and `com.minidoodle.shared`. The build generates jOOQ sources in `build/generated-sources`.
+  Do not edit generated sources.
+- Start Docker before you run `./gradlew build`. Integration tests use Testcontainers.
+  The jOOQ generator starts a `postgres:16` container unless `JOOQ_CODEGEN_URL` identifies
+  an existing database.
+- Run `./gradlew test` for the test suite. Run `./gradlew build` for code generation,
+  tests, the boot jar, and all gates below.
+- Run `docker compose up --build` to start the local stack.
+  The app uses `http://localhost:8080`. Health is at `/actuator/health`.
+  OpenAPI is at `/swagger-ui.html`.
 
 ## Approval before committing or pushing
 
-- NEVER run `git commit` or `git push` unless the user has explicitly approved it for the current work.
-- Implement and verify first, then STOP and ask for approval (e.g. "shall I commit?"). Wait for an explicit yes.
-- Approval is per-change; a previous approval does not carry over to later changes. Do not push without approval even if a commit was approved.
-- When approval is given, commit and push exactly the approved changes — do not bundle unrelated work.
-- Before pushing, run the full CI build locally (`./gradlew build --no-daemon --console=plain`) and confirm it passes. Never push with a red build.
-- A versioned `.githooks/pre-push` hook runs that build and blocks a failing push. Enable it once per clone with `git config core.hooksPath .githooks`.
+- Run `git commit` only after the user explicitly approves a commit for the current change.
+  Run `git push` only after the user explicitly approves a push for the current change.
+- First, make the change and do the necessary checks. Then stop and ask for approval.
+  Wait for an explicit yes.
+- Approval applies only to the current change. Commit approval does not include push approval.
+- Commit or push only the approved changes. Keep unrelated work separate.
+- Before a push, run `./gradlew build --no-daemon --console=plain` locally.
+  Push only if the full CI build passes.
+- The versioned `.githooks/pre-push` hook runs this build and blocks a push if it fails.
+  Enable it once per clone with `git config core.hooksPath .githooks`.
 
 ## Style gate
 
-Linting and formatting are wired into the standard `check` lifecycle, so `./gradlew build`
-(the same command the pre-push hook and CI run) already enforces them. Do not add a separate
-hook or CI step for style.
+The standard `check` lifecycle includes lint and format checks.
+The pre-push hook and CI enforce these checks through `./gradlew build`.
+Do not add a separate hook or CI step for style.
 
-- **Before asking to commit**, run `./gradlew spotlessApply` to auto-fix formatting, then
-  `./gradlew check` to confirm the gate is green. A red gate is never pushed.
-- Spotless owns formatting (google-java-format's **AOSP** variant: 4-space indent, 100-column
-  limit, import order, unused imports); Checkstyle owns naming/brace/block/bug-pattern rules in
-  `config/checkstyle/checkstyle.xml`. Never "fix" a formatting complaint by hand-editing for style —
-  use `spotlessApply`.
-- Generated jOOQ sources under `build/generated-sources` are excluded from both tools; never add
-  manual formatting there or lift the exclusion.
-- Versions are pinned (`build.gradle.kts`). Do not bump Spotless, google-java-format, or
-  Checkstyle casually: google-java-format is capped at `1.36.0` because 1.37.0 breaks Spotless's
-  reflective glue (see `specs/005-checkstyle-enforcement/research.md`).
+- **Before you ask to commit**, run `./gradlew spotlessApply`.
+  Then run `./gradlew check` and make sure that it passes. Do not push if the gate fails.
+- Spotless controls formatting. It uses google-java-format's **AOSP** variant:
+  4-space indentation, a 100-column limit, import order, and removal of unused imports.
+  Checkstyle controls naming, braces, blocks, and bug patterns in
+  `config/checkstyle/checkstyle.xml`. Use `spotlessApply` to correct formatting errors.
+- Both tools exclude generated jOOQ sources in `build/generated-sources`.
+  Keep this exclusion. Do not format these sources manually.
+- `build.gradle.kts` specifies the tool versions. Change these versions only for a specific reason.
+  The maximum google-java-format version is `1.36.0`.
+  Version 1.37.0 breaks Spotless's reflection code.
+  See `specs/005-checkstyle-enforcement/research.md`.
 
 ## Quality gates
 
-Four gates ride the same `check` lifecycle as style, so `./gradlew build` is the single enforcement
-point. Do not add a separate hook or CI step for any of them.
+The four quality gates use the same `check` lifecycle as style.
+`./gradlew build` is the single enforcement point.
+Do not add a separate hook or CI step for these gates.
 
-- **Coverage floors** (JaCoCo, verified by `jacocoTestCoverageVerification`). Bundle floors are
-  line/branch/method/complexity ≥ 0.95 over production classes; `GlobalExceptionHandler`,
-  `JooqSlotRepository`, and `CurrentUserArgumentResolver` each have their own class-scoped rule
-  because a bundle average hides the error/recovery paths. **Floors are never lowered to make a
-  change pass.** Raise coverage instead, or change a floor deliberately in the same commit, quoting
-  the fresh measurement. A floor is the achieved ratio rounded down to 0.05 — re-measure with
-  `./gradlew test jacocoTestReport` before touching one.
-- **Architecture rules** (ArchUnit, defined in
-  `src/test/java/com/minidoodle/architecture/ArchitectureRules.java`).
-  They run as ordinary tests; a layering violation fails `./gradlew test`. Every rule is also
-  asserted to fail against a deliberately violating fixture — keep that property when adding a rule.
-  The fixture tree is `com.minidoodle.architecture.fixture` (plus the package-cycle pair under
-  `com.minidoodle.calendar.fixture.cyclic`). Test-only controllers must stay **outside**
-  `com.minidoodle`, or the application's component scan will pick them up.
-- **Complexity ceilings** (Checkstyle). Four metric checks in
-  `config/checkstyle/checkstyle.xml`. There is no suppression file and no baseline: a ceiling that
-  fails is fixed in the code, not excused.
-- **Mutation testing** (`./gradlew pitest`) is **on demand only** and must never be wired into
-  `check` or `build` — it must not slow or block a push. It has no threshold; survivors are a
-  triage signal.
+- **Coverage floors**: JaCoCo checks coverage through `jacocoTestCoverageVerification`.
+  Production classes have bundle floors of 0.95 for line, branch, method, and complexity coverage.
+  `GlobalExceptionHandler`, `JooqSlotRepository`, and `CurrentUserArgumentResolver`
+  also have class rules. A bundle average can hide their error and recovery paths.
+  **Do not lower a floor to make a change pass.** Add coverage instead.
+  A deliberate floor change must include the new measurement in the same commit.
+  Round the measured ratio down to the nearest multiple of 0.05 to calculate a floor.
+  Run `./gradlew test jacocoTestReport` before you change a floor.
+- **Architecture rules**: ArchUnit rules are in
+  `src/test/java/com/minidoodle/architecture/ArchitectureRules.java`.
+  They run as tests. A layer violation fails `./gradlew test`.
+  Each rule also has a test that proves it fails against a fixture with a deliberate violation.
+  Keep this test when you add a rule.
+  Fixtures are in `com.minidoodle.architecture.fixture`.
+  The package-cycle pair is in `com.minidoodle.calendar.fixture.cyclic`.
+  Keep test-only controllers **outside** `com.minidoodle`.
+  Otherwise, the application's component scan finds them.
+- **Complexity ceilings**: Checkstyle has four metric checks in
+  `config/checkstyle/checkstyle.xml`. There is no suppression file or baseline.
+  Change the code if it exceeds a ceiling.
+- **Mutation testing**: Run `./gradlew pitest` **only on demand**.
+  Never add it to `check` or `build`. It must not slow or block a push.
+  It has no threshold. Review surviving mutations to find possible test gaps.
 
-Notes that save time:
+Technical constraints:
 
-- ArchUnit is pinned to `1.4.1`. 1.5.x is compiled against `junit-platform-engine` 1.14.4 and breaks
-  the Gradle test worker under Spring Boot's managed 1.12.2 (`NoClassDefFoundError:
-  org/junit/platform/engine/OutputDirectoryCreator`). Do not bump it without re-checking the
-  resolved `junit-platform-*` versions.
-- The accepted coverage residue — `JooqSlotRepository`'s rethrow for a non-foreign-key delete
-  failure — is documented beside its class-scoped rule in `build.gradle.kts`. Do not "fix" it by
-  adding a mocking framework; the project is deliberately integration-first.
-- Full measurements, the rounding rule, and the decision record are in
-  `specs/006-quality-gates/research.md` (see its as-built addendum).
+- Keep ArchUnit at `1.4.1` unless you examine the resolved `junit-platform-*` versions again.
+  ArchUnit 1.5.x uses `junit-platform-engine` 1.14.4.
+  It breaks the Gradle test worker with Spring Boot's managed version 1.12.2.
+  The error is `NoClassDefFoundError: org/junit/platform/engine/OutputDirectoryCreator`.
+- `build.gradle.kts` documents the accepted coverage gap beside the class rule for
+  `JooqSlotRepository`. The gap is its rethrow after a delete failure that is not a foreign-key error.
+  Do not add a mocking framework to cover it. This project tests integrations first.
+- See `specs/006-quality-gates/research.md` for measurements, rounding, and the decision record.
+  The as-built addendum records the implemented results.
 
 ## Commit Conventions
 
-All commits MUST follow [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
+All commits MUST obey [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
 
 See [docs/CONVENTIONAL_COMMITS.md](docs/CONVENTIONAL_COMMITS.md) for full rules, types, and examples.
 
@@ -102,16 +129,17 @@ See [docs/CONVENTIONAL_COMMITS.md](docs/CONVENTIONAL_COMMITS.md) for full rules,
 
 ## Load testing (k6)
 
-- The load test harness lives in `loadtest/` (SQL, k6 scripts, run scripts, results). It is off the
-  critical path: never add references to `loadtest/` in `build.gradle.kts`, `.github/workflows/*`,
-  `.githooks/*`, or other build/CI paths. `./gradlew build` must not be made to depend on it.
-- Run locally only: `./loadtest/run.sh --smoke` for wiring, `./loadtest/run.sh` for a full run.
-  Never run the load test in CI or on a schedule.
-- Before committing changes that touch the harness or compose, the standard gate applies:
-  `./gradlew spotlessApply` then `./gradlew check`. The gate must be green; no production schema
-  or Gradle changes are expected from this feature.
-- Tuning the service/schema/connection pool to hit targets is explicitly out of scope for this
-  feature; report a red run as a finding (measurement, not optimisation).
-- If the app's metrics are missing `http_server_requests_seconds_bucket`, enable histogram buckets
-  via `management.metrics.distribution.percentiles-histogram.http.server.requests: true` in
-  `src/main/resources/application.yml` (the only production-file change contemplated by the feature).
+- The load test harness is in `loadtest/`. It contains SQL, k6 scripts, run scripts, and results.
+  Keep it separate from build and CI paths. Never reference it in `build.gradle.kts`,
+  `.github/workflows/*`, `.githooks/*`, or other build and CI paths.
+  `./gradlew build` must not depend on it.
+- Run load tests only locally. Use `./loadtest/run.sh --smoke` for a check of component connections.
+  Use `./loadtest/run.sh` for a full run. Never run load tests in CI or on a schedule.
+- Before you commit harness or Compose changes, run `./gradlew spotlessApply`, then `./gradlew check`.
+  The checks must pass. This feature is not expected to change the production schema or Gradle.
+- Service, schema, and connection-pool adjustments to meet targets are outside this feature's scope.
+  Report a failed run as a measurement. Do not optimize the service as part of this feature.
+- If `http_server_requests_seconds_bucket` is missing, enable histogram buckets with
+  `management.metrics.distribution.percentiles-histogram.http.server.requests: true`
+  in `src/main/resources/application.yml`.
+  This is the only production-file change considered for this feature.

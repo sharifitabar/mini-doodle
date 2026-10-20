@@ -1,5 +1,12 @@
 # Implementation Plan: [FEATURE]
 
+<!--
+  Write generated prose in ASD-STE100 Simplified Technical English (STE).
+  Read AGENTS.md and docs/WRITING.md before you write.
+  Preserve recorded input, requirements, identifiers, commands, and code.
+-->
+
+
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`

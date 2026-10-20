@@ -1,11 +1,12 @@
 # mini-doodle
 
-A high-performance Spring Boot backend for meeting scheduling: users own a personal calendar of
-time slots, mark those slots free or busy, and book a free slot as a meeting.
+mini-doodle is a high-performance Spring Boot backend for meeting scheduling.
+Each user owns a personal calendar of time slots.
+Users mark slots free or busy and book meetings on free slots.
 
 ## Getting started
 
-### Prerequisites
+### Requirements
 
 - Docker and Docker Compose
 
@@ -15,15 +16,17 @@ time slots, mark those slots free or busy, and book a free slot as a meeting.
 docker-compose up --build
 ```
 
-This starts PostgreSQL and the service, applying Flyway migrations and seeding a demo user on
-startup. Once healthy:
+This command starts PostgreSQL and the service.
+At startup, the service applies Flyway migrations and creates a demo user.
+When the stack is healthy, use these addresses:
 
 - API base URL: `http://localhost:8080`
 - OpenAPI UI: <http://localhost:8080/swagger-ui.html>
 - Health: <http://localhost:8080/actuator/health>
 - Metrics (Prometheus): <http://localhost:8080/actuator/prometheus>
 
-Requests are authenticated by a demo `X-User-Id` header. Use the seeded demo user:
+The service uses the demo `X-User-Id` header to authenticate requests.
+Use the seeded demo user:
 
 ```
 X-User-Id: 11111111-1111-1111-1111-111111111111
@@ -32,7 +35,7 @@ X-User-Id: 11111111-1111-1111-1111-111111111111
 See [`specs/001-time-slot-management/quickstart.md`](specs/001-time-slot-management/quickstart.md),
 [`specs/002-meeting-scheduling/quickstart.md`](specs/002-meeting-scheduling/quickstart.md), and
 [`specs/003-availability-query/quickstart.md`](specs/003-availability-query/quickstart.md)
-for full end-to-end walkthroughs.
+for full end-to-end procedures.
 
 ## API
 
@@ -50,9 +53,9 @@ All endpoints are under `/api/v1` and require the `X-User-Id` header.
 | `DELETE` | `/slots/{slotId}/meeting`   | Cancel a meeting (slot returns to `FREE`)         |
 | `GET`    | `/availability`             | Aggregated free/busy/unallocated view over a frame |
 
-A slot holds **at most one meeting** (enforced by a unique constraint). While a slot holds a
-meeting, `PATCH`/`DELETE` on that slot are rejected with `409 Conflict` until the meeting is
-cancelled.
+A unique constraint limits each slot to **at most one meeting**.
+While a slot holds a meeting, the service rejects `PATCH` and `DELETE` for that slot with `409 Conflict`.
+Cancel the meeting before you change or delete the slot.
 
 Example — create a slot and book a meeting on it:
 
@@ -68,20 +71,23 @@ curl -sS -X POST "http://localhost:8080/api/v1/slots/$SLOT_ID/meeting" \
   -d '{"title":"Sprint planning","participants":[{"name":"Ada Lovelace","email":"ada@example.com"}]}'
 ```
 
-Participants are free-form (a name and/or email); they need not be existing users.
+A participant can have a name, an email address, or both.
+Participants do not have to be existing users.
 
 ### Availability
 
-`GET /api/v1/availability?from=&to=` returns the caller's availability over the half-open frame
-`[from, to)` as one chronologically ordered list of disjoint intervals that cover the frame exactly.
-Each interval is classified as:
+`GET /api/v1/availability?from=&to=` returns the caller's availability for the half-open frame `[from, to)`.
+The response contains one list of intervals in time order.
+The intervals do not overlap and cover the complete frame.
+Each interval has one of these types:
 
 - **`FREE`** — a slot that is not busy (`status = FREE` and no meeting),
 - **`BUSY`** — a slot marked `BUSY` or holding a meeting,
 - **`UNALLOCATED`** — time inside the frame covered by no slot.
 
-Contiguous intervals of the same kind are merged. `from` and `to` are required ISO-8601 timestamps
-with `from < to` and a span of at most 31 days.
+The service merges adjacent intervals of the same type.
+Supply `from` and `to` as ISO-8601 timestamps.
+The bounds must satisfy `from < to`. The frame must not exceed 31 days.
 
 ```bash
 curl -sS "http://localhost:8080/api/v1/availability?from=2026-11-02T09:00:00Z&to=2026-11-02T17:00:00Z" \
@@ -100,23 +106,28 @@ curl -sS "http://localhost:8080/api/v1/availability?from=2026-11-02T09:00:00Z&to
 }
 ```
 
-Error responses use the RFC 9457 problem-details shape. A slot that overlaps an existing slot in
-the same calendar, booking a slot that is not free, or modifying/deleting a slot that holds a
-meeting are all rejected with `409 Conflict`. A write that the database aborts for contention — a
-deadlock with a concurrent write — is answered with `503 Service Unavailable` and
-`Retry-After: 1`; send the same request again.
+Error responses use the RFC 9457 problem-details format.
+The service returns `409 Conflict` for these operations:
+
+- Create a slot that overlaps an existing slot in the same calendar.
+- Book a slot that is not free.
+- Change or delete a slot that holds a meeting.
+
+The database can abort a write because of a deadlock with a concurrent write.
+The service then returns `503 Service Unavailable` with `Retry-After: 1`.
+Send the same request again.
 
 ## Data model
 
-- **User** — owns a calendar; identified in the API by `X-User-Id`.
-- **Calendar** — a user's personal time container (one per user; internal concept).
-- **Time slot** — a `[start, end)` interval with a configurable duration and a `FREE`/`BUSY`
-  status. Stored with a `tstzrange` column and a GiST exclusion constraint that makes overlapping
-  slots in the same calendar impossible at the database level.
-- **Meeting** — a booking on a `FREE` slot: a title, optional description, and one or more
-  free-form participants. A slot has at most one meeting (`UNIQUE (slot_id)`); deleting a slot
-  that holds a meeting is blocked by a foreign key (`ON DELETE RESTRICT`), so a meeting must be
-  cancelled first.
+- **User**: Owns a calendar. The API identifies the user with `X-User-Id`.
+- **Calendar**: An internal container for a user's time. Each user has one calendar.
+- **Time slot**: A `[start, end)` interval with a configurable duration and a `FREE` or `BUSY` status.
+  The database stores a `tstzrange` column.
+  A GiST exclusion constraint prevents slots in the same calendar from overlapping.
+- **Meeting**: A booking on a `FREE` slot with a title, optional description, and one or more free-form participants.
+  `UNIQUE (slot_id)` limits a slot to one meeting.
+  A foreign key with `ON DELETE RESTRICT` prevents deletion of a slot that holds a meeting.
+  Cancel the meeting first.
 
 ## Configuration
 
@@ -132,31 +143,36 @@ The `docker` Spring profile (used by Compose) points the datasource at the `db` 
 
 ## Observability
 
-Actuator exposes health, info, and Prometheus metrics. Slot operations emit counters and timers
-(`minidoodle.slots.created`, `minidoodle.slots.updated`, `minidoodle.slots.deleted`,
-`minidoodle.slots.create`, `minidoodle.slots.list`); meeting operations emit
-`minidoodle.meetings.booked`, `minidoodle.meetings.viewed`, `minidoodle.meetings.cancelled` and the
-`minidoodle.meetings.book`/`get`/`cancel` timers. Availability queries emit the
-`minidoodle.availability.queries` counter and the `minidoodle.availability.query` timer. All use
-structured `event=... key=value` logs.
+Actuator exposes health, info, and Prometheus metrics.
+
+- Slot operations emit counters and timers:
+  `minidoodle.slots.created`, `minidoodle.slots.updated`, `minidoodle.slots.deleted`,
+  `minidoodle.slots.create`, `minidoodle.slots.list`.
+- Meeting operations emit `minidoodle.meetings.booked`, `minidoodle.meetings.viewed`,
+  and `minidoodle.meetings.cancelled`, plus the `minidoodle.meetings.book`/`get`/`cancel` timers.
+- Availability queries emit the `minidoodle.availability.queries` counter
+  and the `minidoodle.availability.query` timer.
+
+All operations use structured logs with `event=... key=value`.
 
 ## Testing and quality gates
 
-The suite uses JUnit 5, AssertJ, MockMvc, and Testcontainers (real PostgreSQL); Docker must be
-running.
+The test suite uses JUnit 5, AssertJ, MockMvc, and Testcontainers with real PostgreSQL.
+Start Docker before you run the tests.
 
 ```bash
 ./gradlew test      # run the test suite
 ./gradlew build     # full build (codegen + tests + boot jar)
 ```
 
-Every fast gate below rides `./gradlew check`, so the same `./gradlew build` used by the pre-push
-hook and CI enforces all of it. Nothing here needs a separate CI step.
+`./gradlew check` runs each fast gate below.
+The pre-push hook and CI enforce these gates through `./gradlew build`.
+A separate CI step is not necessary.
 
 ### Coverage floors (JaCoCo)
 
-Coverage is not just reported — it is verified. Floors apply to production classes with jOOQ's
-generated sources excluded.
+JaCoCo reports coverage and verifies the coverage floors for production classes.
+The measurements exclude generated jOOQ sources.
 
 | Counter | Floor | Measured |
 |---|---|---|
@@ -165,8 +181,8 @@ generated sources excluded.
 | Method | 0.95 | 99.19% |
 | Cyclomatic complexity | 0.95 | 97.92% |
 
-Four classes carry stricter, class-scoped floors, because they hold the error and recovery
-behaviour that a bundle average hides:
+Four classes have stricter class rules.
+A bundle average can hide gaps in their error and recovery paths:
 
 | Class | Counter | Floor |
 |---|---|---|
@@ -177,37 +193,42 @@ behaviour that a bundle average hides:
 | `JooqMeetingRepository` | Branch | 0.90 |
 | `CurrentUserArgumentResolver` | Branch | 1.00 |
 
-The floors are the ratios the suite actually achieves, rounded **down** to the nearest 0.05, so a
-green `test` run is always a green verification and only a real regression can trip one. Measure
-before changing them:
+The floors use the measured ratios, rounded **down** to the nearest multiple of 0.05.
+Thus, a successful `test` run also passes verification unless coverage has decreased.
+Measure coverage before you change a floor:
 
 ```bash
 ./gradlew test jacocoTestReport       # report -> build/reports/jacoco/test/
 ./gradlew jacocoTestCoverageVerification
 ```
 
-Do not lower a floor to accommodate a regression; raise the coverage or fix the gate deliberately,
-in the same commit, with the measurement beside it.
+Do not lower a floor to permit a regression.
+Add coverage or deliberately correct the gate in the same commit.
+Include the measurement.
 
 ### Architecture rules (ArchUnit)
 
-`./gradlew test` fails if the layering slips. The rules are ordinary JUnit 5 tests:
+`./gradlew test` fails if a dependency violates a layer rule.
+The rules run as JUnit 5 tests:
 
 | Rule | Meaning |
 |---|---|
 | R1 | No framework types (Spring, Jakarta, jOOQ, Hibernate) in the domain |
 | R2 | The domain depends on the JDK and the domain only |
-| R3 | The application layer does not depend on adapters; its only non-JDK, non-domain dependencies are the Spring stereotype and transaction annotations |
-| R4 | Inbound and outbound adapters do not depend on each other; inbound adapters call application input ports, not concrete services or outbound ports |
+| R3 | The application layer does not depend on adapters. Its only non-JDK, non-domain dependencies are the Spring stereotype and transaction annotations |
+| R4 | Inbound and outbound adapters do not depend on each other. Inbound adapters call application input ports, not concrete services or outbound ports |
 | R5 | Shared infrastructure does not depend on the application or the adapters |
 | R6 | No dependency cycles between the context's packages |
 
-Each rule is also asserted to **fail** against a deliberately violating fixture, so a broken package
-pattern cannot produce a rule that is vacuously green. Failures name the rule and the offending type.
+Each rule also has a fixture with a deliberate violation.
+A test verifies that the rule **fails** against that fixture.
+This prevents an incorrect package pattern from passing without testing any relevant type.
+Failures identify the rule and the affected type.
 
-To fix a failure, move the dependency inward (or break the cycle for R6) — the intended direction is
-described in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). If the rule itself is wrong, change the
-rule and its effectiveness fixture together so it stays provable.
+To correct a failure, move the dependency toward the domain.
+For R6, remove the dependency cycle.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the permitted direction.
+If the rule is incorrect, change the rule and its effectiveness fixture together.
 
 ### Complexity ceilings (Checkstyle)
 
@@ -215,30 +236,33 @@ Four metric checks live in [`config/checkstyle/checkstyle.xml`](config/checkstyl
 `CyclomaticComplexity` 10, `NPathComplexity` 30, `MethodLength` 70, `ParameterNumber` 7. They are
 satisfied with no suppression file and no baseline.
 
-A failure names the check, the measured value, and the ceiling. Split the method (or reduce its
-parameter count); there is no suppression file or baseline to edit.
+A failure identifies the check, measured value, and ceiling.
+Split the method or reduce its parameter count.
+There is no suppression file or baseline.
 
 ### Mutation testing (on demand)
 
-PIT is scoped to the domain package and is deliberately **not** part of `check` or `build`, so it
-can never block a push:
+PIT analyzes the domain package.
+It is **not** part of `check` or `build` and cannot block a push:
 
 ```bash
 ./gradlew pitest   # report -> build/reports/pitest/
 ```
 
-It reports a per-package and overall mutation score, plus a list of surviving mutations with their
-locations. There is no threshold: survivors are a triage signal, not a gate.
+PIT reports a mutation score for each package and for the complete analysis.
+It also lists surviving mutations and their locations.
+There is no threshold. Review survivors to find possible test gaps.
 
 ## Code style
 
-Formatting and linting are part of the standard build, so they are enforced by whatever runs
-`./gradlew build` — including the pre-push hook and CI. No separate tooling step is needed.
+The standard build includes formatting and lint checks.
+The pre-push hook and CI enforce them through `./gradlew build`.
+A separate tool step is not necessary.
 
 - **Formatting** — Spotless with google-java-format's **AOSP** variant (4-space indent, 100-column
   limit), applied only to `src/main/java` and `src/test/java`. It owns indentation, line wrapping,
   whitespace, import order, and unused-import removal.
-- **Linting** — Checkstyle with a curated ruleset in
+- **Linting** — Checkstyle with a selected ruleset in
   [`config/checkstyle/checkstyle.xml`](config/checkstyle/checkstyle.xml): naming, brace/block, and
   bug-pattern rules. It deliberately contains no formatting rules, so the two tools can never
   contradict each other.
@@ -249,34 +273,33 @@ Formatting and linting are part of the standard build, so they are enforced by w
 ./gradlew check                    # both, as part of the normal check lifecycle
 ```
 
-The jOOQ output under `build/generated-sources` is machine-generated and is excluded from both
-tools. The one-time reformat that introduced the gate is recorded in
-[`.git-blame-ignore-revs`](.git-blame-ignore-revs) so it does not pollute `git blame`; enable it with
-`git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+Both tools exclude the generated jOOQ output in `build/generated-sources`.
+[`.git-blame-ignore-revs`](.git-blame-ignore-revs) records the initial format change.
+This lets `git blame` show the original authors instead of the format change.
+Enable it with `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
 
 ## Design decisions
 
-- **Intervals as `tstzrange`**: overlap is a first-class DB concern enforced by a GIST exclusion
-  constraint (`btree_gist`), so correctness does not rely on application-level checks alone.
-- **Hexagonal architecture**: the domain and application ports are framework-free; application services retain Spring
-  service/transaction annotations. Configuration and telemetry use outbound ports; jOOQ, Spring MVC,
-  and Micrometer live in adapters.
-- **Concurrency**: the exclusion constraint arbitrates overlapping concurrent inserts. A write that
-  the database aborts for contention returns `503` with `Retry-After`; the service does not retry it
-  in the request, and the client sends the request again. See
-  [ADR 0001](docs/adr/0001-slot-insert-contention.md).
+- **Intervals as `tstzrange`**: A GIST exclusion constraint (`btree_gist`) enforces the overlap rule in the database.
+  Correctness does not depend only on application checks.
+- **Hexagonal architecture**: The domain and application ports are framework-free.
+  Application services keep Spring service and transaction annotations.
+  Configuration and telemetry use outbound ports. Adapters contain jOOQ, Spring MVC, and Micrometer.
+- **Concurrency**: The exclusion constraint controls concurrent inserts with overlapping ranges.
+  If the database aborts a write because of contention, the service returns `503` with `Retry-After`.
+  The service does not retry the write in that request. The client sends the request again.
+  See [ADR 0001](docs/adr/0001-slot-insert-contention.md).
 - **Aggregate ownership**: `TimeSlot` owns the optional `Meeting` entity and its participants.
-  Domain methods enforce booking, cancellation and mutation restrictions; the slot repository
-  persists the complete aggregate atomically.
-- **One meeting per slot**: the `uq_meetings_slot` unique constraint is the authoritative guard
-  against double-booking, and cancellation frees the slot in the same transaction that deletes the
-  meeting.
-- **Bounded queries**: listing is paginated and capped, and range filters use the slot-range index
-  for predictable latency as data grows.
+  Domain methods enforce booking, cancellation, and change restrictions.
+  The slot repository saves the complete aggregate atomically.
+- **One meeting per slot**: The `uq_meetings_slot` unique constraint prevents double-booking.
+  Cancellation frees the slot and deletes the meeting in the same transaction.
+- **Bounded queries**: Lists use pages and a size limit.
+  Range filters use the slot-range index to keep latency predictable as data grows.
 
 ## Notes
 
-- The challenge brief references a "composer file"; this is interpreted as the `docker-compose.yml`
+- The challenge brief references a "composer file". This is interpreted as the `docker-compose.yml`
   that defines all service dependencies for the service.
 
 ## Roadmap
@@ -292,7 +315,10 @@ tools. The one-time reformat that introduced the gate is recorded in
 
 ## Metrics Stack (Prometheus + Grafana)
 
-This project includes a local observability stack. The Spring Boot app exposes Prometheus metrics at `/actuator/prometheus` (Micrometer). Prometheus scrapes the app, and Grafana is pre-provisioned with Prometheus as the datasource and a baseline dashboard.
+This project includes a local observability stack.
+The Spring Boot app exposes Micrometer's Prometheus metrics at `/actuator/prometheus`.
+Prometheus collects these metrics from the app.
+Grafana starts with a configured Prometheus datasource and a baseline dashboard.
 
 ### Starting the stack
 
@@ -301,14 +327,17 @@ docker compose up -d
 ```
 
 Services:
+
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3000 (admin/admin)
 - App: http://localhost:8080
 
 ### Verifying
 
-1. Prometheus targets: http://localhost:9090/targets — `minidoodle` job should be UP (scraping `app:8080/actuator/prometheus`).
-2. Grafana: log in with `admin/admin`, open "Mini Doodle Baseline" dashboard.
+1. Open http://localhost:9090/targets.
+2. Make sure that the `minidoodle` job is UP and collects metrics from `app:8080/actuator/prometheus`.
+3. Log in to Grafana with `admin/admin`.
+4. Open the "Mini Doodle Baseline" dashboard.
 
 ### Stopping and persistence
 
@@ -322,26 +351,29 @@ Services:
 
 ## Load Test (1000-user booking)
 
-The repository contains a k6 load-test harness in `loadtest/` to simulate 1000 concurrent users
-(each with up to 800 slots and up to 100 meetings) against the booking service. The workload
-is 95% availability checks and 5% manipulations (add a slot → convert it to a meeting). Results
-are recorded in Prometheus and visualised in a dedicated Grafana dashboard.
+The k6 load-test harness in `loadtest/` simulates 1000 concurrent users of the booking service.
+Each user has up to 800 slots and up to 100 meetings.
+The workload contains 95% availability checks and 5% manipulations.
+A manipulation adds a slot and converts it to a meeting.
+Prometheus records the results. A dedicated Grafana dashboard shows them.
 
-### Prerequisites
+### Requirements
 
 - Docker and Docker Compose
-- At least 8 GB RAM (the seeded dataset and the in-memory Postgres + service use a few GB;
-  `docker compose down -v` frees space if you need it)
+- At least 8 GB RAM.
+  The seeded dataset, in-memory Postgres, and service use a few GB.
+  Use `docker compose down -v` if you need to free space.
 
-### Quick start (smoke, proves wiring in ~1 minute)
+### Quick start (smoke, proves configuration in ~1 minute)
 
 ```bash
 ./loadtest/run.sh --smoke
 ```
 
-This provisions 10 users, runs 10 VUs for ~30 s steady state, enforces readiness, prints the
-Grafana URL, and exits with k6's exit code. A green smoke run proves plumbing; it does not prove
-performance.
+The smoke run provisions 10 users and checks that the system is ready.
+It runs 10 virtual users (VUs) for approximately 30 s at steady state.
+It prints the Grafana URL and returns k6's exit code.
+A successful smoke run shows that component connections operate correctly. It does not prove performance.
 
 ### Full run (100 users, 30s ramp + 5m steady + 30s ramp-down)
 
@@ -349,15 +381,20 @@ performance.
 ./loadtest/run.sh
 ```
 
-Default targets: availability p95 < 300 ms, p99 < 1000 ms; manipulation sequence p95 < 500 ms;
-error rate < 1% (expected outcomes `409` and `503` are excluded and reported as separate counters);
-mix 5% ± 1 pt. Defaults can be overridden via environment variables passed through `docker compose`
-(e.g. `TARGET_AVAIL_P95_MS=...`).
+Default targets:
+
+- Availability: p95 < 300 ms and p99 < 1000 ms.
+- Manipulation sequence: p95 < 500 ms.
+- Error rate: < 1%. Expected `409` and `503` responses have separate counters and are excluded from this rate.
+- Manipulation mix: 5% ± 1 percentage point.
+
+To override a default, pass an environment variable through `docker compose`.
+For example, use `TARGET_AVAIL_P95_MS=...`.
 
 ### Reset and clean slate
 
 - `./loadtest/reset.sh` — removes only the load-test data (the 10000000-... block). The demo user
-  and any hand-made data survive.
+  and any manually created data survive.
 - `docker compose down -v` — full clean slate (drops volumes). Useful if you want to start
   completely fresh or reclaim disk space.
 
@@ -365,16 +402,27 @@ mix 5% ± 1 pt. Defaults can be overridden via environment variables passed thro
 
 Grafana is at `http://localhost:3000` (admin/admin). The provisioned dashboard is
 `Mini Doodle - Load Test (1000 users)` (uid `minidoodle-load-test`). Select the run's `testid`
-from the template variable; panels show client-side latency (by flow), manipulation sequence
-latency, throughput, service-side percentiles by URI, database pressure (backends, sessions by
-state, locks, deadlocks, rollbacks, blocks read/hit), and checks + http_failed rates.
+from the template variable.
+The panels show these measurements:
+
+- Client-side latency by flow and manipulation sequence latency.
+- Throughput and service-side percentiles by URI.
+- Database pressure: backends, sessions by state, locks, deadlocks, rollbacks, and blocks read/hit.
+- Checks and http_failed rates.
 
 ### Notes
 
-- The harness is off the critical path: `loadtest/` is `.dockerignore`-d, `.gitignore`'d for
-  artifacts, and must never be referenced by Gradle, CI, or the pre-push hook. `./gradlew build`
-  must remain unchanged in behaviour/duration.
-- Readiness is enforced by `run.sh` polling `/actuator/health` (no curl in the runtime image).
-- Seed runs inside a single transaction, is idempotent (`ON CONFLICT DO NOTHING`), and `verify.sql`
-  enforces invariants before load starts. The window passed to k6 is derived from seeded data and
-  formatted as ISO-8601 with `Z`.
+- Keep the harness outside the standard build.
+  `.dockerignore` excludes `loadtest/`. `.gitignore` excludes its artifacts.
+  Never reference the harness from Gradle, CI, or the pre-push hook.
+  Preserve the behavior and duration of `./gradlew build`.
+- `run.sh` polls `/actuator/health` for a readiness check.
+  The runtime image does not contain curl.
+- The seed operation uses one transaction and is idempotent through `ON CONFLICT DO NOTHING`.
+  `verify.sql` makes sure that invariants hold before load starts.
+  The k6 time window comes from the seeded data and uses ISO-8601 with `Z`.
+
+## Documentation language
+
+Write documentation in ASD-STE100 Simplified Technical English.
+Before you change a README, ADR, or specification, read [the writing rules](docs/WRITING.md).

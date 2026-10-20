@@ -31,7 +31,7 @@ Expected on a clean tree: `BUILD SUCCESSFUL`, no unformatted files, no lint viol
 ./gradlew spotlessCheck checkstyleMain checkstyleTest --console=plain
 ```
 
-`spotlessApply` fixes everything the formatter owns. Anything Checkstyle still reports (e.g. a
+`spotlessApply` fixes everything the formatter owns. Anything Checkstyle still reports (for example a
 missing brace or a naming issue) must be fixed by hand — the report names the file, line, and rule.
 
 ## See what Checkstyle reported
@@ -64,7 +64,7 @@ GitHub honors the same file automatically.
 
 | What | Where |
 |---|---|
-| Lint ruleset (curated, `severity=error`) | `config/checkstyle/checkstyle.xml` |
+| Lint ruleset (selected, `severity=error`) | `config/checkstyle/checkstyle.xml` |
 | Checkstyle version + tasks | `build.gradle.kts` → `checkstyle { ... }` |
 | Formatter (google-java-format AOSP) + version | `build.gradle.kts` → `spotless { java { ... } }` |
 | Generated jOOQ sources excluded from both tools | `build.gradle.kts` |
@@ -72,11 +72,11 @@ GitHub honors the same file automatically.
 
 ## Troubleshooting
 
-- **Spotless reports a file I didn't edit** — the formatter output is canonical; run `spotlessApply`
+- **Spotless reports a file I didn't edit** — the formatter output is standard. Run `spotlessApply`
   and commit the result.
-- **`spotlessCheck` passes but `checkstyleMain` fails** — formatting and linting are separate owners;
-  fix the lint finding named in the report.
-- **A generated `com.minidoodle.jooq` file appears in a report** — the exclusion regressed; check the
+- **`spotlessCheck` passes but `checkstyleMain` fails** — formatting and linting are separate owners.
+  Fix the lint finding named in the report.
+- **A generated `com.minidoodle.jooq` file appears in a report** — the exclusion regressed. Check the
   Spotless `target(...)` list and the Checkstyle `exclude("**/com/minidoodle/jooq/**")`.
-- **The gate feels slow** — `spotlessCheck` and Checkstyle are incremental and cacheable; a warm
+- **The gate feels slow** — `spotlessCheck` and Checkstyle are incremental and cacheable. A warm
   second run should be a few seconds.

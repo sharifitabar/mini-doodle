@@ -4,20 +4,20 @@
 
 **Prerequisites**: `plan.md`, `spec.md` (user stories US1–US5), `research.md` (D1–D13), `data-model.md`, `contracts/`, `quickstart.md`
 
-**Tests**: **No JUnit tests are generated for this feature.** There is no production code to cover, and the constitution now forbids putting the load test on the `check`/CI path. Each user story instead carries an explicit **Verification** task that is the story's independent test (a manual/integration check, run with the harness itself). The rationale is recorded in `plan.md` → Complexity Tracking.
+**Tests**: **No JUnit tests are generated for this feature.** There is no production code to cover, and the constitution now forbids putting the load test on the `check`/CI path. Each user story instead carries an explicit **Verification** task that is the story's independent test (a manual/integration check, run with the harness itself). The reason is recorded in `plan.md` → Complexity Tracking.
 
 ## Constraints that apply to every task
 
 - **Do not commit or push without explicit per-change approval.** Conventional Commits, one logical change per commit.
-- **Nothing from `loadtest/` may be referenced by** `build.gradle.kts`, `.githooks/pre-push`, or `.github/workflows/ci.yml`. `./gradlew build` must stay green and unchanged in duration.
+- **Nothing from `loadtest/` may be referenced by** `build.gradle.kts`, `.githooks/pre-push`, or `.github/workflows/ci.yml`. `./gradlew build` must continue to pass and unchanged in duration.
 - **No new Gradle dependency. No production code change** — the single, conditional exception is T036 (one configuration line in `application.yml`, research D8).
 - **No schema change and no new Flyway migration.** The dataset is rows in the existing tables.
 - Container image versions are pinned exactly as specified (`grafana/k6:2.3.0`, `prometheuscommunity/postgres-exporter:v0.20.1`).
-- Bash/POSIX `sh` for harness scripts; no Bash-isms that break on macOS `sh`.
+- Bash/POSIX `sh` for harness scripts. No Bash-isms that break on macOS `sh`.
 
 ### Already complete (plan phase, uncommitted)
 
-- `.specify/memory/constitution.md` amended **1.0.0 → 1.1.0** (Load testing + DB-side metrics rows; the off-critical-path workflow rule). No task needed; commit with the plan/tasks artifacts.
+- `.specify/memory/constitution.md` amended **1.0.0 → 1.1.0** (Load testing + DB-side metrics rows, the off-critical-path workflow rule). No task needed. Commit with the plan/tasks artifacts.
 - `specs/007-k6-load-test/{spec,plan,research,data-model,quickstart}.md` and `contracts/*` written.
 
 ### Explicitly out of scope
@@ -25,7 +25,7 @@
 - Tuning the service, schema, indexes or connection pool to hit the targets (spec assumption).
 - Performance claims for any flow other than availability checks and the booking manipulation.
 - Running the load test in CI, or on any schedule.
-- Repairing the pre-existing metric-name defects in `grafana/dashboards/mini-doodle-baseline.json` (deferred by decision to a separate change; see plan R5).
+- Repairing the pre-existing metric-name defects in `grafana/dashboards/mini-doodle-baseline.json` (deferred by decision to a separate change, see plan R5).
 
 ---
 
@@ -49,9 +49,9 @@
 - [x] T005 [P] Add the `postgres` scrape job to `prometheus/prometheus.yml` targeting `postgres-exporter:9187`
 - [x] T006 [P] Pin the datasource UID in `grafana/provisioning/datasources/prometheus.yml` to `uid: PBFA97CFB590B2093` (the value `mini-doodle-baseline.json` already hardcodes in 17 places), with a comment explaining that both dashboards depend on it
 - [x] T007 Enable k6's remote-write receiver by adding `--web.enable-remote-write-receiver` to the `prometheus` command in `docker-compose.yml` (depends on T004 — same file)
-- [x] T008 Add the `seed` and `k6` services behind the `loadtest` compose profile in `docker-compose.yml`: `postgres:16` with `./loadtest/sql` mounted and a `psql -v ON_ERROR_STOP=1 -v user_count=${SEED_USERS:-1000} -f` entrypoint; `grafana/k6:2.3.0` with `./loadtest/k6` and `./loadtest/results` mounted and the environment surface from `contracts/harness.md` (depends on T007 — same file). **Every variable must use `:-` defaults, never `:?`**, or a plain `docker compose up` breaks
+- [x] T008 Add the `seed` and `k6` services behind the `loadtest` compose profile in `docker-compose.yml`: `postgres:16` with `./loadtest/sql` mounted and a `psql -v ON_ERROR_STOP=1 -v user_count=${SEED_USERS:-1000} -f` entrypoint. `grafana/k6:2.3.0` with `./loadtest/k6` and `./loadtest/results` mounted and the environment surface from `contracts/harness.md` (depends on T007 — same file). **Every variable must use `:-` defaults, never `:?`**, or a plain `docker compose up` breaks
 - [x] T009 Create `loadtest/run.sh` with the orchestration skeleton: argument parsing (`--no-reset`, `--no-build`, `--smoke`, `--testid ID`, `--help`), host-side readiness polling of `http://localhost:8080/actuator/health` until `UP` with a 180 s timeout, step sequencing, `TEST_ID` generation (UTC timestamp), the Grafana URL printout, and k6's exit code propagated unchanged (depends on T008)
-- [x] T010 Verify the foundation before any story work: `docker compose config` is clean; `docker compose up -d --build` brings the stack up with **both** Prometheus targets `UP`; `/api/v1/write` answers (405/400 rather than connection-refused); `docker compose up` with no profile does **not** start `seed` or `k6`
+- [x] T010 Verify the foundation before any story work: `docker compose config` is clean. `docker compose up -d --build` brings the stack up with **both** Prometheus targets `UP`. `/api/v1/write` answers (405/400 rather than connection-refused). `docker compose up` with no profile does **not** start `seed` or `k6`
 
 **Checkpoint**: The stack is wired and observable. User stories can now begin — in the order given below (see Dependencies).
 
@@ -61,7 +61,7 @@
 
 **Goal**: 1000 users, each with its own calendar, a slot history of 600–800 non-overlapping slots (busiest users at the 800 ceiling), and up to 100 of those slots already booked as meetings — provisioned before any load, idempotently, with a report.
 
-**Independent Test**: From an empty database, run the provisioning step; count users, per-user slots and per-user meetings in the database and confirm they match the target shape; run `verify.sql` and confirm all invariants hold; run provisioning again and confirm the dataset is unchanged.
+**Independent Test**: From an empty database, run the provisioning step. Count users, per-user slots and per-user meetings in the database and confirm they match the target shape. Run `verify.sql` and confirm all invariants hold. Run provisioning again and make sure that the dataset is unchanged.
 
 **Why this comes first**: the other stories measure against this data. Latency against an empty table would be meaningless (spec US3).
 
@@ -71,14 +71,14 @@
 - [x] T012 [US3] Add the `time_slots` insert to `loadtest/sql/seed.sql`: `slots(n) = 600 + (n × 37) mod 201` rows per user, `start_at = T0 − (i + 1) × 45 min + (n mod 15) min`, `duration_minutes = 30`, `T0 = date_trunc('hour', now())` captured once, all past-dated, `status = FREE`
 - [x] T013 [US3] Add the `meetings` and `meeting_participants` inserts to `loadtest/sql/seed.sql`: `meetings(n) = (n × 13) mod 101` per user on that user's lowest-indexed slots, those slots flipped to `status = BUSY`, 2 participants per meeting (name + email, within the column length CHECKs)
 - [x] T014 [US3] Make `loadtest/sql/seed.sql` idempotent: `ON CONFLICT DO NOTHING` throughout, single transaction, closing `ANALYZE users, calendars, time_slots, meetings, meeting_participants`
-- [x] T015 [US3] Add the provisioning report to `loadtest/sql/seed.sql`: users, slots and meetings created plus elapsed wall-clock (FR-011/FR-012), and a `--smoke` reduced `:user_count` path (e.g. 10 users) so the dataset can be provisioned in about a second
-- [x] T016 [P] [US3] Write `loadtest/sql/verify.sql` asserting invariants I1–I9 from `data-model.md` §4, each as a statement that fails loudly (e.g. `DO $$ BEGIN IF (…) THEN RAISE EXCEPTION …; END IF; END $$;`) and ending with a readable shape report
-- [x] T017 [P] [US3] Write `loadtest/sql/reset.sql`: (a) delete `meetings` whose `slot_id` belongs to a load-user calendar — **ownership-scoped, never by meeting-ID namespace**, because manipulation-created meetings carry app-generated UUIDs; (b) delete `users` in the `10000000-…` range and let `ON DELETE CASCADE` clear calendars and slots; (c) `ANALYZE`
-- [x] T018 [US3] Wire provisioning into `loadtest/run.sh`: reset (unless `--no-reset`) → seed → `verify.sql`, with `SEED_USERS` exported for the compose entrypoint and `--smoke` setting a small `SEED_USERS`/`LOAD_VUS` pair; fail fast if `LOAD_VUS > SEED_USERS`
+- [x] T015 [US3] Add the provisioning report to `loadtest/sql/seed.sql`: users, slots and meetings created plus elapsed clock (FR-011/FR-012), and a `--smoke` reduced `:user_count` path (for example 10 users) so the dataset can be provisioned in about a second
+- [x] T016 [P] [US3] Write `loadtest/sql/verify.sql` asserting invariants I1–I9 from `data-model.md` §4, each as a statement that fails loudly (for example `DO $$ BEGIN IF (…) THEN RAISE EXCEPTION …; END IF; END $$;`) and ending with a readable shape report
+- [x] T017 [P] [US3] Write `loadtest/sql/reset.sql`: (a) delete `meetings` whose `slot_id` belongs to a load-user calendar — **ownership-scoped, never by meeting-ID namespace**, because manipulation-created meetings carry app-generated UUIDs. (B) delete `users` in the `10000000-…` range and let `ON DELETE CASCADE` clear calendars and slots. (C) `ANALYZE`
+- [x] T018 [US3] Wire provisioning into `loadtest/run.sh`: reset (unless `--no-reset`) → seed → `verify.sql`, with `SEED_USERS` exported for the compose entrypoint and `--smoke` setting a small `SEED_USERS`/`LOAD_VUS` pair. Fail fast if `LOAD_VUS > SEED_USERS`
 
 ### Verification
 
-- [x] T019 [US3] Verify US3 independently: from an empty database, provision and confirm 1000 users each with exactly one calendar, no user above 800 slots or 100 meetings, the busiest users at the ceilings, `verify.sql` green; provision again and confirm identical counts; run `reset.sql` and confirm the dataset is gone while the `DevDataSeeder` demo user survives
+- [x] T019 [US3] Verify US3 independently: from an empty database, provision and confirm 1000 users each with exactly one calendar, no user above 800 slots or 100 meetings, the busiest users at the ceilings, `verify.sql` passes. Provision again and confirm identical counts. Run `reset.sql` and make sure that the dataset is gone while the `DevDataSeeder` demo user survives
 
 **Checkpoint**: US3 is complete and independently verifiable with no k6 and no dashboards.
 
@@ -112,16 +112,16 @@
 
 ## Phase 5: User Story 2 - A workload that mirrors real usage (95% checks, 5% manipulations) (Priority: P1)
 
-**Goal**: 5% (±1 pt) of simulated requests are a manipulation — add a slot, then convert that same slot into a meeting — executed as one logical unit, with expected refusals reported separately from failures; 95% are availability checks.
+**Goal**: 5% (±1 pt) of simulated requests are a manipulation — add a slot, then convert that same slot into a meeting — executed as one logical unit, with expected refusals reported separately from failures. 95% Are availability checks.
 
-**Independent Test**: Run the scenario for a short duration and inspect the recorded mix by flow: manipulations between 4% and 6%, everything else availability checks; refusals near zero and never counted as errors.
+**Independent Test**: Run the scenario for a short duration and inspect the recorded mix by flow: manipulations between 4% and 6%, everything else availability checks. Refusals near zero and never counted as errors.
 
 ### Implementation
 
 - [x] T028 [US2] Implement the manipulation flow in `loadtest/k6/booking.js`: `POST /api/v1/slots` on the per-`(VU, ITER)` exclusive future hour grid (`startAt` strictly future, `durationMinutes` 30, so one user's manipulations can never overlap each other or the past-dated seeded history), then `POST /api/v1/slots/{id}/meeting` on that same slot, both tagged `flow: manipulation`
 - [x] T029 [US2] Add refusal classification to `loadtest/k6/booking.js`: `http.setResponseCallback(http.expectedStatuses({min:200,max:204}, 409))` so `409` is an expected status rather than an `http_req_failed`, plus a `business_refusals` Counter tagged by `step` (`create_slot` / `book_meeting`) — `contracts/api-usage.md` status table
 - [x] T030 [US2] Add the mix to `loadtest/k6/booking.js`: the deterministic rule `(__ITER % 20) === (__VU % 20)` selecting the manipulation, the `manipulation_share` Rate metric (1 per manipulation iteration, 0 per read), and the `manipulation_sequence_duration` Trend wrapping both write calls as one unit
-- [x] T031 [US2] Add the write-step checks and the mix threshold to `loadtest/k6/booking.js`: `201` assertions on both steps under the `checks > 0.99` threshold (the guard that makes a stale-future run red — research D13), and `manipulation_share` between `0.04` and `0.06`
+- [x] T031 [US2] Add the write-step checks and the mix threshold to `loadtest/k6/booking.js`: `201` assertions on both steps under the `checks > 0.99` threshold (the guard that makes a stale-future run fail — research D13), and `manipulation_share` between `0.04` and `0.06`
 - [x] T032 [US2] Add the mix-over-time and refusals-by-step panels to `grafana/dashboards/mini-doodle-load-test.json`
 
 ### Verification
@@ -136,11 +136,11 @@
 
 **Goal**: An explicit pass/fail against the agreed targets that an automated caller can detect, plus database-level pressure on the same timeline as the traffic, enough to tell "the database was the bottleneck" from "the service was the bottleneck".
 
-**Independent Test**: Run against a deliberately tight target set and confirm the run reports failure and exits non-zero; repeat with loose targets and confirm success; confirm database pressure is visible in the dashboard for the same window.
+**Independent Test**: Run against a deliberately tight target set and make sure that the run reports failure and exits nonzero. Repeat with loose targets and confirm success. Confirm database pressure is visible in the dashboard for the same window.
 
 ### Implementation
 
-- [x] T034 [US4] Add env-overridable targets to `loadtest/k6/booking.js` with the FR-026 values as defaults — `TARGET_AVAIL_P95_MS=300`, `TARGET_AVAIL_P99_MS=1000`, `TARGET_MANIP_P95_MS=500`, `TARGET_ERROR_RATE=0.01`, mix tolerance `0.01`. Defaults are normative; overrides exist so the verdict can itself be tested
+- [x] T034 [US4] Add env-overridable targets to `loadtest/k6/booking.js` with the FR-026 values as defaults — `TARGET_AVAIL_P95_MS=300`, `TARGET_AVAIL_P99_MS=1000`, `TARGET_MANIP_P95_MS=500`, `TARGET_ERROR_RATE=0.01`, mix tolerance `0.01`. Defaults are normative. Overrides exist so the verdict can itself be tested
 - [x] T035 [US4] Add all six thresholds to `loadtest/k6/booking.js` (`http_req_duration{flow:availability}` p95/p99, `manipulation_sequence_duration` p95, `http_req_failed` rate, `manipulation_share` bounds, `checks`) and complete the verdict in `loadtest/k6/lib/report.js`: a PASS/FAIL line per threshold and one overall verdict, relying on k6's built-in exit code 99 for a breach
 - [ ] T036 [P] [US4] Check whether the running service publishes `http_server_requests_seconds_bucket`. **If it does not**, add `management.metrics.distribution.percentiles-histogram.http.server.requests: true` to `src/main/resources/application.yml` (research D8 — the only possible production-file change in this feature). If it does, record that and change nothing
 - [x] T037 [US4] Add the diagnostic rows to `grafana/dashboards/mini-doodle-load-test.json`: service-side p95/p99 by `uri`, request rate by `uri`, 5xx rate, and the database-pressure row (backends, sessions by state, locks, deadlocks, rollbacks, blocks read vs hit) — `contracts/harness.md` §5
@@ -148,7 +148,7 @@
 
 ### Verification
 
-- [ ] T039 [US4] Verify US4 independently: a run with `TARGET_AVAIL_P95_MS=1` exits **99** and prints the failing threshold; the same run with the defaults exits **0**; `echo $?` proves automated detectability (SC-005); database pressure is visible for the same window; and a saturated run shows enough to name the bottleneck (AC4)
+- [ ] T039 [US4] Verify US4 independently: a run with `TARGET_AVAIL_P95_MS=1` exits **99** and prints the failing threshold. The same run with the defaults exits **0**. `echo $?` proves automated detectability (SC-005). Database pressure is visible for the same window. And a saturated run shows enough to name the bottleneck (AC4)
 
 **Checkpoint**: The run answers "is it fast enough, and where does it hurt?" rather than producing a wall of graphs.
 
@@ -156,9 +156,9 @@
 
 ## Phase 7: User Story 5 - Repeatable runs without wrecking the local environment (Priority: P2)
 
-**Goal**: Runs are repeatable back-to-back with no manual database surgery, the normal build is unaffected, and a newcomer can learn everything from the documentation.
+**Goal**: Runs are repeatable in sequence with no manual database surgery, the normal build is unaffected, and a newcomer can learn everything from the documentation.
 
-**Independent Test**: Run the scenario twice back-to-back and confirm comparability without manual cleanup; then run `./gradlew build --no-daemon --console=plain` and confirm its outcome and duration are unchanged.
+**Independent Test**: Run the scenario twice in sequence and confirm comparability without manual cleanup. Then run `./gradlew build --no-daemon --console=plain` and confirm its outcome and duration are unchanged.
 
 ### Implementation
 
@@ -167,8 +167,8 @@
 
 ### Verification
 
-- [ ] T042 [US5] Verify back-to-back comparability: two full runs with the default reset between them produce the same dataset shape and a mix inside tolerance, with no manual database surgery (SC-008)
-- [ ] T043 [US5] Verify isolation: `./gradlew build --no-daemon --console=plain` is green and its duration unchanged; `grep -rn "loadtest" build.gradle.kts .github .githooks` returns nothing (SC-009)
+- [ ] T042 [US5] Verify in sequence comparability: two full runs with the default reset between them produce the same dataset shape and a mix inside tolerance, with no manual database surgery (SC-008)
+- [ ] T043 [US5] Verify isolation: `./gradlew build --no-daemon --console=plain` passes and its duration is unchanged. `grep -rn "loadtest" build.gradle.kts .github .githooks` returns nothing (SC-009)
 
 **Checkpoint**: All five stories are independently functional.
 
@@ -176,10 +176,10 @@
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T044 [P] Reconcile the documentation with the implementation: every command in `quickstart.md` and `contracts/harness.md` must match `run.sh`'s real flags, environment variables and defaults; fix drift in either direction
-- [ ] T045 Run the full `quickstart.md` procedure end-to-end as written, on a clean checkout (`docker compose down -v` first), and confirm SC-001 (one procedure, no manual dashboard editing, no manual data cleanup on re-run)
-- [ ] T046 Record the measured findings of that first full run in `specs/007-k6-load-test/findings.md`: verdict, per-flow percentiles, error and refusal rates, achieved request rate, database pressure observed, and an explicit statement of which resource bound the run. This is a measurement record, not a spec change; any shortfall is reported as a finding for a separate change (spec assumption "measurement, not optimisation")
-- [x] T047 [P] Final format/quality pass on what is in scope for the standard gate: `./gradlew spotlessApply` then `./gradlew check` (expected no-op for this feature — it changes no Java — but the gate must be proven green before any commit is proposed)
+- [ ] T044 [P] Reconcile the documentation with the implementation: every command in `quickstart.md` and `contracts/harness.md` must match `run.sh`'s real flags, environment variables and defaults. Fix drift in either direction
+- [ ] T045 Run the full `quickstart.md` procedure end-to-end as written, on a clean checkout (`docker compose down -v` first), and confirm SC-001 (one procedure, no manual dashboard editing, no manual data cleanup on run again)
+- [ ] T046 Record the measured findings of that first full run in `specs/007-k6-load-test/findings.md`: verdict, per-flow percentiles, error and refusal rates, achieved request rate, database pressure observed, and an explicit statement of which resource bound the run. This is a measurement record, not a spec change. Any shortfall is reported as a finding for a separate change (spec assumption "measurement, not optimisation")
+- [x] T047 [P] Final format/quality pass on what is in scope for the standard gate: `./gradlew spotlessApply` then `./gradlew check` (expected no-op for this feature — it changes no Java — but the gate must pass before any commit is proposed)
 
 ---
 
@@ -206,7 +206,7 @@ Foundational (Phase 2)
 ```
 
 - **US3 → US1**: US1's independent test requires a provisioned dataset. The `--smoke` path makes this a ~1 s dependency rather than a ~2 min one, which is why the reduced dataset is specified in T015.
-- **US1 → US2**: US2 adds the manipulation flow and the mix on top of US1's scenario; both edit `loadtest/k6/booking.js`, so they cannot be parallelised.
+- **US1 → US2**: US2 adds the manipulation flow and the mix on top of US1's scenario. Both edit `loadtest/k6/booking.js`, so they cannot be parallelised.
 - **US2 → US4**: the verdict judges the flows US2 completes, and its database panels are read against US1+US2's traffic.
 - **US5**: last, because it certifies repeatability of everything above and documents the finished flag surface.
 
@@ -229,7 +229,7 @@ Where the template's "all stories in parallel after Foundational" would be disho
 - **Phase 2**: T004, T005, T006 (three different files)
 - **Phase 3**: T016, T017 (two different new files) while T011–T015 proceed on `seed.sql`
 - **Phase 4**: T020, T021 (two different new files) before T022 needs them
-- **Phases 7–8**: T040, T041 in parallel; T044, T047 in parallel
+- **Phases 7–8**: T040, T041 in parallel. T044, T047 in parallel
 
 ### Parallel example: Phase 2 foundation
 
@@ -263,9 +263,9 @@ Task: "Write loadtest/sql/reset.sql (ownership-scoped delete)"           # T017
 
 1. MVP (above) → demo: "1000 users, live in Grafana, summary printed"
 2. **US2** → the workload matches the real 95/5 shape, and the mix is machine-checked
-3. **US4** → the run states pass/fail and points at the bottleneck; this is where the feature starts answering the user's original question
+3. **US4** → the run states pass/fail and points at the bottleneck. This is where the feature starts answering the user's original question
 4. **US5** → repeatable on demand, documented, provably off the build's critical path
-5. **Phase 8** → the first full run's findings are recorded. **Expect the first honest run to be red**: HikariCP is at Spring Boot's default of 10 connections, and a red run is a valid outcome of this feature (spec assumption). Its fix is a separate change
+5. **Phase 8** → the first full run's findings are recorded. **Expect the first representative run to fail**: HikariCP is at Spring Boot's default of 10 connections, and a failed run is a valid outcome of this feature (spec assumption). Its fix is a separate change
 
 ### Review checkpoints
 
@@ -275,7 +275,7 @@ Task: "Write loadtest/sql/reset.sql (ownership-scoped delete)"           # T017
 - After T033: the mix is proven machine-checked, not eyeballed
 - After T039: the verdict is proven to fail *and* to pass on demand
 - After T043: the build is proven untouched
-- Before any commit is proposed: T047 green, and explicit approval requested
+- Before any commit is proposed: T047 passes, and explicit approval requested
 
 ---
 
@@ -283,6 +283,6 @@ Task: "Write loadtest/sql/reset.sql (ownership-scoped delete)"           # T017
 
 - `[P]` means different files and no dependency on incomplete work — never use it for two edits to the same file
 - Story labels (`[US1]`…`[US5]`) map each task to the spec's user stories for traceability
-- Every story ends with a **Verification** task that is that story's independent test; a story is not done until its verification passes
+- Every story ends with a **Verification** task that is that story's independent test. A story is not done until its verification passes
 - Do not start a story until its preceding checkpoint has passed
-- Commit per logical group (for example: harness scaffolding, dataset, scenario, mix, verdict+db, docs), and only after asking for approval
+- Commit per logical group (for example: harness scaffolding, dataset, scenario, mix, verdict+db, documentation), and only after asking for approval

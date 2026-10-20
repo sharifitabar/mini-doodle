@@ -28,7 +28,7 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 **Purpose**: Project initialization and build tooling
 
-- [X] T001 Create Gradle project files in `settings.gradle.kts` and `build.gradle.kts` (Java 21 toolchain, Spring Boot 3.5.x, Spring MVC + Validation, Actuator, Micrometer-Prometheus, jOOQ, Flyway, springdoc-openapi, Testcontainers; add the Gradle wrapper)
+- [X] T001 Create Gradle project files in `settings.gradle.kts` and `build.gradle.kts` (Java 21 toolchain, Spring Boot 3.5.x, Spring MVC + Validation, Actuator, Micrometer-Prometheus, jOOQ, Flyway, springdoc-openapi, Testcontainers, add the Gradle wrapper)
 - [X] T002 [P] Configure jOOQ code generation in `build.gradle.kts` (jOOQ plugin reading `src/main/resources/db/migration`, generated sources under `build/generated-sources`)
 - [X] T003 [P] Create `docker-compose.yml` with the app service and a PostgreSQL 16 service (healthcheck, env, ports)
 - [X] T004 [P] Create the multi-stage `Dockerfile` (Gradle build stage → JRE 21 runtime stage)
@@ -45,17 +45,17 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
 - [X] T008 Create Flyway migration `src/main/resources/db/migration/V1__init.sql` (`btree_gist` extension, `users`, `calendars`, `time_slots` with generated `slot_range`, `ck_*` checks, `ex_slot_no_overlap` exclusion constraint, indexes) per data-model.md
-- [X] T009 Run jOOQ code generation against `src/main/resources/db/migration` and verify generated classes build under `build/generated-sources/jooq`; configure the generated `slot_range` column to be excluded from generated insert/update statements (depends on T002, T008)
+- [X] T009 Run jOOQ code generation against `src/main/resources/db/migration` and verify generated classes build under `build/generated-sources/jooq`. Configure the generated `slot_range` column to be excluded from generated insert/update statements (depends on T002, T008)
 - [X] T010 [P] Implement value objects `UserId`, `CalendarId`, `SlotId`, `TimeRange`, `SlotStatus` in `src/main/java/com/minidoodle/calendar/domain/model/`
 - [X] T011 Implement domain entities `Calendar` and `TimeSlot` (aggregate root with invariants) in `src/main/java/com/minidoodle/calendar/domain/model/` (depends on T010)
 - [X] T012 [P] Define domain exceptions (`SlotOverlapException`, `InvalidSlotException`, `SlotNotFoundException`, `ForbiddenAccessException`) in `src/main/java/com/minidoodle/calendar/domain/exception/`
 - [X] T013 [P] Define outbound ports `CalendarRepository` and `SlotRepository` in `src/main/java/com/minidoodle/calendar/application/port/out/`
-- [X] T014 Implement persistence adapters `JooqCalendarRepository` and `JooqSlotRepository` (+ row mappers) in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/`; ensure the generated `slot_range` column is never written (let PostgreSQL maintain it) (depends on T009, T013)
+- [X] T014 Implement persistence adapters `JooqCalendarRepository` and `JooqSlotRepository` (+ row mappers) in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/`. Ensure the generated `slot_range` column is never written (let PostgreSQL maintain it) (depends on T009, T013)
 - [X] T015 [P] Implement caller identity: `CurrentUserArgumentResolver` / filter resolving `X-User-Id` into a `UserId` and provisioning lookup, in `src/main/java/com/minidoodle/shared/web/`
 - [X] T016 [P] Implement global error handling `ApiExceptionHandler` mapping domain exceptions to RFC 7807 `ProblemDetail` (400/403/404/409) in `src/main/java/com/minidoodle/shared/web/` (depends on T012)
 - [X] T017 [P] Add `OpenApiConfig` and structured logging configuration in `src/main/java/com/minidoodle/shared/config/`
 - [X] T018 Create Testcontainers base test `src/test/java/com/minidoodle/support/PostgresIntegrationTest.java` (spins up PostgreSQL 16, applies Flyway) 
-- [X] T019 Add dev seed data for a demo user + calendar via `src/main/resources/db/migration/V2__seed_dev.sql` or a dev-profile `ApplicationRunner`
+- [X] T019 Add dev seed data for a demo user + calendar through `src/main/resources/db/migration/V2__seed_dev.sql` or a dev-profile `ApplicationRunner`
 
 **Checkpoint**: Foundation ready — user stories can begin
 
@@ -65,7 +65,7 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 **Goal**: A caller can create a slot (default FREE) in their calendar, and retrieve/list their slots.
 
-**Independent Test**: POST a valid slot, then GET it back and confirm it exists with `status=FREE`; POST an overlapping slot and confirm `409`.
+**Independent Test**: POST a valid slot, then GET it back and make sure that it exists with `status=FREE`. POST an overlapping slot and confirm `409`.
 
 ### Tests for User Story 1 (write first, must fail before implementation) ⚠️
 
@@ -74,8 +74,8 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 - [X] T022 [P] [US1] MockMvc contract test for `POST /api/v1/slots` (201, 400, 403, 404, 409, including missing/unknown caller identity) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerCreateIT.java` (covers FR-016)
 - [X] T023 [P] [US1] MockMvc contract test for `GET /api/v1/slots` and `GET /api/v1/slots/{slotId}` (200, filters, pagination, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerReadIT.java`
 - [X] T054 [P] [US1] Persistence integration test proving slots survive a restart (fresh application context / reconnected DataSource against the same database) in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryPersistenceIT.java` (covers FR-013)
-- [X] T055 [P] [US1] Domain test for timezone/offset normalization across a DST boundary (e.g., a slot crossing a spring-forward/fall-back transition) in `src/test/java/com/minidoodle/calendar/domain/TimeRangeTimezoneTest.java` (covers FR-014 edge case)
-- [X] T056 [P] [US1] Concurrency integration test: N parallel inserts of mutually overlapping slots yield exactly one success and N-1 overlap rejections via `ex_slot_no_overlap` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryConcurrencyIT.java` (covers FR-010, SC-002)
+- [X] T055 [P] [US1] Domain test for timezone/offset normalization across a DST boundary (for example, a slot crossing a spring-forward/fall-back transition) in `src/test/java/com/minidoodle/calendar/domain/TimeRangeTimezoneTest.java` (covers FR-014 edge case)
+- [X] T056 [P] [US1] Concurrency integration test: N parallel inserts of mutually overlapping slots yield exactly one success and N-1 overlap rejections through `ex_slot_no_overlap` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryConcurrencyIT.java` (covers FR-010, SC-002)
 
 ### Implementation for User Story 1
 
@@ -95,7 +95,7 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 **Goal**: A caller toggles an existing slot between `FREE` and `BUSY`.
 
-**Independent Test**: PATCH a slot's status to `BUSY`, GET it, confirm `BUSY`; PATCH to `FREE`, confirm `FREE`.
+**Independent Test**: PATCH a slot's status to `BUSY`, GET it, confirm `BUSY`. PATCH to `FREE`, confirm `FREE`.
 
 ### Tests for User Story 2
 
@@ -114,13 +114,13 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 ## Phase 5: User Story 3 - Modify an existing slot (Priority: P3)
 
-**Goal**: A caller changes a slot's start time and/or duration; overlap is still rejected.
+**Goal**: A caller changes a slot's start time and/or duration. Overlap is still rejected.
 
-**Independent Test**: PATCH the duration of an existing slot and confirm end time updates; PATCH into an occupied range and confirm `409`.
+**Independent Test**: PATCH the duration of an existing slot and confirm end time updates. PATCH into an occupied range and confirm `409`.
 
 ### Tests for User Story 3
 
-- [X] T036 [P] [US3] Domain unit test for modifying time/duration invariants and overlap re-check in `src/test/java/com/minidoodle/calendar/domain/TimeSlotModifyTest.java`
+- [X] T036 [P] [US3] Domain unit test for modifying time/duration invariants and overlap check again in `src/test/java/com/minidoodle/calendar/domain/TimeSlotModifyTest.java`
 - [X] T037 [P] [US3] Persistence integration test: updating a slot into an overlapping range fails on the constraint in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/SlotRepositoryModifyIT.java`
 - [X] T038 [P] [US3] MockMvc contract test for `PATCH /api/v1/slots/{slotId}` with `startAt`/`durationMinutes` (200, 400, 404, 409) in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotControllerModifyIT.java`
 
@@ -138,7 +138,7 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 **Goal**: A caller removes a slot from their calendar.
 
-**Independent Test**: Create a slot, DELETE it, confirm it is gone (`404` on subsequent GET).
+**Independent Test**: Create a slot, DELETE it, confirm it is gone (`404` on later GET).
 
 ### Tests for User Story 4
 
@@ -181,11 +181,11 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 ### User Story Dependencies
 
 - **US1 (P1)**: after Foundational — no dependency on other stories
-- **US2 (P2)**: after Foundational — extends the PATCH endpoint introduced conceptually in US1's controller (T028); otherwise independent
+- **US2 (P2)**: after Foundational — extends the PATCH endpoint introduced conceptually in US1's controller (T028). Otherwise independent
 - **US3 (P3)**: after Foundational — extends PATCH (T041 on top of T035)
 - **US4 (P4)**: after Foundational — fully independent
 
-> NOTE: US2 and US3 both add fields to the same `PATCH /slots/{id}` handler, so they touch `SlotController`; implement sequentially (US2 → US3) to avoid file conflicts. US4 is independent.
+> NOTE: US2 and US3 both add fields to the same `PATCH /slots/{id}` handler, so they touch `SlotController`. Implement sequentially (US2 → US3) to avoid file conflicts. US4 is independent.
 
 ### Within Each User Story
 
@@ -197,7 +197,7 @@ Single Gradle module. Production code under `src/main/java/com/minidoodle/`, tes
 
 - Setup: T002, T003, T004, T005, T007 in parallel
 - Foundational: T010, T012, T013, T015, T016, T017 in parallel (mind T011 → T010, T014 → T009/T013)
-- Each story's test tasks (e.g., T020–T023) run in parallel
+- Each story's test tasks (for example, T020–T023) run in parallel
 - Different stories can be worked in parallel by different people once Foundational completes (except the shared PATCH handler in US2/US3)
 
 ---

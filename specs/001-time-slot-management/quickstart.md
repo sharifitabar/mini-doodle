@@ -1,6 +1,6 @@
 # Quickstart: Time Slot Management
 
-How to build, run, and verify the time slot feature locally.
+How to build and run the time slot feature locally and do the necessary checks.
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ migrations on startup.
 - Health: `http://localhost:8080/actuator/health`
 - Metrics: `http://localhost:8080/actuator/prometheus`
 
-Seed data (dev profile) provides a demo user; its id is the value to send as `X-User-Id`.
+Seed data (dev profile) provides a demo user. Its id is the value to send as `X-User-Id`.
 
 ## 2. Create a slot
 
@@ -79,7 +79,7 @@ curl -sS -X POST http://localhost:8080/api/v1/slots \
 
 The suite runs:
 - domain unit tests (overlap/duration/status rules),
-- integration tests against a real PostgreSQL via Testcontainers (exclusion-constraint and
+- integration tests against a real PostgreSQL through Testcontainers (exclusion-constraint and
   concurrency behavior),
 - MockMvc contract tests (status codes, validation, ownership).
 
@@ -88,6 +88,6 @@ The suite runs:
 - **`extension "btree_gist" is not available`**: ensure the PostgreSQL image allows
   `CREATE EXTENSION btree_gist` (the official `postgres` image does) and that Flyway
   `V1__init.sql` ran (check `actuator/health` and logs).
-- **`403` on every request**: the `X-User-Id` header is missing or unknown; use the seeded
+- **`403` on every request**: the `X-User-Id` header is missing or unknown. Use the seeded
   demo user id.
 - **Port 8080 in use**: change the published port in `docker-compose.yml`.

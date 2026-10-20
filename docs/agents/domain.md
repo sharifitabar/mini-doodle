@@ -1,18 +1,20 @@
-# Domain Docs
+# Domain Documentation
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+Engineering skills should use the domain documentation when they examine this codebase.
 
 ## Before exploring, read these
 
-- **`GLOSSARY.md`** at the repo root, or
-- **`GLOSSARY-MAP.md`** at the repo root if it exists: it points at one `GLOSSARY.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`**: read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
+- **`GLOSSARY.md`** at the repository root, or
+- **`GLOSSARY-MAP.md`** at the repository root if it exists: it points at one `GLOSSARY.md` per context. Read each one relevant to the topic.
+- **`docs/adr/`**: read ADRs that touch the area you're about to work in. In multi-context repositories, also examine `src/<context>/docs/adr/` for context-scoped decisions.
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
+If a file does not exist, **continue silently**. Do not report its absence or propose its creation at this stage.
+The `/domain-modeling` skill creates these files when terms or decisions are resolved.
+The `/grill-with-docs` and `/improve-codebase-architecture` skills call this skill.
 
 ## File structure
 
-Single-context repo (most repos):
+Single-context repository (most repositories):
 
 ```
 /
@@ -23,7 +25,7 @@ Single-context repo (most repos):
 └── src/
 ```
 
-Multi-context repo (presence of `GLOSSARY-MAP.md` at the root):
+Multi-context repository (presence of `GLOSSARY-MAP.md` at the root):
 
 ```
 /
@@ -40,12 +42,15 @@ Multi-context repo (presence of `GLOSSARY-MAP.md` at the root):
 
 ## Use the glossary's vocabulary
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
+Use the term defined in `GLOSSARY.md` when you name a domain concept.
+This applies to issue titles, refactor proposals, hypotheses, and test names.
+Do not use synonyms that the glossary excludes.
 
-If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
+If the glossary does not contain a concept, find out if the project uses it.
+Reconsider a new term. If the glossary has a gap, record it for `/domain-modeling`.
 
-## Flag ADR conflicts
+## Identify ADR conflicts
 
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
+If your output contradicts an existing ADR, state the conflict explicitly:
 
 > _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_

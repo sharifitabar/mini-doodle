@@ -1,5 +1,12 @@
 # Feature Specification: [FEATURE NAME]
 
+<!--
+  Write generated prose in ASD-STE100 Simplified Technical English (STE).
+  Read AGENTS.md and docs/WRITING.md before you write.
+  Preserve recorded input, requirements, identifiers, commands, and code.
+-->
+
+
 **Feature Branch**: `[###-feature-name]`
 
 **Created**: [DATE]

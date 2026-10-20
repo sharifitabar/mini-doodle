@@ -12,9 +12,11 @@
 
 ### User Story 1 - Run metrics stack with a single command (Priority: P1)
 
-An operator wants to start the full stack (`app + db + Prometheus + Grafana`) via a single command and have metrics and dashboards available with no manual UI configuration.
+An operator starts the full stack (`app + db + Prometheus + Grafana`) with one command.
+Metrics and dashboards are available without manual UI configuration.
 
-**Why this priority**: The stack's value comes from being reproducible and easy to run; automatic provisioning is the core of this feature.
+**Why this priority**: The stack must be reproducible and easy to run.
+Automatic provisioning is the main purpose of this feature.
 
 **Independent Test**: `docker compose up` brings Prometheus and Grafana up in a healthy state, and Grafana loads a provisioned Prometheus datasource and at least one provisioned dashboard.
 
@@ -46,7 +48,8 @@ An operator wants to browse key metrics already emitted by the application (requ
 
 An operator wants data and dashboards to survive container restarts so they are not lost on `docker compose down/up`.
 
-**Why this priority**: Reproducibility and persistence matter for a local demo; without volumes, dashboards and short-term metrics history are ephemeral.
+**Why this priority**: A local demo must be reproducible and preserve its data.
+Without volumes, dashboards and short-term metrics history are temporary.
 
 **Independent Test**: After `docker compose down`, then `docker compose up`, the provisioned datasource and dashboards remain and Prometheus starts with its retained data volume mounted.
 
@@ -59,9 +62,10 @@ An operator wants data and dashboards to survive container restarts so they are 
 
 ### Edge Cases
 
-- **App unavailable at scrape time**: Prometheus target is marked DOWN; Grafana panels show gaps/no data rather than crashing; no manual intervention required.
-- **First boot ordering**: Grafana starts after Prometheus becomes healthy (or after scrape target is reachable); provisioning succeeds without races.
-- **Port conflicts**: Default ports (Prometheus 9090, Grafana 3000) may conflict on the host; the compose file must be explicit about published ports so conflicts are visible.
+- **App unavailable at scrape time**: Prometheus marks the target DOWN. Grafana panels show gaps or no data without crashing.
+  Manual intervention is not required.
+- **First boot ordering**: Grafana starts after Prometheus becomes healthy (or after scrape target is reachable). Provisioning succeeds without races.
+- **Port conflicts**: Default ports (Prometheus 9090, Grafana 3000) may conflict on the host. The compose file must be explicit about published ports so conflicts are visible.
 - **Restart resilience**: `docker compose down` followed by `up` yields the same provisioned configuration.
 - **Existing metrics endpoint**: Scraping the already-exposed `/actuator/prometheus` works without any application code changes.
 
@@ -72,7 +76,7 @@ An operator wants data and dashboards to survive container restarts so they are 
 - **FR-001**: The `docker-compose.yml` MUST add a Prometheus service configured to scrape the application's Prometheus endpoint (`/actuator/prometheus`) at a fixed interval.
 - **FR-002**: The `docker-compose.yml` MUST add a Grafana service with Prometheus configured as a provisioned datasource (no manual UI setup required).
 - **FR-003**: Grafana datasource and at least one baseline dashboard MUST be provisioned from version-controlled files (provisioning-as-code).
-- **FR-004**: Prometheus and Grafana data MUST persist across container restarts via named volumes.
+- **FR-004**: Prometheus and Grafana data MUST persist across container restarts through named volumes.
 - **FR-005**: The stack MUST reuse the application's existing metrics endpoint (`/actuator/prometheus`) with no application code changes required for metrics exposition.
 - **FR-006**: Prometheus and Grafana UIs MUST be reachable from the host on their published ports.
 - **FR-007**: The stack MUST start with a single `docker compose up` and reach a healthy state without manual configuration steps.
@@ -103,11 +107,11 @@ An operator wants data and dashboards to survive container restarts so they are 
 ## Assumptions
 
 - **Scope is the stack only**: This feature adds Prometheus + Grafana to docker-compose with provisioning-as-code and volumes. Adding new application metrics or altering percentile/histogram configuration is out of scope.
-- **Single-instance demo**: Local docker-compose with a single `app` instance; no service discovery beyond static targets.
+- **Single-instance demo**: Local docker-compose with a single `app` instance. No service discovery beyond static targets.
 - **Demo credentials**: Grafana uses default/demo credentials documented in README (not production-hardened).
-- **Default ports**: Prometheus on 9090, Grafana on 3000 (explicitly published); conflicts are assumed to be handled by the operator if they occur.
-- **Retention**: Prometheus uses reasonable default retention for a local demo (documented in provisioning); no long-term archival.
-- **Observability of HTTP and JVM**: The application already exposes `http.server.requests` and JVM/process metrics via Actuator/Micrometer; they are included in the baseline dashboard.
+- **Default ports**: Prometheus on 9090, Grafana on 3000 (explicitly published). Conflicts are assumed to be handled by the operator if they occur.
+- **Retention**: Prometheus uses reasonable default retention for a local demo (documented in provisioning). No long-term archival.
+- **Observability of HTTP and JVM**: The application already exposes `http.server.requests` and JVM/process metrics through Actuator/Micrometer. They are included in the baseline dashboard.
 - **Alerting and tracing are out of scope**: No Alertmanager, no OpenTelemetry/tracing integration, no exemplars in this feature.
 - **Persistence is local**: Named volumes are sufficient for the local demo environment.
 

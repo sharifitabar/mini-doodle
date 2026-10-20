@@ -31,13 +31,13 @@
 
 ## Notes
 
-- Scope was not restated by the user; the assistant selected the gate set from the baseline audit
+- Scope was not restated by the user. The assistant selected the gate set from the baseline audit
   discussion and recorded the selection as explicit assumptions (enforcement split by cost,
   floors derived from baseline, deferred gates named and justified as out of scope).
 - Baseline figures used throughout (94.1% line, 85.1% branch, 95.1% method, 90.3% complexity,
   10/15 error responses, 4/5 catch blocks, 1.6% shallow lines) come from a measured audit of the
   current suite, not estimates.
 - Exact floor values are deliberately deferred to planning (FR-003 requires them to be derived from
-  the measured baseline and recorded with rationale), so this spec contains no numeric thresholds.
+  the measured baseline and recorded with reason), so this spec contains no numeric thresholds.
 - Deferred gates (bug-pattern analysis, dependency vulnerability scanning, dependency locking,
   container scanning) are named in Assumptions so their absence is a decision, not an oversight.

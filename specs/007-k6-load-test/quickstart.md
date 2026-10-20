@@ -43,7 +43,7 @@ Useful variants:
 Reset-and-reseed is the **default** on purpose: the manipulation flow writes its new slots into the
 empty future on a deterministic grid, so a second run against a dataset left over from the first
 would attempt the same hours, be refused with `409` every time, and measure a write path that never
-wrote anything. `--no-reset` is for deliberate continuation experiments; the run's `checks`
+wrote anything. `--no-reset` is for deliberate continuation experiments. The run's `checks`
 threshold is the backstop that catches it if you forget.
 
 If you prefer to see every step, the same procedure by hand:
@@ -76,7 +76,7 @@ docker compose --profile loadtest run --rm \
 | Stack up (build on first run) | 1–5 min first time, ~20 s after | Image build dominates the first run |
 | Readiness wait | seconds | Polls `/actuator/health` until `UP` |
 | Seed | seconds – 2 min | One pass inserts ≈851,000 rows and runs `ANALYZE` |
-| Load | ~6 min | 30 s ramp-up + 5 min steady state + 30 s ramp-down (defaults; override via env) |
+| Load | ~6 min | 30 s ramp-up + 5 min steady state + 30 s ramp-down (defaults, override through env) |
 | Total | ~8 min (first run longer if rebuilding) | Scale back up with `SEED_USERS`/`LOAD_VUS`/`LOAD_STEADY_SECONDS` |
 
 ## Where to look while it runs
@@ -114,7 +114,7 @@ anything else = k6 could not run the scenario.
 This is a **measurement**, not a tuning exercise, and the current configuration is untuned for this
 scale:
 
-- HikariCP is at Spring Boot's default of **10 connections**; Postgres `max_connections` is the
+- HikariCP is at Spring Boot's default of **10 connections**. Postgres `max_connections` is the
   default 100. At 1000 resident users, pool queueing is a likely finding.
 - **A failing run is still a successful outcome of this feature.** It is the signal the feature
   exists to produce. Fixing whatever it exposes (pool sizing, indexes, caching) is a separate,
@@ -126,12 +126,12 @@ To tell the three failure modes apart:
 | --- | --- |
 | `k6_vus` = 1000, latency high, Postgres backends ≤ 10 with growing active/waiting sessions | **Connection-pool bound** — the service is waiting for a connection |
 | Postgres active sessions high, blocks-read high, service-side p95 rising with client p95 | **Database bound** — the queries themselves are the cost |
-| Host CPU pinned, k6's own iteration duration rising, latency high while the service-side p95 stays flat | **Generator bound** — the laptop, not the service; lower `LOAD_VUS` and re-run before drawing conclusions |
+| Host CPU pinned, k6's own iteration duration rising, latency high while the service-side p95 stays flat | **Generator bound** — the laptop, not the service. Lower `LOAD_VUS` and run again before drawing conclusions |
 
 ## Repeat runs
 
 The seed is idempotent, so a second run reuses the same dataset and stays comparable. Over many
-runs the delete/insert cycles accumulate dead tuples; when numbers start drifting without a code
+runs the delete/insert cycles accumulate dead tuples. When numbers start drifting without a code
 change, take the clean-slate path:
 
 ```bash
@@ -145,18 +145,18 @@ docker compose down -v        # also clears Prometheus and Grafana volumes
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| 403s in the run, `checks` red | The dataset is missing or the generator's user IDs don't match the seeded namespace | Run the seed step; confirm `select count(*) from users where id >= '10000000-0000-4000-8000-000000000000' and id < '10000000-0000-4000-8001-000000000000'` = 1000. The wider `10000000`–`20000000` range also contains the demo user |
+| 403s in the run, `checks` red | The dataset is missing or the generator's user IDs don't match the seeded namespace | Run the seed step. Confirm `select count(*) from users where id >= '10000000-0000-4000-8000-000000000000' and id < '10000000-0000-4000-8001-000000000000'` = 1000. The wider `10000000`–`20000000` range also contains the demo user |
 | 400s from `/api/v1/availability` | `WINDOW_FROM`/`WINDOW_TO` not in ISO-8601 (`psql`'s default timestamp format is not accepted) | Use `run.sh`, or the `to_char(...)` query above |
-| 400s from `POST /api/v1/slots` | Generated `startAt` is not in the future (host clock skew) | Check the host clock; the generator derives times from `now` |
-| Grafana panels empty but the run clearly happened | Prometheus missing `--web.enable-remote-write-receiver`, or the stack wasn't recreated after adding it | `docker compose up -d --force-recreate prometheus`; check `docker compose logs prometheus` for remote-write errors |
-| `postgres` target DOWN | Exporter not running or wrong `DATA_SOURCE_NAME` | `docker compose ps`; `docker compose logs postgres-exporter` |
+| 400s from `POST /api/v1/slots` | Generated `startAt` is not in the future (host clock skew) | Check the host clock. The generator derives times from `now` |
+| Grafana panels empty but the run clearly happened | Prometheus missing `--web.enable-remote-write-receiver`, or the stack wasn't recreated after adding it | `docker compose up -d --force-recreate prometheus`. Check `docker compose logs prometheus` for remote-write errors |
+| `postgres` target DOWN | Exporter not running or wrong `DATA_SOURCE_NAME` | `docker compose ps`. `docker compose logs postgres-exporter` |
 | VUs never reach 1000, or the container is OOM-killed | Docker VM memory too small for 1000 VU runtimes | Raise Docker Desktop memory, or run with a lower `LOAD_VUS` and say so when you report numbers |
 | Port already in use | 8080, 3000, 9090, 9187, 5432 | Stop the conflicting process or the other compose stack |
-| Seed takes many minutes | Competing load, or the database is mid-`ANALYZE` on a slow disk | Wait; do not start the run "just to save time" — a partially seeded dataset invalidates the numbers |
-| A red run that "should" be green | Check `k6_business_refusals_total` first: a refusal is not an error, but a rising refusal rate means the manipulation placement is colliding and the mix is not what the run claims | Investigate the generator's slot-time grid |
-| Manipulation p95 looks great, but `k6_business_refusals_total` ≈ the number of manipulations | Stale future: the dataset still holds the previous run's manipulated slots, so every create-slot is refused (harmless for the mix, useless as a measurement) | Re-run without `--no-reset`; a systemic refusal also trips the `checks` threshold |
+| Seed takes many minutes | Competing load, or the database is mid-`ANALYZE` on a slow disk | Wait. Do not start the run "just to save time" — a partially seeded dataset invalidates the numbers |
+| A failed run that "should" be green | Check `k6_business_refusals_total` first: a refusal is not an error, but a rising refusal rate means the manipulation placement is colliding and the mix is not what the run claims | Investigate the generator's slot-time grid |
+| Manipulation p95 looks great, but `k6_business_refusals_total` ≈ the number of manipulations | Stale future: the dataset still holds the previous run's manipulated slots, so every create-slot is refused (harmless for the mix, useless as a measurement) | Run again without `--no-reset`. A systemic refusal also trips the `checks` threshold |
 
-## When to check that the load test has not leaked into the normal workflow
+## When to make sure that the load test has not leaked into the normal workflow
 
 ```bash
 ./gradlew build --no-daemon --console=plain    # must be exactly as fast and as green as before
@@ -165,8 +165,8 @@ grep -rn "loadtest" build.gradle.kts .github .githooks    # must return nothing
 
 ## Out of scope here
 
-Optimising the service to hit the targets; performance claims for endpoints other than availability
-and the booking manipulation; running the load test in CI; fixing the pre-existing metric-name
+Optimising the service to hit the targets. Performance claims for endpoints other than availability
+and the booking manipulation. Running the load test in CI. Fixing the pre-existing metric-name
 defects in the baseline dashboard (`minidoodle_meetings_created_total`,
 `minidoodle_meetings_deleted_total`, `minidoodle_availability_query_total` — none of which are the
 names the application publishes).

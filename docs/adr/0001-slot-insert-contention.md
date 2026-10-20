@@ -5,8 +5,7 @@ Date: 2026-10-20
 
 ## Terms
 
-- **Exclusion constraint**: a database rule that prevents two rows from having overlapping ranges
-  in one calendar. The rule is `ex_slot_no_overlap`.
+- **Exclusion constraint**: a database rule that prevents overlapping row ranges in one calendar. The rule is `ex_slot_no_overlap`.
 - **Transaction**: a group of database operations that commit or roll back as one unit.
 - **Exclusion check**: the test that the database does when a transaction inserts or updates a
   range. The test reads the ranges of other rows.
@@ -17,9 +16,9 @@ Date: 2026-10-20
 
 ## Context
 
-The database prevents overlapping slots. The constraint is an exclusion constraint over the
-range of each slot. The constraint is correct. The constraint can return two different errors,
-and the service must keep them apart.
+The database prevents overlapping slots with an exclusion constraint on each slot range.
+The constraint is correct. It can return two different errors.
+The service must distinguish these errors.
 
 ### The wait cycle
 
@@ -39,9 +38,9 @@ Two clients insert overlapping slots in the same calendar.
 The database selects the victim. The selection is not related to the request of the client. The
 same request can succeed after a new attempt. The other transaction continues.
 
-A wait cycle needs at least two writers. A single writer cannot cause a 40P01 error. The database
-waits for the value of `deadlock_timeout` before it aborts a transaction. The default value is 1
-second.
+A wait cycle needs at least two writers. A single writer cannot cause a 40P01 error.
+The database waits for the period specified by `deadlock_timeout` before it aborts a transaction.
+The default value is 1 second.
 
 ### The single waiter
 
@@ -60,8 +59,7 @@ Transaction 2 never sees a deadlock. It sees the final state.
 
 - **23P01 exclusion_violation** is a business error. The slot overlaps a committed slot. A new
   attempt with the same body fails again. The client must select another time.
-- **40P01 deadlock_detected** is not a business error. The request was valid. The client lost a
-  race between two transactions. A new attempt can succeed.
+- **40P01 deadlock_detected** is not a business error. The request was valid. The database aborted its transaction because of contention with another transaction. A new attempt can succeed.
 
 SQLSTATE 40001 serialization_failure has the same property as 40P01. The database cannot prove
 that the exclusion check is consistent. This error can occur with REPEATABLE READ isolation, with
@@ -70,12 +68,12 @@ SERIALIZABLE isolation, or at COMMIT.
 ### What the code did
 
 `SlotWriteRetry` ran the insert again for 40P01 and 40001. It waited 10 ms, then 20 ms, and so on.
-The insert opened its own transaction, so each attempt started with a clean transaction. The code
+The insert opened its own transaction. Each attempt thus started with a new transaction. The code
 was correct. It hid the difference between the two error classes.
 
 Two problems came from the retry.
 
-- The request waited for the server, not for the client. A wait of up to 150 ms per request is
+- The server controlled the wait. The client did not control it. A wait of up to 150 ms per request is
   small. It is still a cost that the client pays without a choice.
 - The retry loop ran the statement, not the transaction, on the update path. After a 40P01 error,
   PostgreSQL stops the whole transaction. Every later statement in that transaction receives
@@ -114,15 +112,15 @@ Positive:
 - The client waits only for deadlock detection. The client does not wait for a retry loop.
 - The database closes the failed transaction at the first abort, so the next request can continue
   at once.
-- The retry policy, the sleep function, and their tests are gone.
-- The broken retry on the update path is gone with the class.
+- The retry policy, sleep function, and their tests have been removed.
+- Removal of the class also removed the retry that could not succeed on the update path.
 
 Negative:
 
 - The client MUST send the request again after a 503. This is a new part of the API contract.
 - The load test in `loadtest/` shows 503 responses when the contention is high. The result is a
   measurement, not a defect. Read the 503 counter together with the success counter.
-- `SlotRepositoryConcurrencyIT` asserts that every loser receives a slot overlap error. The test
+- `SlotRepositoryConcurrencyIT` asserts that every request that loses a concurrency race receives a slot overlap error. The test
   MUST accept the slot contention error too.
 
 ## Implementation notes
@@ -142,8 +140,9 @@ Negative:
 
 ## Alternatives
 
-- **Keep the retry.** Correct, and the code exists. Rejected because the client cannot plan its
-  own retry, and because a retry loop hides a 40P01 in the request latency.
+- **Keep the retry.** The code is correct and already exists.
+  Rejected because the client cannot plan its own retry.
+  The retry loop also hides a 40P01 in the request latency.
 - **Remove the loop and keep the error as a 500.** Rejected. The client cannot tell a defect from
   contention, and `SlotRepositoryConcurrencyIT` becomes flaky.
 - **Map 40P01 to 409.** Rejected. The status code says that the request can never succeed with

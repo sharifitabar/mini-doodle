@@ -30,7 +30,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Purpose**: Confirm the existing project already provides everything this feature needs
 
-- [x] T001 Verify no new third-party dependencies are required (Spring MVC, Bean Validation, jOOQ, Flyway, springdoc, Micrometer already present) and no new Flyway migration is needed; run `./gradlew build --no-daemon --console=plain` to confirm a green baseline
+- [x] T001 Verify no new third-party dependencies are required (Spring MVC, Bean Validation, jOOQ, Flyway, springdoc, Micrometer already present) and no new Flyway migration is needed. Run `./gradlew build --no-daemon --console=plain` to make sure that the baseline passes
 
 ---
 
@@ -59,14 +59,14 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Goal**: A caller requests availability for a frame and receives their merged free windows (clipped to the frame), in chronological order.
 
-**Independent Test**: Create two contiguous free slots plus a separated one, `GET /api/v1/availability?from=&to=`, and confirm the contiguous pair is returned as one merged `FREE` window and the frame is echoed.
+**Independent Test**: Create two contiguous free slots plus a separated one, `GET /api/v1/availability?from=&to=`, and make sure that the contiguous pair is returned as one merged `FREE` window and the frame is echoed.
 
 ### Tests for User Story 1 (write first, must fail before implementation) ⚠️
 
-- [x] T012 [P] [US1] Domain unit tests for `TimeFrame` (missing/inverted/oversized bounds rejected; bounds normalized to UTC and truncated) and `AvailabilityInterval` invariants in `src/test/java/com/minidoodle/calendar/domain/TimeFrameTest.java` and `src/test/java/com/minidoodle/calendar/domain/AvailabilityIntervalTest.java`
-- [x] T013 [P] [US1] Domain unit tests for the FREE path of `AvailabilityCalculator` (contiguous free slots merge; non-adjacent free slots stay separate; a slot extending past a frame bound is clipped; a slot entirely outside the frame is dropped) in `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
-- [x] T014 [P] [US1] Persistence integration test for `JooqAvailabilityRepository`: only slots overlapping the frame for the caller's calendar are returned, ordered by `start_at`; another calendar's slots are excluded in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/AvailabilityRepositoryIT.java`
-- [x] T015 [P] [US1] MockMvc contract test for `GET /api/v1/availability` (200 with merged free windows for the frame; 400 missing/invalid/malformed `from`/`to`; 403 unknown caller; frame echoed) in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
+- [x] T012 [P] [US1] Domain unit tests for `TimeFrame` (missing/inverted/oversized bounds rejected, bounds normalized to UTC and truncated) and `AvailabilityInterval` invariants in `src/test/java/com/minidoodle/calendar/domain/TimeFrameTest.java` and `src/test/java/com/minidoodle/calendar/domain/AvailabilityIntervalTest.java`
+- [x] T013 [P] [US1] Domain unit tests for the FREE path of `AvailabilityCalculator` (contiguous free slots merge, non-adjacent free slots stay separate, a slot extending past a frame bound is clipped, a slot entirely outside the frame is dropped) in `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
+- [x] T014 [P] [US1] Persistence integration test for `JooqAvailabilityRepository`: only slots overlapping the frame for the caller's calendar are returned, ordered by `start_at`. Another calendar's slots are excluded in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/AvailabilityRepositoryIT.java`
+- [x] T015 [P] [US1] MockMvc contract test for `GET /api/v1/availability` (200 with merged free windows for the frame, 400 missing/invalid/malformed `from`/`to`, 403 unknown caller, frame echoed) in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
 
 ### Implementation for User Story 1
 
@@ -75,7 +75,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 - [x] T018 [US1] Implement `AvailabilityApplicationService` (resolve caller calendar, build `TimeFrame`, load occupancies, invoke the calculator) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T008, T009, T016, T017)
 - [x] T019 [P] [US1] Add web DTOs `AvailabilityResponse` and `AvailabilityIntervalResponse` with `AvailabilityWebMapper` in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
 - [x] T020 [US1] Implement `AvailabilityController` `GET /api/v1/availability` wiring the use case, with the required `X-User-Id` header, in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T018, T019)
-- [x] T021 [US1] Enforce the required `from`/`to` query parameters and ISO-8601-with-offset binding, and confirm the 400/403 surface, in `src/main/java/com/minidoodle/calendar/adapter/in/web/AvailabilityController.java` (depends on T010, T020)
+- [x] T021 [US1] Enforce the required `from`/`to` query parameters and ISO-8601-with-offset binding, and do a check of the 400/403 responses, in `src/main/java/com/minidoodle/calendar/adapter/in/web/AvailabilityController.java` (depends on T010, T020)
 
 **Checkpoint**: US1 fully functional and independently testable (MVP) — returns merged free windows
 
@@ -85,12 +85,12 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Goal**: Busy time within the frame is distinguished from free time: slots explicitly marked `BUSY` and slots that hold a meeting are reported as `BUSY` intervals.
 
-**Independent Test**: With a frame containing a busy slot and a slot that holds a meeting, `GET /api/v1/availability` and confirm both are reported as `BUSY`; a free slot touching a busy slot stays a separate `FREE` interval.
+**Independent Test**: With a frame containing a busy slot and a slot that holds a meeting, `GET /api/v1/availability` and confirm both are reported as `BUSY`. A free slot touching a busy slot stays a separate `FREE` interval.
 
 ### Tests for User Story 2
 
-- [x] T022 [P] [US2] Domain tests for busy classification (`SlotOccupancy.isBusy()`; `SlotStatus.BUSY` → BUSY; `holdsMeeting` → BUSY; a free block touching a busy block is not merged) in `src/test/java/com/minidoodle/calendar/domain/SlotOccupancyTest.java` and `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
-- [x] T023 [P] [US2] Persistence integration test: a slot that holds a meeting is returned with `holdsMeeting = true` via the `LEFT JOIN meetings` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/AvailabilityRepositoryIT.java`
+- [x] T022 [P] [US2] Domain tests for busy classification (`SlotOccupancy.isBusy()`, `SlotStatus.BUSY` → BUSY, `holdsMeeting` → BUSY, a free block touching a busy block is not merged) in `src/test/java/com/minidoodle/calendar/domain/SlotOccupancyTest.java` and `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
+- [x] T023 [P] [US2] Persistence integration test: a slot that holds a meeting is returned with `holdsMeeting = true` through the `LEFT JOIN meetings` in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/AvailabilityRepositoryIT.java`
 - [x] T024 [P] [US2] MockMvc contract test: after booking a meeting on a free slot, availability reports that period as `BUSY`, not `FREE`, in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
 
 ### Implementation for User Story 2
@@ -106,11 +106,11 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Goal**: Time inside the frame covered by no slot is reported as `UNALLOCATED`, so the returned intervals are disjoint and together cover the frame exactly.
 
-**Independent Test**: Request availability for a partly covered frame and confirm gaps appear as `UNALLOCATED` intervals, with the union matching `[from, to)` exactly (no overlaps, no holes); a fully covered frame yields no `UNALLOCATED` intervals.
+**Independent Test**: Request availability for a partly covered frame and confirm gaps appear as `UNALLOCATED` intervals, with the union matching `[from, to)` exactly (no overlaps, no holes). A fully covered frame yields no `UNALLOCATED` intervals.
 
 ### Tests for User Story 3
 
-- [x] T027 [P] [US3] Domain tests for gap filling and exact coverage: empty frame → single `UNALLOCATED` interval spanning the frame; holes between intervals → `UNALLOCATED`; a frame fully covered by free+busy slots → no gaps; boundaries align at microseconds, in `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
+- [x] T027 [P] [US3] Domain tests for gap filling and exact coverage: empty frame → single `UNALLOCATED` interval spanning the frame. Holes between intervals → `UNALLOCATED`. A frame fully covered by free+busy slots → no gaps. Boundaries align at microseconds, in `src/test/java/com/minidoodle/calendar/domain/AvailabilityCalculatorTest.java`
 - [x] T028 [P] [US3] MockMvc contract test: response intervals are ordered, disjoint, and cover `[from, to)` exactly (first `startAt` == `from`, last `endAt` == `to`, adjacent boundaries equal), in `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java`
 
 ### Implementation for User Story 3
@@ -130,7 +130,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 - [x] T032 [P] Update `README.md` with the availability endpoint, an example, the free/busy/unallocated semantics, and the metric names
 - [x] T033 Run `specs/003-availability-query/quickstart.md` end-to-end against `docker-compose up` and fix any discrepancies
 - [x] T034 Performance check for `specs/003-availability-query/quickstart.md`: verify availability p99 ≤ 300 ms (SC-001, SC-005) against a seeded dataset of thousands of slots
-- [x] T035 Code cleanup: confirm no framework types leaked into `src/main/java/com/minidoodle/calendar/domain/` and re-run `./gradlew build --no-daemon --console=plain`
+- [x] T035 Code cleanup: confirm no framework types leaked into `src/main/java/com/minidoodle/calendar/domain/` and run again `./gradlew build --no-daemon --console=plain`
 - [x] T036 [FR-010] Add a read-only assertion to `src/test/java/com/minidoodle/calendar/adapter/in/web/AvailabilityControllerIT.java` verifying no `time_slots` or `meetings` rows change after an availability query
 
 ---
@@ -160,8 +160,8 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ### Parallel Opportunities
 
-- Foundational: T002, T003, T004, T006, T007, T008 in parallel (mind T005 → T003/T004; T009 → T006/T008; T010 → T007)
-- US1: test tasks T012–T015 in parallel; DTOs T019 in parallel with the calculator T017
+- Foundational: T002, T003, T004, T006, T007, T008 in parallel (mind T005 → T003/T004, T009 → T006/T008, T010 → T007)
+- US1: test tasks T012–T015 in parallel. DTOs T019 in parallel with the calculator T017
 - US2: test tasks T022–T024 in parallel
 - US3: test tasks T027–T028 in parallel
 - Polish: T030, T031, T032 in parallel
@@ -208,7 +208,7 @@ Task: "AvailabilityCalculator (FREE path) in src/main/java/com/minidoodle/calend
 - [P] tasks = different files, no dependencies
 - [Story] label maps the task to its user story for traceability
 - No schema change: availability is computed from existing `time_slots` and `meetings`
-- Merging/clipping/classification live in the framework-free `AvailabilityCalculator` (constitution I); the read uses the existing GiST range index (constitution II)
+- Merging/clipping/classification live in the framework-free `AvailabilityCalculator` (constitution I). The read uses the existing GiST range index (constitution II)
 - Run the full build with the Gradle daemon disabled: `./gradlew build --no-daemon --console=plain`
 - Commit after each task or logical group (Conventional Commits)
 - Suggested MVP scope: Phase 1 + Phase 2 + US1 (T001–T021)

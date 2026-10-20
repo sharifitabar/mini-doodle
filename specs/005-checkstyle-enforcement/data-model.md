@@ -23,14 +23,14 @@ build.gradle.kts
 .git-blame-ignore-revs ──(hash of)──► the isolated reformat commit
 ```
 
-Both tools run inside the standard `build`; there is exactly one enforcement path.
+Both tools run inside the standard `build`. There is exactly one enforcement path.
 
 ---
 
 ## 2. Lint ruleset — `config/checkstyle/checkstyle.xml`
 
 **Owner**: Checkstyle (Gradle `checkstyle` plugin, `toolVersion = "14.3.0"`).
-**Scope**: `src/main/java` and `src/test/java`; generated `com.minidoodle.jooq` excluded.
+**Scope**: `src/main/java` and `src/test/java`. Generated `com.minidoodle.jooq` excluded.
 **Severity**: `error` (violations fail the build).
 
 ```xml
@@ -92,7 +92,7 @@ Both tools run inside the standard `build`; there is exactly one enforcement pat
 ```
 
 Notes:
-- **Every module above sits under `TreeWalker`** — all of these are AST-based checks; `Checker` only
+- **Every module above sits under `TreeWalker`** — all of these are AST-based checks. `Checker` only
   carries the shared `severity`/`charset` properties. (File-level checks such as
   `FileTabCharacter`/`NewlineAtEndOfFile` are deliberately absent, since Spotless owns them.)
 - `severity` is set on `Checker` so it is inherited by every rule (violations are `error` → the
@@ -153,7 +153,7 @@ spotless {
 | Unused imports removed | `removeUnusedImports()` |
 | Import grouping/order | `importOrder(...)` (group list above) |
 
-`spotlessCheck` is created and automatically added to `check`; `spotlessApply` is the documented fix
+`spotlessCheck` is created and automatically added to `check`. `spotlessApply` is the documented fix
 command (FR-010).
 
 ---
@@ -162,7 +162,7 @@ command (FR-010).
 
 **Owner**: build configuration (no separate file).
 **Content**: the generated jOOQ source tree only — `build/generated-sources/jooq` /
-package `com.minidoodle.jooq`. Excluded via explicit Spotless targets and the Checkstyle `exclude`
+package `com.minidoodle.jooq`. Excluded through explicit Spotless targets and the Checkstyle `exclude`
 pattern. No entry is added for human-written code (FR-011: no baseline).
 
 ---
@@ -191,7 +191,7 @@ it lands in a follow-up commit. Documented in README/AGENTS.
 |---|---|---|---|
 | `checkstyleMain` | Gradle `checkstyle` plugin | yes (auto) | lint violation in `src/main/java` |
 | `checkstyleTest` | Gradle `checkstyle` plugin | yes (auto) | lint violation in `src/test/java` |
-| `spotlessCheck` | Spotless plugin | yes (auto, `enforceCheck`) | file not matching the canonical format |
+| `spotlessCheck` | Spotless plugin | yes (auto, `enforceCheck`) | file not matching the standard format |
 | `spotlessApply` | Spotless plugin | no | — (writes fixes) |
 
 `check` → `build` → `.githooks/pre-push` (`./gradlew build`) and CI
@@ -210,8 +210,8 @@ it lands in a follow-up commit. Documented in README/AGENTS.
 
 ## Validation rules (from the spec)
 
-- A lint violation in either source set → non-zero build result (FR-007, SC-001).
-- A formatting mismatch → non-zero build result naming the file(s) (FR-007, FR-009, SC-002).
+- A lint violation in either source set → nonzero build result (FR-007, SC-001).
+- A formatting mismatch → nonzero build result naming the file(s) (FR-007, FR-009, SC-002).
 - Generated jOOQ sources never appear in either report (FR-005).
 - On the cleaned tree, `spotlessCheck` + `checkstyleMain` + `checkstyleTest` pass with zero findings
   (FR-011, SC-005).

@@ -4,18 +4,20 @@
 
 **Input**: Feature specification from `/specs/001-time-slot-management/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command; its definition describes the execution workflow.
+**Note**: The `/speckit.plan` command fills in this template.
+Its definition describes the execution workflow.
 
 ## Summary
 
-Implement time slot management as the P1 slice of mini-doodle: users create, list,
-inspect, modify, delete, and toggle the free/busy status of time slots in their personal
-calendar. The technical approach follows the ratified constitution: a framework-free
-domain core (hexagonal architecture) implemented with Spring Boot 3.5.x + Java 21, jOOQ
-over PostgreSQL, Flyway migrations, and a database-level `tstzrange` exclusion constraint
-that makes overlapping slots impossible — including under concurrent requests. The HTTP
-surface is a small JSON REST API consumed by an external client that identifies itself via
-an `X-User-Id` header (demo auth).
+Implement time slot management as the P1 feature of mini-doodle.
+Users create, list, view, change, and delete time slots in their personal calendars.
+They can change a slot's status between free and busy.
+
+Use the approved constitution's hexagonal architecture with a framework-free domain core.
+The implementation uses Spring Boot 3.5.x, Java 21, jOOQ over PostgreSQL, and Flyway migrations.
+A database `tstzrange` exclusion constraint prevents overlapping slots, including under concurrent requests.
+An external client uses a small JSON REST API.
+The client identifies itself with an `X-User-Id` header for demo authentication.
 
 ## Technical Context
 
@@ -29,32 +31,32 @@ constraint)
 
 **Testing**: JUnit 5, AssertJ, MockMvc, Testcontainers (PostgreSQL)
 
-**Target Platform**: Linux container (JVM) for local `docker-compose`; developer machines
-via `./gradlew bootRun`
+**Target Platform**: Linux container (JVM) for local `docker-compose`. Developer machines
+through `./gradlew bootRun`
 
 **Project Type**: web-service (single deployable Gradle module)
 
 **Performance Goals**: Slot create completes with p99 ≤ 200 ms (SC-001). Listing a user's
-slots completes with p99 ≤ 300 ms even with thousands of slots per user (SC-004; see
+slots completes with p99 ≤ 300 ms even with thousands of slots per user (SC-004, see
 Deferred items).
 
-**Constraints**: Overlaps MUST be rejected at the database level via a GIST exclusion
-constraint over a `tstzrange`; all schema changes via Flyway; timestamps stored in UTC and
+**Constraints**: Overlaps MUST be rejected at the database level through a GIST exclusion
+constraint over a `tstzrange`. All schema changes through Flyway. Timestamps stored in UTC and
 exchanged with explicit offset.
 
 **Scale/Scope**: Hundreds of users, thousands of slots per user. Single user-facing
-resource (`time slot`); no meeting/availability features in this slice.
+resource (`time slot`). No meeting/availability features in this slice.
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*GATE: Must pass before Phase 0 research. Check again after Phase 1 design.*
 
 | Principle | Gate | Status |
 |-----------|------|--------|
-| I. Domain-Centric Hexagonal Architecture | Domain layer has no Spring/jOOQ/Jakarta types; dependencies point inward; `com.minidoodle` layout by context then `domain`/`application`/`adapter` | PASS |
-| II. Database as Source of Truth | Flyway-only schema; overlap prevented by `tstzrange` + GIST exclusion constraint; no schema auto-generation | PASS |
-| III. Test Discipline with Real Dependencies | Domain unit tests (JUnit 5/AssertJ), persistence + constraint tests against real PostgreSQL via Testcontainers, MockMvc contract tests; green CI gate | PASS |
-| IV. Simplicity & YAGNI at Honest Scale | Spring MVC (blocking), single module, no broker/cache/microservices; abstractions limited to ports with a current need | PASS |
+| I. Domain-Centric Hexagonal Architecture | Domain layer has no Spring/jOOQ/Jakarta types. Dependencies point inward. `com.minidoodle` layout by context then `domain`/`application`/`adapter` | PASS |
+| II. Database as Source of Truth | Flyway-only schema. Overlap prevented by `tstzrange` + GIST exclusion constraint. No schema automatic generation | PASS |
+| III. Test Discipline with Real Dependencies | Domain unit tests (JUnit 5/AssertJ), persistence + constraint tests against real PostgreSQL through Testcontainers, MockMvc contract tests. CI check that passes | PASS |
+| IV. Simplicity & YAGNI at Honest Scale | Spring MVC (blocking), single module, no broker/cache/microservices. Abstractions limited to ports with a current need | PASS |
 | V. Observable & Documented Service | Actuator health + Prometheus metrics, structured logs, springdoc OpenAPI UI, README consumption steps | PASS |
 
 No violations — Complexity Tracking is empty.
@@ -122,7 +124,7 @@ small `shared` package for cross-cutting web/config. This satisfies hexagonal la
 
 > **Fill ONLY if Constitution Check has violations that must be justified**
 
-No constitution violations were identified; this section is intentionally empty.
+No constitution violations were identified. This section is intentionally empty.
 
 ## Phase 0 / Phase 1 Artifacts
 
@@ -134,13 +136,13 @@ No constitution violations were identified; this section is intentionally empty.
 ## Post-Design Constitution Check
 
 Re-evaluated after Phase 1 design: the schema (data-model.md) encodes the overlap rule as
-a database exclusion constraint (II); contracts expose only the required operations and
-stay within the single module (I, IV); observability and docs remain in scope (V). No new
+a database exclusion constraint (II). Contracts expose only the required operations and
+stay within the single module (I, IV). Observability and documentation remain in scope (V). No new
 violations. Gate: PASS.
 
 ## Open Items
 
-- None. SC-004/SC-005 were resolved in the spec clarifications (p99 ≤ 300 ms read target;
-  5xx rate < 0.1%). FR-016 (unknown caller rejection) is covered by T022; the added
+- None. SC-004/SC-005 were resolved in the spec clarifications (p99 ≤ 300 ms read target,
+  5xx rate < 0.1%). FR-016 (unknown caller rejection) is covered by T022. The added
   concurrency, persistence-restart, and DST tests (T054–T056) close the coverage gaps
-  flagged by the consistency analysis.
+  identified by the consistency analysis.

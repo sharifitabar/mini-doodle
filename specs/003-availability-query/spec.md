@@ -12,15 +12,16 @@
 
 ### User Story 1 - View your free time over a period (Priority: P1)
 
-A user asks for their availability over a requested time frame, defined by a start and an end. The
-system replies with the periods within that frame during which the user is free, merging the time
-they have declared available into contiguous free windows.
+A user requests their availability for a time frame with a start and an end.
+The system returns free periods within that frame.
+It merges adjacent periods of declared availability into free windows.
 
-**Why this priority**: This is the core purpose of the feature — a single request that answers
-"when am I free between these two times?". Without it, a user can only inspect slots one by one.
+**Why this priority**: One request answers "when am I free between these two times?".
+This is the feature's main purpose.
+Without this query, a user can only examine individual slots.
 
 **Independent Test**: Create several free slots over a frame — some contiguous, some separated by
-busy time — request availability for the frame, and confirm the returned free windows exactly match
+busy time — request availability for the frame, and make sure that the returned free windows exactly match
 the user's merged free time clipped to the frame.
 
 **Acceptance Scenarios**:
@@ -64,8 +65,9 @@ meeting, request availability and confirm both are reported as busy windows.
 A user requests availability and receives the portions of the frame that are covered by no slot at
 all, so they can see where they have not declared any availability.
 
-**Why this priority**: Completes the picture — free, busy, and neither — and helps users spot gaps
-in their declared schedule. Useful but not required for the core free-time query.
+**Why this priority**: Unallocated intervals identify gaps in the user's declared schedule.
+The response then shows free, busy, and unallocated time.
+This is useful but not required for the basic free-time query.
 
 **Independent Test**: Request availability for a frame that is only partly covered by slots, and
 confirm the uncovered portions are returned as unallocated gaps.
@@ -101,18 +103,18 @@ confirm the uncovered portions are returned as unallocated gaps.
 
 - **FR-001**: Users MUST be able to request their aggregated availability for a time frame defined
   by a start and an end.
-- **FR-002**: The system MUST require both a start and an end, MUST reject a frame whose end is not
-  later than its start, and MUST reject a frame whose span exceeds 31 days.
-- **FR-003**: The system MUST compute FREE intervals as the union of the caller's free slots within
-  the frame, excluding any slot that holds a meeting, clipped to the frame, with contiguous or
-  overlapping free intervals coalesced into single windows.
-- **FR-004**: The system MUST compute BUSY intervals as the union of the caller's slots explicitly
-  marked busy and any of the caller's slots that hold a meeting, clipped to the frame and coalesced
-  the same way.
+- **FR-002**: The system MUST require both a start and an end.
+  It MUST reject a frame whose end is not later than its start.
+  It MUST reject a frame longer than 31 days.
+- **FR-003**: The system MUST compute FREE intervals as the union of the caller's free slots within the frame.
+  It MUST exclude slots that hold a meeting and clip intervals to the frame.
+  It MUST merge adjacent or overlapping free intervals into single windows.
+- **FR-004**: The system MUST compute BUSY intervals from the caller's slots marked busy or holding a meeting.
+  It MUST take their union, clip intervals to the frame, and merge adjacent or overlapping intervals in the same way.
 - **FR-005**: The system MUST report UNALLOCATED intervals as the portions of the frame covered by
   neither a free nor a busy interval.
-- **FR-006**: The response MUST present intervals in chronological order as a set of disjoint
-  intervals that together cover the frame exactly, with no overlaps and no holes.
+- **FR-006**: The response MUST present intervals in time order.
+  Together, the intervals MUST cover the complete frame with no overlaps or gaps.
 - **FR-007**: Each returned interval MUST be labeled as free, busy, or unallocated.
 - **FR-008**: The system MUST restrict results to the caller's own calendar and MUST NOT disclose
   another user's availability.
@@ -123,9 +125,8 @@ confirm the uncovered portions are returned as unallocated gaps.
 - **FR-011**: The system MUST reject requests from a missing or unknown caller.
 - **FR-012**: When a request is rejected, the system MUST return a clear, actionable error that
   distinguishes validation failures from authentication failures.
-- **FR-013**: The system MUST handle times in UTC, consistently with existing slot and meeting data,
-  and MUST interpret the requested frame boundaries inclusively at the start and exclusively at the
-  end.
+- **FR-013**: The system MUST use UTC, consistent with existing slot and meeting data.
+  It MUST include the requested frame's start boundary and exclude its end boundary.
 - **FR-014**: The system MUST return availability promptly for frames up to 31 days,
   independent of how many slots or meetings the user has.
 
@@ -135,13 +136,13 @@ confirm the uncovered portions are returned as unallocated gaps.
   intervals covering the requested frame. It is derived on demand and is not stored.
 - **Interval**: A labeled, half-open `[start, end)` period within the frame, classified as free,
   busy, or unallocated.
-- **Time Frame**: The caller-provided `[start, end)` window the availability is computed over; it
+- **Time Frame**: The caller-provided `[start, end)` window the availability is computed over. It
   must be bounded and within 31 days.
 - **Time Slot** (from time slot management): A user's declared block of time, either free or busy,
   which may hold a meeting.
 - **Meeting** (from meeting scheduling): Occupies a slot and causes that slot to count as busy.
 - **Calendar / User** (from time slot management): The owner of the slots whose availability is
-  queried; the caller in the API contract.
+  queried. The caller in the API contract.
 
 ## Success Criteria *(mandatory)*
 
@@ -153,7 +154,7 @@ confirm the uncovered portions are returned as unallocated gaps.
   and together cover the frame exactly — no overlaps and no gaps — 100% of the time.
 - **SC-003**: Contiguous free time is always presented as a single merged window, never as multiple
   adjacent windows.
-- **SC-004**: Immediately after a meeting is booked on a slot, every subsequent availability read
+- **SC-004**: Immediately after a meeting is booked on a slot, every later availability read
   reflects that slot as busy.
 - **SC-005**: The system supports hundreds of users each holding thousands of slots, and availability
   reads stay within p99 ≤ 300 ms regardless of total data volume.
@@ -163,18 +164,18 @@ confirm the uncovered portions are returned as unallocated gaps.
 ## Assumptions
 
 - "Aggregated" means coalescing the user's declared time into merged free and busy windows over the
-  frame (a free/busy interval view); bucketed or duration-summary/statistics reports are out of
+  frame (a free/busy interval view). Bucketed or duration-summary/statistics reports are out of
   scope.
-- Availability is derived from existing slots and meetings; this feature introduces no new persisted
+- Availability is derived from existing slots and meetings. This feature introduces no new persisted
   data and does not alter slots or meetings.
 - Time not covered by any slot is neither free nor busy and is reported as unallocated.
-- Only the caller's own availability is queryable; availability across users (per-user comparison,
+- Only the caller's own availability is queryable. Availability across users (per-user comparison,
   team availability, or "find a time we are all free") is out of scope.
 - The requested frame must be bounded and within a maximum span of 31 days, to keep responses
   predictable.
 - Users, calendars, slots, meetings, ownership isolation, UTC storage, and free/busy slot semantics
   are defined by the time slot management and meeting scheduling features and are reused unchanged.
-- Authentication and identity are handled elsewhere; the caller is identified as in the existing
+- Authentication and identity are handled elsewhere. The caller is identified as in the existing
   features.
-- Notifications, calendar exports (e.g., ICS), recurring availability, and time-zone conversion
+- Notifications, calendar exports (for example, ICS), recurring availability, and time-zone conversion
   beyond UTC are out of scope.

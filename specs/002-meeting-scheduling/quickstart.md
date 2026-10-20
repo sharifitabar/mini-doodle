@@ -1,6 +1,6 @@
 # Quickstart: Meeting Scheduling
 
-How to build, run, and verify the meeting scheduling feature locally. This builds on time slot
+How to build and run the meeting scheduling feature locally and do the necessary checks. This builds on time slot
 management — a meeting is created from an existing free slot.
 
 ## Prerequisites
@@ -21,7 +21,7 @@ This starts the service (`http://localhost:8080`) and PostgreSQL, applying Flywa
 - Health: `http://localhost:8080/actuator/health`
 - Metrics: `http://localhost:8080/actuator/prometheus`
 
-Seed data (dev profile) provides a demo user; its id is the value to send as `X-User-Id`.
+Seed data (dev profile) provides a demo user. Its id is the value to send as `X-User-Id`.
 
 ## 2. Create a free slot to book
 
@@ -54,7 +54,7 @@ curl -sS -X POST http://localhost:8080/api/v1/slots/$SLOT_ID/meeting \
       }'
 ```
 
-Expected: `201 Created` with the meeting body; the slot's `status` is now `BUSY`.
+Expected: `201 Created` with the meeting body. The slot's `status` is now `BUSY`.
 
 ## 4. View and cancel
 
@@ -96,7 +96,7 @@ curl -sS -X PATCH http://localhost:8080/api/v1/slots/$SLOT_ID \
 
 The suite runs:
 - domain unit tests (meeting title and participant invariants),
-- integration tests against a real PostgreSQL via Testcontainers (one-meeting-per-slot unique
+- integration tests against a real PostgreSQL through Testcontainers (one-meeting-per-slot unique
   constraint, slot-deletion FK protection, participant cascade, concurrent booking),
 - MockMvc contract tests (book/view/cancel status codes, validation, ownership).
 

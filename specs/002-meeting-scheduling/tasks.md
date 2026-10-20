@@ -10,7 +10,7 @@ description: "Task list for Meeting Scheduling (002)"
 
 **Tests**: Included. Constitution Principle III (Test Discipline with Real Dependencies) makes tests a merge gate, so each user story carries its own tests.
 
-**Organization**: Tasks are grouped by user story so each can be implemented and tested independently. This feature extends the existing `calendar` bounded context; there is no greenfield setup.
+**Organization**: Tasks are grouped by user story so each can be implemented and tested independently. This feature extends the existing `calendar` bounded context. There is no greenfield setup.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -28,7 +28,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Purpose**: Confirm the existing project already provides everything this feature needs
 
-- [x] T001 Verify no new third-party dependencies are required (Spring MVC, Bean Validation, jOOQ, Flyway, springdoc, Micrometer are already present), record the decision in `build.gradle.kts` if needed, and run `./gradlew build` to confirm a green baseline
+- [x] T001 Verify no new third-party dependencies are required (Spring MVC, Bean Validation, jOOQ, Flyway, springdoc, Micrometer are already present), record the decision in `build.gradle.kts` if needed, and run `./gradlew build` to make sure that the baseline passes
 
 ---
 
@@ -38,13 +38,13 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [x] T002 Create Flyway migration `src/main/resources/db/migration/V2__meetings.sql` (`meetings` table with `uq_meetings_slot`, `ON DELETE RESTRICT` FK to `time_slots`, title `ck_*` checks; `meeting_participants` table with `(meeting_id, position)` PK, participant `ck_*` checks, `ON DELETE CASCADE`) per data-model.md
-- [x] T003 Run jOOQ code generation and verify the `Meetings`/`MeetingParticipants` generated classes build under `build/generated-sources/jooq`; confirm no generated column is written by the app (depends on T002)
+- [x] T002 Create Flyway migration `src/main/resources/db/migration/V2__meetings.sql` (`meetings` table with `uq_meetings_slot`, `ON DELETE RESTRICT` FK to `time_slots`, title `ck_*` checks, `meeting_participants` table with `(meeting_id, position)` PK, participant `ck_*` checks, `ON DELETE CASCADE`) per data-model.md
+- [x] T003 Run jOOQ code generation and make sure that the `Meetings`/`MeetingParticipants` generated classes build under `build/generated-sources/jooq`. Confirm no generated column is written by the app (depends on T002)
 - [x] T004 [P] Implement value objects `MeetingId` and `Participant` (name and/or email, at least one present) in `src/main/java/com/minidoodle/calendar/domain/model/`
-- [x] T005 Implement the `Meeting` aggregate root (framework-free; title and participant invariants) in `src/main/java/com/minidoodle/calendar/domain/model/` (depends on T004)
+- [x] T005 Implement the `Meeting` aggregate root (framework-free, title and participant invariants) in `src/main/java/com/minidoodle/calendar/domain/model/` (depends on T004)
 - [x] T006 [P] Define domain exceptions `MeetingNotFoundException` and `MeetingConflictException`, extending the existing `DomainException`, in `src/main/java/com/minidoodle/calendar/domain/exception/`
 - [x] T007 [P] Define outbound port `MeetingRepository` (`save`, `findBySlotId`, `existsBySlotId`, `deleteBySlotId`) in `src/main/java/com/minidoodle/calendar/application/port/out/`
-- [x] T008 Implement `JooqMeetingRepository` and `MeetingPersistenceMapper` in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/`; translate SQLSTATE `23505` (unique slot) and `23503` (restricted delete) into `MeetingConflictException` (depends on T003, T007)
+- [x] T008 Implement `JooqMeetingRepository` and `MeetingPersistenceMapper` in `src/main/java/com/minidoodle/calendar/adapter/out/persistence/`. Translate SQLSTATE `23505` (unique slot) and `23503` (restricted delete) into `MeetingConflictException` (depends on T003, T007)
 - [x] T009 [P] Expose/confirm a status-update operation on the existing `SlotRepository` (`src/main/java/com/minidoodle/calendar/application/port/out/SlotRepository.java` + `JooqSlotRepository`) used by booking (→ BUSY) and cancellation (→ FREE)
 - [x] T010 [P] Extend `src/main/java/com/minidoodle/shared/web/GlobalExceptionHandler.java` to map `MeetingNotFoundException` → 404 and `MeetingConflictException` → 409 (RFC 7807) (depends on T006)
 - [x] T011 Extend the Testcontainers base so `V2__meetings.sql` is applied in tests and add meeting tables/constraints to `src/test/java/com/minidoodle/SchemaSmokeTest.java`
@@ -55,9 +55,9 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ## Phase 3: User Story 1 - Book a meeting from an available slot (Priority: P1) 🎯 MVP
 
-**Goal**: A caller converts a free slot into a meeting with a title, optional description, and participants; the slot becomes BUSY and cannot be double-booked.
+**Goal**: A caller converts a free slot into a meeting with a title, optional description, and participants. The slot becomes BUSY and cannot be double-booked.
 
-**Independent Test**: Create a free slot, `POST /api/v1/slots/{slotId}/meeting`, confirm `201` and that the slot is now `BUSY`; a second booking of the same slot returns `409`.
+**Independent Test**: Create a free slot, `POST /api/v1/slots/{slotId}/meeting`, confirm `201` and that the slot is now `BUSY`. A second booking of the same slot returns `409`.
 
 ### Tests for User Story 1 (write first, must fail before implementation) ⚠️
 
@@ -72,7 +72,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 - [x] T017 [US1] Implement booking in `MeetingApplicationService` (resolve caller calendar, load slot, require FREE and no existing meeting, build aggregate, persist meeting, set slot BUSY in one transaction, translate constraint violations) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T005, T007, T008, T009, T016)
 - [x] T018 [P] [US1] Add web DTOs `BookMeetingRequest`, `ParticipantRequest`, `MeetingResponse`, and `MeetingWebMapper` in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
 - [x] T019 [US1] Implement `MeetingController` `POST /api/v1/slots/{slotId}/meeting` wiring the use case in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T017, T018)
-- [x] T020 [US1] Enforce bean validation on `BookMeetingRequest`/`ParticipantRequest` (title bounds, `@NotEmpty` participants, at least one of name/email) and confirm the 400 surface in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
+- [x] T020 [US1] Enforce bean validation on `BookMeetingRequest`/`ParticipantRequest` (title bounds, `@NotEmpty` participants, at least one of name/email) and do a check of the 400 responses in `src/main/java/com/minidoodle/calendar/adapter/in/web/`
 
 **Checkpoint**: US1 fully functional and independently testable (MVP)
 
@@ -82,7 +82,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 **Goal**: A caller retrieves the meeting for a slot they own, including title, description, participants, and the slot's time window.
 
-**Independent Test**: Book a meeting, `GET /api/v1/slots/{slotId}/meeting`, and confirm the returned fields match what was booked; a slot without a meeting returns `404`.
+**Independent Test**: Book a meeting, `GET /api/v1/slots/{slotId}/meeting`, and make sure that the returned fields match what was booked. A slot without a meeting returns `404`.
 
 ### Tests for User Story 2
 
@@ -92,7 +92,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 ### Implementation for User Story 2
 
 - [x] T023 [P] [US2] Define inbound port `GetMeetingUseCase` in `src/main/java/com/minidoodle/calendar/application/port/in/`
-- [x] T024 [US2] Implement meeting read in `MeetingApplicationService` (ownership via caller calendar, map to response, throw `MeetingNotFoundException` when absent) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007)
+- [x] T024 [US2] Implement meeting read in `MeetingApplicationService` (ownership through caller calendar, map to response, throw `MeetingNotFoundException` when absent) in `src/main/java/com/minidoodle/calendar/application/service/` (depends on T007)
 - [x] T025 [US2] Add the `GET` endpoint to `MeetingController` and a response mapper for the slot time window in `src/main/java/com/minidoodle/calendar/adapter/in/web/` (depends on T019, T024)
 
 **Checkpoint**: US1 and US2 both work independently
@@ -101,15 +101,15 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ## Phase 5: User Story 3 - Cancel a meeting (Priority: P3)
 
-**Goal**: A caller cancels a meeting, which removes it and frees its slot; slot modify/delete/status operations are rejected while a meeting exists.
+**Goal**: A caller cancels a meeting, which removes it and frees its slot. Slot modify/delete/status operations are rejected while a meeting exists.
 
-**Independent Test**: Book then `DELETE /api/v1/slots/{slotId}/meeting`; confirm `204`, the meeting is gone (`404` on GET), the slot is `FREE`, and `PATCH`/`DELETE` on a booked slot are rejected with `409`.
+**Independent Test**: Book then `DELETE /api/v1/slots/{slotId}/meeting`. Confirm `204`, the meeting is gone (`404` on GET), the slot is `FREE`, and `PATCH`/`DELETE` on a booked slot are rejected with `409`.
 
 ### Tests for User Story 3
 
 - [x] T026 [P] [US3] MockMvc contract test for `DELETE /api/v1/slots/{slotId}/meeting` (204, 403, 404) in `src/test/java/com/minidoodle/calendar/adapter/in/web/MeetingControllerCancelIT.java`
 - [x] T027 [P] [US3] MockMvc contract test for the FR-010 guards: `PATCH` status, `PATCH` time/duration, and `DELETE` on a booked slot each return `409` in `src/test/java/com/minidoodle/calendar/adapter/in/web/SlotMeetingGuardIT.java`
-- [x] T028 [P] [US3] Persistence integration test: cancelling deletes the meeting, cascades participants, and frees the slot in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingRepositoryCancelIT.java`
+- [x] T028 [P] [US3] Persistence integration test: canceling deletes the meeting, cascades participants, and frees the slot in `src/test/java/com/minidoodle/calendar/adapter/out/persistence/MeetingRepositoryCancelIT.java`
 
 ### Implementation for User Story 3
 
@@ -127,7 +127,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 **Purpose**: Documentation, observability, and performance verification
 
 - [x] T033 [P] Annotate `MeetingController` endpoints with springdoc `@Operation`/`@ApiResponse` and the required `X-User-Id` header, and verify Swagger UI matches `specs/002-meeting-scheduling/contracts/openapi.yaml` in `src/main/java/com/minidoodle/calendar/adapter/in/web/MeetingController.java`
-- [x] T034 [P] Add `MeetingMetrics` (booked/viewed/cancelled counters and timers) and structured logging, wired into the meeting services, in `src/main/java/com/minidoodle/calendar/application/service/`
+- [x] T034 [P] Add `MeetingMetrics` (booked/viewed/canceled counters and timers) and structured logging, wired into the meeting services, in `src/main/java/com/minidoodle/calendar/application/service/`
 - [x] T035 [P] Update `README.md` with the meeting endpoints, examples, and the "one meeting per slot" rule
 - [x] T036 Run `specs/002-meeting-scheduling/quickstart.md` end-to-end against `docker-compose up` and fix discrepancies
 - [x] T037 Performance check for `specs/002-meeting-scheduling/quickstart.md`: verify booking p99 ≤ 200 ms (SC-001) and meeting retrieval p99 ≤ 300 ms (SC-004) under a seeded dataset
@@ -148,7 +148,7 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 - **US1 (P1)**: after Foundational — no dependency on other stories
 - **US2 (P2)**: after Foundational — reuses the `MeetingResponse`/mapper introduced in US1 (T018), otherwise independent
-- **US3 (P3)**: after Foundational — reuses the controller (T019) and adds the FR-010 guards in the slot services; independent of US2
+- **US3 (P3)**: after Foundational — reuses the controller (T019) and adds the FR-010 guards in the slot services. Independent of US2
 
 > NOTE: US1, US2, and US3 all add methods to the same `MeetingController`, so implement them sequentially (US1 → US2 → US3) to avoid file conflicts, even though the underlying use cases are independent.
 
@@ -160,10 +160,10 @@ Single Gradle module (established by 001). Production code under `src/main/java/
 
 ### Parallel Opportunities
 
-- Foundational: T004, T006, T007, T009, T010 in parallel (mind T005 → T004; T008 → T003/T007; T010 → T006)
-- US1: test tasks T012–T015 in parallel; DTOs T018 in parallel with the service T017
-- US2: test tasks T021–T022 in parallel; port T023 in parallel with tests
-- US3: test tasks T026–T028 in parallel; port T029 in parallel with tests
+- Foundational: T004, T006, T007, T009, T010 in parallel (mind T005 → T004, T008 → T003/T007, T010 → T006)
+- US1: test tasks T012–T015 in parallel. DTOs T018 in parallel with the service T017
+- US2: test tasks T021–T022 in parallel. Port T023 in parallel with tests
+- US3: test tasks T026–T028 in parallel. Port T029 in parallel with tests
 - Polish: T033, T034, T035 in parallel
 
 ---

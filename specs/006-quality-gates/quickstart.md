@@ -13,12 +13,12 @@ everyday work: all fast gates run inside `./gradlew build`.
 ./gradlew build --no-daemon --console=plain
 ```
 
-This is what the pre-push hook and CI run. If it is green, every fast gate passes. It now includes:
+This is what the pre-push hook and CI run. If it passes, every fast gate passes. It now includes:
 
 - style (formatting + lint) — feature 005,
-- **architecture conformance** (`ArchitectureTest`, via `test`),
+- **architecture conformance** (`ArchitectureTest`, through `test`),
 - **complexity ceilings** (inside `checkstyleMain`/`checkstyleTest`),
-- **coverage verification** (`jacocoTestCoverageVerification`, via `check`).
+- **coverage verification** (`jacocoTestCoverageVerification`, through `check`).
 
 It does **not** include mutation analysis.
 
@@ -39,7 +39,7 @@ Machine-readable: `build/reports/jacoco/test/jacocoTestReport.xml`.
 ### Reading the six dimensions
 
 `./gradlew jacocoTestReport` reports **instruction, branch, line, method, class, and cyclomatic
-complexity**. Four of them have enforced floors; all six are always reported.
+complexity**. Four of them have enforced floors. All six are always reported.
 
 ### If coverage verification fails
 
@@ -54,12 +54,12 @@ The message names the rule (counter and scope), the measured value, and the mini
    one path never did, which is the usual cause of a branch-floor failure.
 2. Add the missing assertion or case. If the gap is in error handling, look for an
    `@ExceptionHandler` with no test.
-3. Re-run. Do **not** lower a floor to accommodate a regression; floors only move up.
+3. Run again. Do **not** lower a floor to accommodate a regression. Floors only move up.
 
 ### Why some classes have their own (stricter) rule
 
 `GlobalExceptionHandler`, `JooqSlotRepository`, and `CurrentUserArgumentResolver` carry class-scoped
-rules because they hold the error and recovery behaviour. They can be far below the class average
+rules because they hold the error and recovery behavior. They can be far below the class average
 while the bundle looks healthy — that is exactly what a bundle floor cannot see.
 
 ---
@@ -99,7 +99,7 @@ The rules are ordinary tests, so they run with the suite:
 ./gradlew test --tests '*Architecture*'
 ```
 
-A failure names the rule and the offending type, for example a domain type referencing Spring, or
+A failure names the rule and the affected type, for example a domain type referencing Spring, or
 `adapter.in` reaching into `adapter.out`. Fix it by depending on the port/interface instead of the
 concrete type — dependencies point inward.
 
@@ -122,7 +122,7 @@ hundreds of mutants.
 
 Survivors are the interesting output: each one is a change to the code that no test noticed. Some
 are equivalent mutants (inherently undetectable, common in logging and `toString`) and can be
-ignored; the rest point at a missing or too-weak assertion.
+ignored. The rest point at a missing or too-weak assertion.
 
 There is no mutation threshold. It is never part of `./gradlew build`.
 
@@ -136,8 +136,8 @@ Each gate has a deliberate-failure check, worth running when changing the config
 |---|---|
 | Coverage | temporarily add a rule demanding a ratio above today's measured value |
 | Complexity | temporarily lower a ceiling below a known method's measured value |
-| Architecture | temporarily add a dependency that breaks a rule (e.g. import a Spring type into a domain class) |
-| Error-path class rules | the rule-effectiveness test covers this; run `./gradlew test --tests '*Architecture*'` |
+| Architecture | temporarily add a dependency that breaks a rule (for example import a Spring type into a domain class) |
+| Error-path class rules | the rule-effectiveness test covers this. Run `./gradlew test --tests '*Architecture*'` |
 | Mutation | `./gradlew pitest` and confirm survivors are listed per package |
 
 Revert immediately after.
@@ -149,7 +149,7 @@ Revert immediately after.
 | Symptom | Cause |
 |---|---|
 | `jacocoTestCoverageVerification` reports metrics including generated code | `classDirectories` filtering was not applied to the verification task (it owns a separate collection from the report task) |
-| `:jacocoTestCoverageVerification SKIPPED` | no `.exec` data — the task needs `test` to have run; use `./gradlew test jacocoTestCoverageVerification` |
-| A complexity failure points at a *test* method | ceilings apply to test sources too; long concurrency tests are the usual cause |
-| Architecture rule passes with an obviously wrong dependency | the rule's package pattern does not match the type; the rule-effectiveness test is the guard for this |
+| `:jacocoTestCoverageVerification SKIPPED` | no `.exec` data — the task needs `test` to have run. Use `./gradlew test jacocoTestCoverageVerification` |
+| A complexity failure points at a *test* method | ceilings apply to test sources too. Long concurrency tests are the usual cause |
+| Architecture rule passes with an obviously wrong dependency | the rule's package pattern does not match the type. The rule-effectiveness test is the guard for this |
 | `pitest` takes a very long time | `targetTests` is not scoped, so container-backed integration tests are running per mutant |
