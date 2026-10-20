@@ -58,14 +58,20 @@ class SlotControllerModifyIT extends PostgresIntegrationTest {
         String slotId = createSlot(caller, start, 30);
         OffsetDateTime newStart = start.plusDays(1);
 
-        mockMvc.perform(
-                        patch("/api/v1/slots/{slotId}", slotId)
-                                .header(HEADER, caller.userId().value())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"startAt\":\"%s\"}".formatted(newStart)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.durationMinutes").value(30))
-                .andExpect(jsonPath("$.startAt").value(newStart.toString()));
+        String response =
+                mockMvc.perform(
+                                patch("/api/v1/slots/{slotId}", slotId)
+                                        .header(HEADER, caller.userId().value())
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("{\"startAt\":\"%s\"}".formatted(newStart)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.durationMinutes").value(30))
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
+
+        OffsetDateTime returnedStart = OffsetDateTime.parse(JsonPath.read(response, "$.startAt"));
+        assertThat(returnedStart.toInstant()).isEqualTo(newStart.toInstant());
     }
 
     @Test
