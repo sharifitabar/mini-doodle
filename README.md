@@ -339,6 +339,19 @@ Services:
 3. Log in to Grafana with `admin/admin`.
 4. Open the "Mini Doodle Baseline" dashboard.
 
+### Outbox meters
+
+The service exposes three outbox meters:
+
+| Meter | Meaning |
+| --- | --- |
+| `minidoodle_outbox_published_total` | events delivered to the delivery target |
+| `minidoodle_outbox_failed_total` | failed delivery attempts |
+| `minidoodle_outbox_pending` | events that wait for delivery |
+
+A pending value that does not fall to 0 shows a stuck outbox.
+See [ADR 0002](docs/adr/0002-event-outbox.md) and [specification 008](specs/008-domain-event-outbox/spec.md).
+
 ### Stopping and persistence
 
 - Stop: `docker compose down`

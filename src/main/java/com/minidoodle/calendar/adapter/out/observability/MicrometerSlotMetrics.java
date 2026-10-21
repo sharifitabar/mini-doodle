@@ -6,8 +6,6 @@ import com.minidoodle.calendar.domain.model.TimeSlot;
 
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import io.micrometer.core.instrument.Counter;
@@ -20,8 +18,6 @@ import io.micrometer.core.instrument.Timer;
  */
 @Component
 class MicrometerSlotMetrics implements SlotMetrics {
-
-    private static final Logger log = LoggerFactory.getLogger(MicrometerSlotMetrics.class);
 
     private final Counter created;
     private final Counter updated;
@@ -55,28 +51,16 @@ class MicrometerSlotMetrics implements SlotMetrics {
     @Override
     public void slotCreated(TimeSlot slot) {
         created.increment();
-        log.info(
-                "event=slot.created slotId={} calendarId={}",
-                slot.id().value(),
-                slot.calendarId().value());
     }
 
     @Override
     public void slotUpdated(TimeSlot slot) {
         updated.increment();
-        log.info(
-                "event=slot.updated slotId={} calendarId={} status={} startAt={} durationMinutes={}",
-                slot.id().value(),
-                slot.calendarId().value(),
-                slot.status(),
-                slot.timeRange().start(),
-                slot.timeRange().durationMinutes());
     }
 
     @Override
     public void slotDeleted(SlotId slotId) {
         deleted.increment();
-        log.info("event=slot.deleted slotId={}", slotId.value());
     }
 
     @Override

@@ -12,6 +12,14 @@ app:
   seed-demo-data: false
   slot:
     max-duration-minutes: 1440
+  outbox:
+    # Tests call pollOnce() and cleanupOnce() directly. A long interval keeps the scheduler
+    # from delivering rows in the background while a test asserts on them.
+    poll-interval: 1h
+    batch-size: 50
+    max-attempts: 5
+    cleanup-interval: 1h
+    retention: 7d
 
 logging:
   level:

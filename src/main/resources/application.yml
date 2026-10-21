@@ -44,6 +44,12 @@ app:
   seed-demo-data: ${SEED_DEMO_DATA:true}
   slot:
     max-duration-minutes: ${SLOT_MAX_DURATION_MINUTES:1440}
+  outbox:
+    poll-interval: ${OUTBOX_POLL_INTERVAL:500ms}
+    batch-size: ${OUTBOX_BATCH_SIZE:50}
+    max-attempts: ${OUTBOX_MAX_ATTEMPTS:5}
+    cleanup-interval: ${OUTBOX_CLEANUP_INTERVAL:1h}
+    retention: ${OUTBOX_RETENTION:7d}
 
 logging:
   pattern:

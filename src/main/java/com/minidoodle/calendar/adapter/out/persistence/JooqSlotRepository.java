@@ -34,16 +34,12 @@ class JooqSlotRepository implements SlotRepository {
 
     @Override
     public void insert(TimeSlot slot) {
-        // One transaction: the slot and its meeting must commit or roll back together.
+        // The caller owns the transaction, so the slot, its meeting, and its events stay one unit.
         SlotWriteErrors.translate(
-                () ->
-                        dsl.transaction(
-                                configuration -> {
-                                    DSLContext context = DSL.using(configuration);
-                                    new JooqSlotRepository(context).insertInternal(slot);
-                                    slot.findMeeting()
-                                            .ifPresent(new JooqMeetingRepository(context)::save);
-                                }));
+                () -> {
+                    insertInternal(slot);
+                    slot.findMeeting().ifPresent(meetings::save);
+                });
     }
 
     private void insertInternal(TimeSlot slot) {
