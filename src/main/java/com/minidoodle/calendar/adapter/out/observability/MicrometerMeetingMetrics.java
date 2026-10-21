@@ -61,12 +61,6 @@ class MicrometerMeetingMetrics implements MeetingMetrics {
     @Override
     public void meetingBooked(Meeting meeting, TimeSlot slot) {
         booked.increment();
-        log.info(
-                "event=meeting.booked meetingId={} slotId={} calendarId={} participants={}",
-                meeting.id().value(),
-                slot.id().value(),
-                slot.calendarId().value(),
-                meeting.participants().size());
     }
 
     @Override
@@ -78,7 +72,6 @@ class MicrometerMeetingMetrics implements MeetingMetrics {
     @Override
     public void meetingCancelled(SlotId slotId) {
         cancelled.increment();
-        log.info("event=meeting.cancelled slotId={}", slotId.value());
     }
 
     @Override

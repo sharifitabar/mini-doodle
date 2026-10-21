@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://minidoodle.example/contracts/outbox-event.schema.json",
+  "title": "Calendar event",
+  "description": "The document that a delivery adapter receives. The database keeps the envelope in columns and the payload in a jsonb column. The publisher joins them for the delivery target.",
+  "type": "object",
+  "required": [
+    "event_id",
+    "type",
+    "schema_version",
+    "aggregate_type",
+    "aggregate_id",
+    "calendar_id",
+    "occurred_at",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "type": { "type": "string", "enum": ["slot.created", "slot.updated", "slot.deleted", "meeting.booked", "meeting.cancelled"] },
+    "schema_version": { "type": "integer", "const": 1 },
+    "aggregate_type": { "type": "string", "const": "slot" },
+    "aggregate_id": { "type": "string", "format": "uuid" },
+    "calendar_id": { "type": "string", "format": "uuid" },
+    "occurred_at": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "slot.created" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/slotCreated" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "slot.updated" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/slotUpdated" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "slot.deleted" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/slotDeleted" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "meeting.booked" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/meetingBooked" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "meeting.cancelled" } } },
+      "then": { "properties": { "payload": { "$ref": "#/$defs/meetingCancelled" } } }
+    }
+  ],
+  "$defs": {
+    "slotCreated": {
+      "type": "object",
+      "required": ["start_at", "duration_minutes", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "start_at": { "type": "string", "format": "date-time" },
+        "duration_minutes": { "type": "integer", "minimum": 1, "maximum": 1440 },
+        "status": { "type": "string", "enum": ["FREE", "BUSY"] }
+      }
+    },
+    "slotUpdated": {
+      "type": "object",
+      "required": ["start_at", "duration_minutes", "status", "changed"],
+      "additionalProperties": false,
+      "properties": {
+        "start_at": { "type": "string", "format": "date-time" },
+        "duration_minutes": { "type": "integer", "minimum": 1, "maximum": 1440 },
+        "status": { "type": "string", "enum": ["FREE", "BUSY"] },
+        "changed": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "enum": ["start_at", "duration_minutes", "status"] }
+        }
+      }
+    },
+    "slotDeleted": {
+      "type": "object",
+      "required": ["start_at", "duration_minutes", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "start_at": { "type": "string", "format": "date-time" },
+        "duration_minutes": { "type": "integer", "minimum": 1, "maximum": 1440 },
+        "status": { "type": "string", "enum": ["FREE", "BUSY"] }
+      }
+    },
+    "meetingBooked": {
+      "type": "object",
+      "required": ["meeting_id", "title", "participant_count"],
+      "additionalProperties": false,
+      "properties": {
+        "meeting_id": { "type": "string", "format": "uuid" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "participant_count": { "type": "integer", "minimum": 1, "maximum": 100 }
+      }
+    },
+    "meetingCancelled": {
+      "type": "object",
+      "required": ["meeting_id"],
+      "additionalProperties": false,
+      "properties": {
+        "meeting_id": { "type": "string", "format": "uuid" }
+      }
+    }
+  }
+}

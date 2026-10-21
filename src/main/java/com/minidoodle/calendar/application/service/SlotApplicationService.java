@@ -9,6 +9,7 @@ import com.minidoodle.calendar.application.port.in.SlotPage;
 import com.minidoodle.calendar.application.port.in.SlotQuery;
 import com.minidoodle.calendar.application.port.in.UpdateSlotCommand;
 import com.minidoodle.calendar.application.port.in.UpdateSlotUseCase;
+import com.minidoodle.calendar.application.port.out.EventOutbox;
 import com.minidoodle.calendar.application.port.out.SlotFilter;
 import com.minidoodle.calendar.application.port.out.SlotLimits;
 import com.minidoodle.calendar.application.port.out.SlotMetrics;
@@ -43,6 +44,7 @@ class SlotApplicationService
 
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
+    private final EventOutbox outbox;
     private final SlotMetrics metrics;
     private final SlotLimits slotLimits;
     private final Clock clock;
@@ -50,22 +52,21 @@ class SlotApplicationService
     SlotApplicationService(
             CallerCalendarResolver calendarResolver,
             SlotRepository slots,
+            EventOutbox outbox,
             SlotMetrics metrics,
             SlotLimits slotLimits,
             Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
+        this.outbox = outbox;
         this.metrics = metrics;
         this.slotLimits = slotLimits;
         this.clock = clock;
     }
 
-    /**
-     * Inserts the slot without a method-level {@code @Transactional}: the repository's {@code
-     * insert} opens its own transaction so the slot and its meeting commit or roll back as one
-     * unit. The calendar lookup is a pure read.
-     */
+    /** Creates the slot and its event in one transaction. The calendar lookup is a pure read. */
     @Override
+    @Transactional
     public TimeSlot createSlot(UserId caller, CreateSlotCommand command) {
         return metrics.timeCreate(
                 () -> {
@@ -76,6 +77,7 @@ class SlotApplicationService
                     TimeSlot slot =
                             TimeSlot.create(calendar.id(), timeRange, OffsetDateTime.now(clock));
                     slots.insert(slot);
+                    outbox.append(slot.drainEvents());
                     metrics.slotCreated(slot);
                     return slot;
                 });
@@ -146,6 +148,7 @@ class SlotApplicationService
         }
 
         slots.update(slot);
+        outbox.append(slot.drainEvents());
         metrics.slotUpdated(slot);
         return slot;
     }
@@ -173,7 +176,9 @@ class SlotApplicationService
                                         new SlotNotFoundException(
                                                 "Slot not found: " + slotId.value()));
         slot.ensureDeletable();
+        slot.recordDeletion(OffsetDateTime.now(clock));
         slots.deleteByIdAndCalendarId(slotId, calendar.id());
+        outbox.append(slot.drainEvents());
         metrics.slotDeleted(slotId);
     }
 }

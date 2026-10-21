@@ -1,29 +1,46 @@
 package com.minidoodle.calendar.domain.model;
 
+import com.minidoodle.calendar.domain.event.CalendarEvent;
+import com.minidoodle.calendar.domain.event.MeetingBooked;
+import com.minidoodle.calendar.domain.event.MeetingCancelled;
+import com.minidoodle.calendar.domain.event.SlotCreated;
+import com.minidoodle.calendar.domain.event.SlotDeleted;
+import com.minidoodle.calendar.domain.event.SlotUpdated;
 import com.minidoodle.calendar.domain.exception.InvalidSlotException;
 import com.minidoodle.calendar.domain.exception.MeetingConflictException;
 import com.minidoodle.calendar.domain.exception.MeetingNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Time slot aggregate root. Owns its optional meeting and all booking transitions, plus a positive,
  * bounded duration, a start instant in the future relative to the caller's clock, and an
  * availability status. Cross-slot non-overlap is enforced by the database exclusion constraint (the
  * only place with a global view).
+ *
+ * <p>The aggregate records one event for each real transition. {@link #drainEvents()} gives the
+ * events to the application service, which writes them to the outbox in the same transaction as the
+ * state change.
  */
 public final class TimeSlot {
 
     private final SlotId id;
     private final CalendarId calendarId;
     private final OffsetDateTime createdAt;
+    private final List<CalendarEvent> events = new ArrayList<>();
+    private final Set<String> pendingChangedFields = new LinkedHashSet<>();
     private TimeRange timeRange;
     private SlotStatus status;
     private OffsetDateTime updatedAt;
     private Meeting meeting;
+    private OffsetDateTime pendingChangedAt;
 
     private TimeSlot(
             SlotId id,
@@ -44,8 +61,19 @@ public final class TimeSlot {
         Objects.requireNonNull(now, "now must not be null");
         requireFutureStart(timeRange, now);
         OffsetDateTime utcNow = now.withOffsetSameInstant(ZoneOffset.UTC);
-        return new TimeSlot(
-                SlotId.random(), calendarId, timeRange, SlotStatus.FREE, utcNow, utcNow);
+        TimeSlot created =
+                new TimeSlot(
+                        SlotId.random(), calendarId, timeRange, SlotStatus.FREE, utcNow, utcNow);
+        created.events.add(
+                new SlotCreated(
+                        UUID.randomUUID(),
+                        calendarId.value(),
+                        created.id.value(),
+                        timeRange.start(),
+                        timeRange.durationMinutes(),
+                        SlotStatus.FREE.name(),
+                        utcNow));
+        return created;
     }
 
     public static TimeSlot of(
@@ -63,8 +91,20 @@ public final class TimeSlot {
         Objects.requireNonNull(newTimeRange, "newTimeRange must not be null");
         Objects.requireNonNull(now, "now must not be null");
         requireFutureStart(newTimeRange, now);
+        if (this.timeRange.equals(newTimeRange)) {
+            return;
+        }
+        boolean startChanged = !this.timeRange.start().equals(newTimeRange.start());
+        boolean durationChanged =
+                this.timeRange.durationMinutes() != newTimeRange.durationMinutes();
         this.timeRange = newTimeRange;
         this.updatedAt = now.withOffsetSameInstant(ZoneOffset.UTC);
+        if (startChanged) {
+            markChanged("start_at", updatedAt);
+        }
+        if (durationChanged) {
+            markChanged("duration_minutes", updatedAt);
+        }
     }
 
     public void changeStatus(SlotStatus newStatus, OffsetDateTime now) {
@@ -76,6 +116,7 @@ public final class TimeSlot {
         }
         this.status = newStatus;
         this.updatedAt = now.withOffsetSameInstant(ZoneOffset.UTC);
+        markChanged("status", updatedAt);
     }
 
     /** Rehydrates a complete aggregate, including its optional meeting entity. */
@@ -104,6 +145,15 @@ public final class TimeSlot {
         meeting = created;
         status = SlotStatus.BUSY;
         updatedAt = created.updatedAt();
+        events.add(
+                new MeetingBooked(
+                        UUID.randomUUID(),
+                        calendarId.value(),
+                        id.value(),
+                        created.id().value(),
+                        created.title(),
+                        created.participants().size(),
+                        created.updatedAt()));
         return created;
     }
 
@@ -122,10 +172,60 @@ public final class TimeSlot {
 
     public void cancelMeeting(OffsetDateTime now) {
         Objects.requireNonNull(now, "now must not be null");
-        requireMeeting();
+        Meeting cancelled = requireMeeting();
         meeting = null;
         status = SlotStatus.FREE;
         updatedAt = now.withOffsetSameInstant(ZoneOffset.UTC);
+        events.add(
+                new MeetingCancelled(
+                        UUID.randomUUID(),
+                        calendarId.value(),
+                        id.value(),
+                        cancelled.id().value(),
+                        updatedAt));
+    }
+
+    /**
+     * Records the deletion event. The caller deletes the row in the same transaction, so a failed
+     * delete leaves no event behind.
+     */
+    public void recordDeletion(OffsetDateTime now) {
+        Objects.requireNonNull(now, "now must not be null");
+        OffsetDateTime occurredAt = now.withOffsetSameInstant(ZoneOffset.UTC);
+        events.add(
+                new SlotDeleted(
+                        UUID.randomUUID(),
+                        calendarId.value(),
+                        id.value(),
+                        timeRange.start(),
+                        timeRange.durationMinutes(),
+                        status.name(),
+                        occurredAt));
+    }
+
+    /**
+     * Returns the events that this aggregate recorded, then clears them. The pending field set
+     * merges the changes of one command, so a patch that changes time and status gives one {@code
+     * slot.updated} event.
+     */
+    public List<CalendarEvent> drainEvents() {
+        List<CalendarEvent> drained = new ArrayList<>(events);
+        if (!pendingChangedFields.isEmpty()) {
+            drained.add(
+                    new SlotUpdated(
+                            UUID.randomUUID(),
+                            calendarId.value(),
+                            id.value(),
+                            timeRange.start(),
+                            timeRange.durationMinutes(),
+                            status.name(),
+                            List.copyOf(pendingChangedFields),
+                            pendingChangedAt));
+        }
+        events.clear();
+        pendingChangedFields.clear();
+        pendingChangedAt = null;
+        return List.copyOf(drained);
     }
 
     public void ensureDeletable() {
@@ -140,6 +240,11 @@ public final class TimeSlot {
             throw new MeetingConflictException(
                     "Slot has a meeting; cancel it before updating the slot");
         }
+    }
+
+    private void markChanged(String field, OffsetDateTime occurredAt) {
+        pendingChangedFields.add(field);
+        pendingChangedAt = occurredAt;
     }
 
     private static void requireFutureStart(TimeRange timeRange, OffsetDateTime now) {

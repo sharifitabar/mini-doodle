@@ -5,6 +5,7 @@ import com.minidoodle.calendar.application.port.in.BookMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.CancelMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.GetMeetingUseCase;
 import com.minidoodle.calendar.application.port.in.MeetingView;
+import com.minidoodle.calendar.application.port.out.EventOutbox;
 import com.minidoodle.calendar.application.port.out.MeetingMetrics;
 import com.minidoodle.calendar.application.port.out.SlotRepository;
 import com.minidoodle.calendar.domain.exception.SlotNotFoundException;
@@ -31,16 +32,19 @@ class MeetingApplicationService
 
     private final CallerCalendarResolver calendarResolver;
     private final SlotRepository slots;
+    private final EventOutbox outbox;
     private final MeetingMetrics metrics;
     private final Clock clock;
 
     MeetingApplicationService(
             CallerCalendarResolver calendarResolver,
             SlotRepository slots,
+            EventOutbox outbox,
             MeetingMetrics metrics,
             Clock clock) {
         this.calendarResolver = calendarResolver;
         this.slots = slots;
+        this.outbox = outbox;
         this.metrics = metrics;
         this.clock = clock;
     }
@@ -70,6 +74,7 @@ class MeetingApplicationService
                                     command.participants(),
                                     OffsetDateTime.now(clock));
                     slots.update(slot);
+                    outbox.append(slot.drainEvents());
 
                     metrics.meetingBooked(meeting, slot);
                     return new MeetingView(meeting, slot.timeRange());
@@ -115,6 +120,7 @@ class MeetingApplicationService
                                                             "Slot not found: " + slotId.value()));
                     slot.cancelMeeting(OffsetDateTime.now(clock));
                     slots.update(slot);
+                    outbox.append(slot.drainEvents());
 
                     metrics.meetingCancelled(slotId);
                 });

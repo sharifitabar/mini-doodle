@@ -46,6 +46,27 @@ The write returns 503 Service Unavailable with `Retry-After`.
 The client sends the request again.
 See [ADR 0001](adr/0001-slot-insert-contention.md) for the contract.
 
+## Calendar events
+
+Five flows record one event: time slot creation, time slot update, time slot deletion, meeting
+booking, and meeting cancellation.
+The aggregate creates the event.
+The application service writes it to `outbox_events` in the same transaction as the state change.
+A failed operation writes no event.
+
+A scheduled relay reads the pending rows in capture order.
+It sends each row through the `EventPublisher` port.
+The current adapter writes the application log.
+A failed delivery increases the attempt count.
+After 5 failures, the row becomes failed.
+Published rows stay for 7 days.
+The cleanup removes them.
+
+The order guarantee holds for one application instance.
+The metrics adapters keep their read-path log entries.
+The mutation-event log entries moved to the outbox publisher.
+See [ADR 0002](adr/0002-event-outbox.md).
+
 Metrics keep their existing meanings for attempts and successes.
 The service records success counters before transaction commit.
 These counters are not an audit of committed database changes.
